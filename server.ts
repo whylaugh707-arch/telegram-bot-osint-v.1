@@ -992,6 +992,11 @@ async function startServer() {
     let retryCount = 0;
     const launchBot = async () => {
       try {
+        const isAIStudio = process.env.VITE_APP_URL && String(process.env.VITE_APP_URL).includes("ais-");
+        if (isAIStudio) {
+          console.log("🛑 MENCEGAH ERROR 409: Bot dimatikan di AI Studio agar tidak berebut dengan Railway.");
+          return;
+        }
         await bot.launch({ dropPendingUpdates: true });
         console.log("Telegram bot is running");
       } catch (e: any) {
