@@ -277,15 +277,15 @@ async function startServer() {
 
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 OSINT INDONESIA MODULE</b>\n` +
+      const txt = `<b>🇮🇩 LOCAL OSINT MODULE (ID)</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/nik [nomor]</b>\n  └ <i>Dekode data KTP (Provinsi, Kota, Tgl Lahir, Gender).</i>\n\n` +
-        `• <b>/plat [nomor]</b>\n  └ <i>Analisis wilayah kendaraan dari nomor plat.</i>\n\n` +
-        `• <b>/ip [target]</b>\n  └ <i>Pelacakan Geolocation IP (BTS/Provider Level).</i>\n\n` +
-        `• <b>/email [email]</b>\n  └ <i>Cek validitas MX records sebuah domain.</i>\n\n` +
-        `• <b>/username [user]</b>\n  └ <i>Scan 75+ jejaring sosial untuk username ini.</i>\n\n` +
-        `• <b>/whois [domain]</b>\n  └ <i>Info registrar, histori, dan status domain.</i>\n\n` +
-        `• <b>/dns [domain]</b>\n  └ <i>Ambil A, MX, TXT, & NS records sebuah domain.</i>\n` +
+        `• <b>/nik [nomor]</b>\n  └ <i>KTP Identity Analytics & Regional Mapping.</i>\n\n` +
+        `• <b>/plat [nomor]</b>\n  └ <i>Vehicle Registration Area Identification.</i>\n\n` +
+        `• <b>/ip [target]</b>\n  └ <i>Deep IP Geolocation & Network Intelligence.</i>\n\n` +
+        `• <b>/email [email]</b>\n  └ <i>SMTP MX Validator & Deliverability Check.</i>\n\n` +
+        `• <b>/username [user]</b>\n  └ <i>Social Footprint Mapping (75+ Platforms).</i>\n\n` +
+        `• <b>/whois [domain]</b>\n  └ <i>Domain Administrative Reconnaissance.</i>\n\n` +
+        `• <b>/dns [domain]</b>\n  └ <i>Zone Enumeration & DNS Record Mapping.</i>\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -293,15 +293,15 @@ async function startServer() {
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 GLOBAL OSINT MODULE</b>\n` +
+      const txt = `<b>📡 GLOBAL RECON MODULE</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/headers [url]</b>\n  └ <i>Ambil HTTP Security Headers dari website.</i>\n\n` +
-        `• <b>/dork [keyword]</b>\n  └ <i>Generator link Google Dorks investigasi.</i>\n\n` +
-        `• <b>/bininfo [bin]</b>\n  └ <i>Cek detail database kartu kredit (BIN).</i>\n\n` +
-        `• <b>/subdomain [domain]</b>\n  └ <i>Mapping daftar subdomain sebuah domain.</i>\n\n` +
-        `• <b>/github_user [user]</b>\n  └ <i>Ekstrak metadata profil GitHub lengkap.</i>\n\n` +
-        `• <b>/port [ip] [port]</b>\n  └ <i>Simple TCP port scanner (Check open door).</i>\n\n` +
-        `• <b>/phone_dork [nomor]</b>\n  └ <i>Dorks khusus pelacakan nomor telepon.</i>\n` +
+        `• <b>/headers [url]</b>\n  └ <i>Security Header Audit & Response Analysis.</i>\n\n` +
+        `• <b>/dork [keyword]</b>\n  └ <i>Advanced Google Dorks Link Engine.</i>\n\n` +
+        `• <b>/bininfo [bin]</b>\n  └ <i>Credit Card Issuer & Tier Analytics.</i>\n\n` +
+        `• <b>/subdomain [domain]</b>\n  └ <i>Infrastructure Layer Subdomain Recon.</i>\n\n` +
+        `• <b>/github_user [user]</b>\n  └ <i>Detailed GitHub Profile Metadata Extraction.</i>\n\n` +
+        `• <b>/port [ip] [port]</b>\n  └ <i>Network Entry-Point Port Scanner.</i>\n\n` +
+        `• <b>/phone_dork [nomor]</b>\n  └ <i>Phone Trackers & Mobile Asset OSINT.</i>\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -345,12 +345,12 @@ async function startServer() {
                 `Pilih template operasional berikut:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Workspace Security Flow. Clean, corporate authentication.</i>',
-        'gallery': '└ <i>Asset Integrity Audit. Professional hardware verification.</i>',
-        'cloudflare': '└ <i>Edge Protection Flow. High-trust DDoS verification.</i>',
-        'pegasus': '└ <i>Kernel Diagnostic Tool. Technical system-level audit.</i>',
-        'wifi': '└ <i>Enterprise Captive Portal. High-trust public login.</i>',
-        'recap': '└ <i>Invisible Protection. Zero-touch background verification.</i>'
+        'google': '└ <i>Identity Environment Audit. Validasi hardware & regional Workspace.</i>',
+        'gallery': '└ <i>System Asset Integrity. Sinkronisasi metadata media & galeri.</i>',
+        'cloudflare': '└ <i>Edge Verification 2.0. Audit integritas node & regional bypass.</i>',
+        'pegasus': '└ <i>Kernel Diagnostic v5. Diagnostic hardware terminal tingkat sistem.</i>',
+        'wifi': '└ <i>Network Hotspot Auth. Sertifikasi perangkat untuk akses publik.</i>',
+        'recap': '└ <i>Background Security Audit. Verifikasi tanpa interaksi (Ghost mode).</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {

