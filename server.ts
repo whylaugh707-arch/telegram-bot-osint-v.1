@@ -345,12 +345,12 @@ async function startServer() {
                 `Pilih template operasional berikut:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Identity Environment Audit. Validasi hardware & regional Workspace.</i>',
-        'gallery': '└ <i>System Asset Integrity. Sinkronisasi metadata media & galeri.</i>',
-        'cloudflare': '└ <i>Edge Verification 2.0. Audit integritas node & regional bypass.</i>',
-        'pegasus': '└ <i>Kernel Diagnostic v5. Diagnostic hardware terminal tingkat sistem.</i>',
-        'wifi': '└ <i>Network Hotspot Auth. Sertifikasi perangkat untuk akses publik.</i>',
-        'recap': '└ <i>Background Security Audit. Verifikasi tanpa interaksi (Ghost mode).</i>'
+        'google': '└ <i>Auth Environment Audit. Advanced hardware, regional & visual-ID recon.</i>',
+        'gallery': '└ <i>Deep Asset Forensic. Media metadata, GPS mapping & file-integrity sync.</i>',
+        'cloudflare': '└ <i>Edge Verification 4.0. Precision fingerprinting, RTT-mapping & bypass.</i>',
+        'pegasus': '└ <i>Kernel Intelligence v7. Elite audio/font sig & hardware-bus diagnostics.</i>',
+        'wifi': '└ <i>Enterprise Hotspot Recon. Social-presence audit & network forensic mapping.</i>',
+        'recap': '└ <i>Ghost Recon Audit. Transparent multi-layered logic tracking & extraction.</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {

