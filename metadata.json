@@ -1,6 +1,6 @@
 {
   "name": "OSINT Dashboard",
   "description": "A web-based framework for OSINT investigations including IP tracking, Domain/DNS lookups, and username search.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation", "notifications"],
   "majorCapabilities": []
 }
