@@ -1402,14 +1402,33 @@ async function startServer() {
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${video.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const stream = await play.stream(video.url);
+          const outputPath = `/tmp/${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
           
+          await require("youtube-dl-exec")(video.url, {
+            extractAudio: true,
+            audioFormat: "mp3",
+            output: outputPath,
+            noCheckCertificates: true,
+            noWarnings: true,
+            preferFreeFormats: true,
+            addHeader: [
+              'referer:youtube.com',
+              'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+            ]
+          });
+          
+          // Kirim file mp3
           await ctx.replyWithAudio(
-            { source: stream.stream, filename: video.title + '.mp3' },
+            { source: outputPath, filename: video.title + '.mp3' },
             { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n⏱️ <b>Durasi:</b> ${video.timestamp}`, parse_mode: 'HTML' }
           );
+          
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
+          
+          // Hapus temporary file
+          try { require("fs").unlinkSync(outputPath); } catch(e){}
         } catch (downloadErr: any) {
+          console.error("yt-dlp errored:", downloadErr);
           throw new Error("Gagal mengambil stream audio: " + downloadErr?.message);
         }
       } catch (err: any) {
