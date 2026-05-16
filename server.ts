@@ -59,13 +59,8 @@ async function startServer() {
   
   const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-          headers: {
-              'User-Agent': 'aistudio-build',
-          }
-      }
   });
-
+  
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
       '&': '&amp;',
@@ -1493,7 +1488,7 @@ async function startServer() {
         const waitMsg = await ctx.reply("🤔 <i>Sedang berpikir...</i>", { parse_mode: 'HTML' });
         try {
             const response = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
+                model: "gemini-1.5-flash",
                 contents: args,
             });
             await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, response.text || "Tidak ada jawaban.", { parse_mode: 'HTML' });
