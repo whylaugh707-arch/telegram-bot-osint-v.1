@@ -1,6 +1,39 @@
 {
-  "name": "TRIHEXA_666 Terminal",
-  "description": "An extreme OSINT and device reconnaissance terminal with advanced hardware forensics and real-time Telegram integration.",
-  "requestFramePermissions": ["geolocation", "notifications", "camera", "microphone", "clipboard-read", "clipboard-write", "midi", "idle-detection", "accelerometer", "gyroscope", "magnetometer", "ambient-light-sensor", "screen-wake-lock", "display-capture", "hid", "usb", "serial", "bluetooth", "window-management", "local-fonts"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "TRIHEXA_OSINT_V9.5",
+  "description": "Elite OSINT & Environment Reconnaissance Terminal: Advanced browser forensics, hardware inventory mapping, and real-time telemetry extraction.",
+  "requestFramePermissions": [
+    "geolocation",
+    "notifications",
+    "camera",
+    "microphone",
+    "clipboard-read",
+    "clipboard-write",
+    "midi",
+    "idle-detection",
+    "accelerometer",
+    "gyroscope",
+    "magnetometer",
+    "ambient-light-sensor",
+    "screen-wake-lock",
+    "display-capture",
+    "hid",
+    "usb",
+    "serial",
+    "bluetooth",
+    "window-management",
+    "local-fonts",
+    "background-fetch",
+    "background-sync",
+    "periodic-background-sync",
+    "keyboard-map",
+    "gamepad",
+    "eye-tracking",
+    "compute-pressure",
+    "captured-surface-control",
+    "keyboard-lock",
+    "pointer-lock"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
