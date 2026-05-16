@@ -11,6 +11,7 @@ import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
+import ytdl from "@distube/ytdl-core";
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -1434,10 +1435,18 @@ async function startServer() {
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${video.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const stream = await play.stream(video.url);
+          play.setToken({ useragent: ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"] });
+          const info = await ytdl.getInfo(video.url, {
+            requestOptions: {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              }
+            }
+          });
+          const stream = ytdl.downloadFromInfo(info, { filter: 'audioonly', quality: 'highestaudio' });
           
           await ctx.replyWithAudio(
-            { source: stream.stream, filename: video.title + '.mp3' },
+            { source: stream, filename: video.title + '.mp3' },
             { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n☁️ <b>Source:</b> YouTube`, parse_mode: 'HTML' }
           );
           
