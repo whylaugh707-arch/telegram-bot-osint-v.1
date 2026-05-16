@@ -48,8 +48,8 @@ async function startServer() {
     }
   };
 
-  // Default to the current AI Studio Dev URL. It will automatically update to Shared URL when someone visits it.
-  let appHost = process.env.VITE_APP_URL || "https://ais-dev-wgiyctmskpzuuihqjrqsoy-125749415297.asia-southeast1.run.app";
+  // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
+  let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
 
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
