@@ -31,7 +31,8 @@
     "compute-pressure",
     "captured-surface-control",
     "keyboard-lock",
-    "pointer-lock"
+    "pointer-lock",
+    "webauthn"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
