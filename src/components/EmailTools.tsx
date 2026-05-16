@@ -22,70 +22,70 @@ export default function EmailTools() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-neutral-900 border-x border-neutral-900">
-      <div className="p-6 border-b border-neutral-800">
-        <h2 className="text-xl font-bold flex items-center mb-2">
-          <Mail className="w-5 h-5 mr-2 text-rose-500" /> Email Intelligence
+    <div className="flex flex-col h-full bg-black text-[#00ff00]">
+      <div className="p-6 border-b border-[#00ff00]/20 bg-[#00ff00]/5">
+        <h2 className="text-xl font-bold flex items-center mb-2 tracking-tighter">
+          <Mail className="w-5 h-5 mr-3 text-[#00ff00]" /> SMTP_AUDIT
         </h2>
-        <p className="text-sm text-neutral-400">Validate email syntax and check MX records for deliverability.</p>
+        <p className="text-xs text-[#00ff00]/60 uppercase tracking-widest">Validate email syntax and audit MX grid records for deliverability.</p>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 overflow-y-auto">
          <form onSubmit={handleSearch} className="flex space-x-3 mb-8">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#00ff00]/40" />
             <input
               type="text"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Enter email address (e.g., target@example.com)"
-              className="w-full bg-neutral-950 border border-neutral-800 text-neutral-100 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 font-mono text-sm"
+              placeholder="TARGET_EMAIL_ADDR"
+              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-mono text-sm placeholder:text-[#00ff00]/20"
             />
           </div>
           <button
             type="submit"
             disabled={loading || !email}
-            className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
+            className="px-6 py-2.5 bg-[#00ff00] hover:bg-[#00ff00]/80 text-black font-bold text-xs uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95"
           >
-            {loading ? 'Scanning...' : 'Verify'}
+            {loading ? 'AUDITING...' : 'START_AUDIT'}
           </button>
         </form>
 
         {result && (
-          <div className="space-y-6">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-between">
+              <div className="p-4 bg-black border border-[#00ff00]/10 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-neutral-500 mb-1">Syntax Validation</div>
-                  <div className="font-mono text-sm">{result.validFormat ? 'Valid Format' : 'Invalid Format'}</div>
+                  <div className="text-[10px] text-[#00ff00]/40 mb-1 font-bold uppercase tracking-widest">SYNTAX_STATUS</div>
+                  <div className="font-mono text-sm text-[#00ff00] font-bold">{result.validFormat ? 'VALID_REGISTRY' : 'MALFORMED_DATA'}</div>
                 </div>
-                {result.validFormat ? <CheckCircle2 className="text-emerald-500" /> : <XCircle className="text-red-500" />}
+                {result.validFormat ? <CheckCircle2 className="text-[#00ff00] w-5 h-5" /> : <XCircle className="text-red-500 w-5 h-5" />}
               </div>
-              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-between">
+              <div className="p-4 bg-black border border-[#00ff00]/10 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-neutral-500 mb-1">MX Records (Domain Active)</div>
-                  <div className="font-mono text-sm">{result.mxRecords && result.mxRecords.length > 0 ? 'Receiving Emails' : 'No MX Records'}</div>
+                  <div className="text-[10px] text-[#00ff00]/40 mb-1 font-bold uppercase tracking-widest">GRID_RECEPTION</div>
+                  <div className="font-mono text-sm text-[#00ff00] font-bold">{result.mxRecords && result.mxRecords.length > 0 ? 'STATUS_ACTIVE' : 'STATUS_NULL'}</div>
                 </div>
-                {result.mxRecords && result.mxRecords.length > 0 ? <CheckCircle2 className="text-emerald-500" /> : <XCircle className="text-red-500" />}
+                {result.mxRecords && result.mxRecords.length > 0 ? <CheckCircle2 className="text-[#00ff00] w-5 h-5" /> : <XCircle className="text-red-500 w-5 h-5" />}
               </div>
             </div>
 
             {result.mxRecords && result.mxRecords.length > 0 && (
               <div>
-                 <h3 className="font-mono text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">MX RECORDS FOUND FOR {result.domain}</h3>
-                 <div className="bg-neutral-950 rounded-lg border border-neutral-800 overflow-hidden">
+                 <h3 className="font-mono text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">MX_REGISTRY_MANIFEST: {result.domain}</h3>
+                 <div className="bg-black/50 border border-[#00ff00]/20 overflow-hidden shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]">
                    <table className="w-full text-left text-sm font-mono">
-                     <thead className="bg-neutral-900 border-b border-neutral-800">
+                     <thead className="bg-[#00ff00]/5 border-b border-[#00ff00]/10">
                        <tr>
-                         <th className="px-4 py-3 text-neutral-400 font-medium font-sans text-xs">Priority</th>
-                         <th className="px-4 py-3 text-neutral-400 font-medium font-sans text-xs">Exchange Server</th>
+                         <th className="px-4 py-3 text-[#00ff00]/60 font-bold text-[10px] uppercase tracking-widest">PRIORITY</th>
+                         <th className="px-4 py-3 text-[#00ff00]/60 font-bold text-[10px] uppercase tracking-widest">EXCHANGE_NODE</th>
                        </tr>
                      </thead>
-                     <tbody className="divide-y divide-neutral-800/50">
+                     <tbody className="divide-y divide-[#00ff00]/5">
                        {result.mxRecords.map((mx: any, idx: number) => (
-                         <tr key={idx} className="hover:bg-neutral-900/50">
-                           <td className="px-4 py-3">{mx.priority}</td>
-                           <td className="px-4 py-3 text-emerald-400">{mx.exchange}</td>
+                         <tr key={idx} className="hover:bg-[#00ff00]/5 transition-colors">
+                           <td className="px-4 py-3 text-xs opacity-60">{mx.priority}</td>
+                           <td className="px-4 py-3 text-xs text-[#00ff00] font-bold">{mx.exchange}</td>
                          </tr>
                        ))}
                      </tbody>
@@ -95,10 +95,9 @@ export default function EmailTools() {
             )}
             
             {result.error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm font-mono flex flex-col gap-1">
-                 <strong>Error checking records:</strong>
-                 <span>{result.message}</span>
-                 <span className="text-xs opacity-70">{result.error}</span>
+              <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-mono uppercase tracking-[0.2em] space-y-1">
+                 <div className="font-bold">CRITICAL_AUDIT_FAIL:</div>
+                 <div className="opacity-80">{result.message}</div>
               </div>
             )}
           </div>
