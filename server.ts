@@ -1421,24 +1421,24 @@ async function startServer() {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
-      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (Soundcloud...)...</i>", { parse_mode: 'HTML' });
+      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (YouTube)...</i>", { parse_mode: 'HTML' });
       try {
-        const results = await play.search(args, { source: { soundcloud: 'tracks' }, limit: 1 });
+        const results = await yts(args);
         
-        if (!results || results.length === 0) {
-           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ ʟᴀɢᴜ ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ ᴅɪ ꜱᴏᴜɴᴅᴄʟᴏᴜᴅ.");
+        if (!results || results.videos.length === 0) {
+           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ ʟᴀɢᴜ ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ.");
         }
         
-        const track = results[0];
+        const video = results.videos[0];
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${track.name}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${video.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const stream = await play.stream(track.url);
+          const stream = await play.stream(video.url);
           
           await ctx.replyWithAudio(
-            { source: stream.stream, filename: track.name + '.mp3' },
-            { caption: `🎵 <b>${track.name}</b>\n👤 <b>Author:</b> ${track.user?.name || 'Unknown'}\n☁️ <b>Source:</b> Soundcloud`, parse_mode: 'HTML' }
+            { source: stream.stream, filename: video.title + '.mp3' },
+            { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n☁️ <b>Source:</b> YouTube`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
