@@ -10,7 +10,7 @@ import fs from "fs";
 import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
 import yts from "yt-search";
-import ytdl from "@distube/ytdl-core";
+import play from "play-dl";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -1401,30 +1401,17 @@ async function startServer() {
         
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${video.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
         
-        await new Promise((resolve, reject) => {
-          const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
-          const chunks: Buffer[] = [];
+        try {
+          const stream = await play.stream(video.url);
           
-          stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-          
-          stream.on('end', async () => {
-            try {
-              const buffer = Buffer.concat(chunks);
-              await ctx.replyWithAudio(
-                { source: buffer, filename: video.title + '.mp3' },
-                { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n⏱️ <b>Durasi:</b> ${video.timestamp}`, parse_mode: 'HTML' }
-              );
-              ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
-              resolve(true);
-            } catch (e) {
-              reject(e);
-            }
-          });
-          
-          stream.on('error', (err) => {
-            reject(err);
-          });
-        });
+          await ctx.replyWithAudio(
+            { source: stream.stream, filename: video.title + '.mp3' },
+            { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n⏱️ <b>Durasi:</b> ${video.timestamp}`, parse_mode: 'HTML' }
+          );
+          ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
+        } catch (downloadErr: any) {
+          throw new Error("Gagal mengambil stream audio: " + downloadErr?.message);
+        }
       } catch (err: any) {
         console.error("Lagu err:", err);
         ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `❌ Gagal mengunduh lagu: ${err?.message || 'Error internal'}`);
