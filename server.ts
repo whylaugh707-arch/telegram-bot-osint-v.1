@@ -10,7 +10,7 @@ import fs from "fs";
 import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
 import yts from "yt-search";
-import play from "play-dl";
+import scdl from "soundcloud-downloader";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -1391,44 +1391,32 @@ async function startServer() {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
-      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database...</i>", { parse_mode: 'HTML' });
+      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (Soundcloud API)...</i>", { parse_mode: 'HTML' });
       try {
-        const searchResult = await yts(args);
-        const video = searchResult.videos[0];
-        if (!video) {
-          return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ Lagu tidak ditemukan.");
+        const scResult = await scdl.default.search({
+          query: args,
+          resourceType: "tracks",
+          limit: 1
+        });
+        
+        if (!scResult || scResult.collection.length === 0) {
+           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ Lagu tidak ditemukan di Soundcloud.");
         }
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${video.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
+        const trackInfo = await scdl.default.getInfo(scResult.collection[0].permalink_url);
+        
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${trackInfo.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const outputPath = `/tmp/${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
+          const stream = await scdl.default.download(trackInfo.permalink_url);
           
-          await require("youtube-dl-exec")(video.url, {
-            extractAudio: true,
-            audioFormat: "mp3",
-            output: outputPath,
-            noCheckCertificates: true,
-            noWarnings: true,
-            preferFreeFormats: true,
-            addHeader: [
-              'referer:youtube.com',
-              'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-            ]
-          });
-          
-          // Kirim file mp3
           await ctx.replyWithAudio(
-            { source: outputPath, filename: video.title + '.mp3' },
-            { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n⏱️ <b>Durasi:</b> ${video.timestamp}`, parse_mode: 'HTML' }
+            { source: stream, filename: trackInfo.title + '.mp3' },
+            { caption: `🎵 <b>${trackInfo.title}</b>\n👤 <b>Author:</b> ${trackInfo.user?.username || 'Unknown'}\n☁️ <b>Source:</b> Soundcloud`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
-          
-          // Hapus temporary file
-          try { require("fs").unlinkSync(outputPath); } catch(e){}
         } catch (downloadErr: any) {
-          console.error("yt-dlp errored:", downloadErr);
           throw new Error("Gagal mengambil stream audio: " + downloadErr?.message);
         }
       } catch (err: any) {
