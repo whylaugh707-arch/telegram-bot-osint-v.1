@@ -10,7 +10,8 @@ import fs from "fs";
 import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
 import yts from "yt-search";
-import scdl from "soundcloud-downloader";
+import play from "play-dl";
+
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -1420,28 +1421,24 @@ async function startServer() {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
-      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (Soundcloud API)...</i>", { parse_mode: 'HTML' });
+      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (Soundcloud...)...</i>", { parse_mode: 'HTML' });
       try {
-        const scResult = await scdl.search({
-          query: args,
-          resourceType: "tracks",
-          limit: 1
-        });
+        const results = await play.search(args, { source: { soundcloud: 'tracks' }, limit: 1 });
         
-        if (!scResult || scResult.collection.length === 0) {
+        if (!results || results.length === 0) {
            return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ ʟᴀɢᴜ ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ ᴅɪ ꜱᴏᴜɴᴅᴄʟᴏᴜᴅ.");
         }
         
-        const trackInfo = await scdl.getInfo(scResult.collection[0].permalink_url);
+        const track = results[0];
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${trackInfo.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${track.name}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const stream = await scdl.download(trackInfo.permalink_url);
+          const stream = await play.stream(track.url);
           
           await ctx.replyWithAudio(
-            { source: stream, filename: trackInfo.title + '.mp3' },
-            { caption: `🎵 <b>${trackInfo.title}</b>\n👤 <b>Author:</b> ${trackInfo.user?.username || 'Unknown'}\n☁️ <b>Source:</b> Soundcloud`, parse_mode: 'HTML' }
+            { source: stream.stream, filename: track.name + '.mp3' },
+            { caption: `🎵 <b>${track.name}</b>\n👤 <b>Author:</b> ${track.user?.name || 'Unknown'}\n☁️ <b>Source:</b> Soundcloud`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
