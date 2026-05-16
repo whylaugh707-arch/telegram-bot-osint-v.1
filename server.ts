@@ -480,10 +480,10 @@ async function startServer() {
   if (process.env.TELEGRAM_BOT_TOKEN) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-    const startMsgText = `<b>🤖 TRIHEXA_666: ULTIMATE RECON TERMINAL</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `Terminal Intelijen Digital Aktif. Gunakan modul di bawah untuk memulai investigasi, pelacakan, atau analisis data.\n\n` +
-                         `<i>"In the world of data, secrecy is a myth."</i>\n` +
+    const startMsgText = `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
+                         `<b>ᴏᴡɴᴇʀ - ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
+                         `ᴀʙᴏᴜᴛ ᴛʀɪʜᴇxᴀ666 : ᴅɪᴋᴇᴍʙᴀɴɢᴋᴀɴ ᴏʟᴇʜ ᴡʜʏʟᴀᴜɢʜ404 ꜱᴇʙᴀɢᴀɪ ᴀʟᴀᴛ ᴏꜱɪɴᴛ ᴅᴀɴ ᴘᴇʟᴀᴄᴀᴋᴀɴ ꜱᴇᴄᴀʀᴀ ᴍᴇɴᴅᴀʟᴀᴍ. ᴍᴇʟɪʙᴀᴛᴋᴀɴ ᴘᴇɴɢɢᴜɴᴀᴀɴ ɪɴꜰᴏʀᴍᴀꜱɪ ꜱᴜᴍʙᴇʀ ᴛᴇʀʙᴜᴋᴀ ᴅᴀɴ ʟᴏɢɢᴇʀ ʟɪɴᴋ. ʙᴏᴛ ɪɴɪ ᴅɪʜᴀʀᴀᴘᴋᴀɴ ᴍᴀᴍᴘᴜ ᴜɴᴛᴜᴋ ᴍᴇᴍᴇɴᴜʜɪ ᴛᴜɢᴀꜱɴʏᴀ ꜱᴇʙᴀɢᴀɪ ʙᴀɢɪᴀɴ ᴅᴀʀɪ ᴀʟᴀᴛ ᴀʟᴀᴛ ᴡʜʏʟᴀᴜɢʜ404\n` +
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
