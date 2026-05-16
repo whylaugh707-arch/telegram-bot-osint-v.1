@@ -13,7 +13,6 @@ import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
-import { GoogleGenAI } from "@google/genai";
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -56,10 +55,6 @@ async function startServer() {
 
   // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
-  
-  const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-  });
   
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
@@ -485,8 +480,33 @@ async function startServer() {
   }
 
   // TELEGRAM BOT SETUP
+  const ADMIN_ID = 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
+  const PASSWORD = "112233";
+  let authenticatedUsers = new Set<number>();
+  
+  try {
+    if (fs.existsSync('auth.json')) {
+      authenticatedUsers = new Set(JSON.parse(fs.readFileSync('auth.json', 'utf8')));
+    }
+  } catch (e) { console.error("Error loading auth.json", e); }
+
+  const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
+
   if (process.env.TELEGRAM_BOT_TOKEN) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+    
+    bot.use(async (ctx, next) => {
+        if (!ctx.from) return;
+        if (ctx.from.id === ADMIN_ID || authenticatedUsers.has(ctx.from.id)) return next();
+        
+        const text = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
+        if (text === PASSWORD) {
+            authenticatedUsers.add(ctx.from.id);
+            saveAuth();
+            return ctx.reply("✅ Akses diberikan!");
+        }
+        return ctx.reply(`🔒 Bot terkunci.\nID Anda: <code>${ctx.from.id}</code>\nMasukkan password untuk melanjutkan.`, {parse_mode: 'HTML'});
+    });
 
     const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
                          `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
@@ -498,7 +518,7 @@ async function startServer() {
       [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help'), Markup.button.callback('🤖 AI GPT', 'menu_ai')]
+      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -506,17 +526,6 @@ async function startServer() {
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       ctx.editMessageText(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
-    });
-
-    bot.action('menu_ai', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🤖 AI GPT INTEGRATION</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Gunakan perintah <code>/ai [pertanyaan]</code> untuk chat dengan AI Gemini.\n\n` +
-        `Contoh: /ai buatkan kode python untuk cek IP\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_osint_basic', (ctx) => {
@@ -1480,22 +1489,6 @@ async function startServer() {
 
     bot.command('lagu', downloadSong);
     bot.command('play', downloadSong);
-
-    bot.command('ai', async (ctx) => {
-        const args = ctx.message.text.split(' ').slice(1).join(' ');
-        if (!args) return ctx.reply("Format: /ai [pertanyaan]");
-        
-        const waitMsg = await ctx.reply("🤔 <i>Sedang berpikir...</i>", { parse_mode: 'HTML' });
-        try {
-            const response = await ai.models.generateContent({
-                model: "gemini-1.5-flash",
-                contents: args,
-            });
-            await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, response.text || "Tidak ada jawaban.", { parse_mode: 'HTML' });
-        } catch (e: any) {
-            await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `❌ Error AI: ${e.message}`);
-        }
-    });
 
     // --- 20+ MINI GAMES ---
     bot.command('suit', (ctx) => {
