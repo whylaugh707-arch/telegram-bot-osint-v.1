@@ -10,7 +10,7 @@ import fs from "fs";
 import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
 import yts from "yt-search";
-import ytdl from "youtube-dl-exec";
+import ytdl from "@distube/ytdl-core";
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -1434,21 +1434,16 @@ async function startServer() {
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${video.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          // Use youtube-dl-exec directly
-          await ytdl(video.url, {
-            extractAudio: true,
-            audioFormat: 'mp3',
-            output: '/tmp/audio.mp3',
-          });
+          const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
           
           await ctx.replyWithAudio(
-            { source: '/tmp/audio.mp3', filename: video.title + '.mp3' },
+            { source: stream, filename: video.title + '.mp3' },
             { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n☁️ <b>Source:</b> YouTube`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
         } catch (downloadErr: any) {
-          throw new Error("Gagal mengambil stream audio via ytdl: " + downloadErr?.message);
+          throw new Error("Gagal mengambil stream audio via ytdl-core: " + downloadErr?.message);
         }
       } catch (err: any) {
         console.error("Lagu err:", err);
