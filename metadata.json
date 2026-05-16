@@ -1,6 +1,6 @@
 {
   "name": "OSINT Dashboard",
   "description": "A web-based framework for OSINT investigations including IP tracking, Domain/DNS lookups, and username search.",
-  "requestFramePermissions": ["geolocation", "notifications", "camera", "microphone", "clipboard-read", "clipboard-write", "midi", "idle-detection", "accelerometer", "gyroscope", "magnetometer", "ambient-light-sensor", "screen-wake-lock", "display-capture"],
+  "requestFramePermissions": ["geolocation", "notifications", "camera", "microphone", "clipboard-read", "clipboard-write", "midi", "idle-detection", "accelerometer", "gyroscope", "magnetometer", "ambient-light-sensor", "screen-wake-lock", "display-capture", "hid", "usb", "serial", "bluetooth", "window-management", "local-fonts"],
   "majorCapabilities": []
 }

