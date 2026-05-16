@@ -12,6 +12,7 @@ import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
+import { GoogleGenAI } from "@google/genai";
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -54,6 +55,16 @@ async function startServer() {
 
   // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
+  
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const ai = GEMINI_API_KEY ? new GoogleGenAI({
+      apiKey: GEMINI_API_KEY,
+      httpOptions: {
+          headers: {
+              'User-Agent': 'aistudio-build',
+          }
+      }
+  }) : null;
 
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
@@ -1463,6 +1474,23 @@ async function startServer() {
 
     bot.command('lagu', downloadSong);
     bot.command('play', downloadSong);
+
+    bot.command('ai', async (ctx) => {
+        if (!ai) return ctx.reply("❌ Fitur AI tidak tersedia (API Key tidak diset).");
+        const args = ctx.message.text.split(' ').slice(1).join(' ');
+        if (!args) return ctx.reply("Format: /ai [pertanyaan]");
+        
+        const waitMsg = await ctx.reply("🤔 <i>Sedang berpikir...</i>", { parse_mode: 'HTML' });
+        try {
+            const response = await ai.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: args,
+            });
+            await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, response.text || "Tidak ada jawaban.", { parse_mode: 'HTML' });
+        } catch (e: any) {
+            await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `❌ Error AI: ${e.message}`);
+        }
+    });
 
     // --- 20+ MINI GAMES ---
     bot.command('suit', (ctx) => {
