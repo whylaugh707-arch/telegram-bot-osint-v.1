@@ -1,6 +1,6 @@
 {
   "name": "TRIHEXA_OSINT_V9.5",
-  "description": "Elite OSINT & Environment Reconnaissance Terminal: Advanced browser forensics, hardware inventory mapping, and real-time telemetry extraction.",
+  "description": "Elite OSINT & Environment Reconnaissance Terminal [v1.1.4]: Advanced browser forensics, hardware inventory mapping, and real-time telemetry extraction.",
   "requestFramePermissions": [
     "geolocation",
     "notifications",
