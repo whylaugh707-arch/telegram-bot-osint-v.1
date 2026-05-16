@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dns from "dns";
 import util from "util";
 import { Telegraf, Markup } from "telegraf";
+import "dotenv/config";
 import net from "net";
 import crypto from "crypto";
 import fs from "fs";
@@ -57,6 +58,7 @@ async function startServer() {
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
   
   const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
           headers: {
               'User-Agent': 'aistudio-build',
@@ -501,7 +503,7 @@ async function startServer() {
       [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
+      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help'), Markup.button.callback('🤖 AI GPT', 'menu_ai')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -509,6 +511,17 @@ async function startServer() {
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       ctx.editMessageText(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
+    });
+
+    bot.action('menu_ai', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🤖 AI GPT INTEGRATION</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Gunakan perintah <code>/ai [pertanyaan]</code> untuk chat dengan AI Gemini.\n\n` +
+        `Contoh: /ai buatkan kode python untuk cek IP\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_osint_basic', (ctx) => {
