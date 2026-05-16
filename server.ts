@@ -1434,11 +1434,6 @@ async function startServer() {
         await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${track.name}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          await play.setToken({
-            soundcloud: {
-              clientId: 'M8Vb0i1280f3Y9P8uXWwIfi2Y9P8uXWw' // Common client ID, might be outdated
-            }
-          });
           const stream = await play.stream(track.url);
           
           await ctx.replyWithAudio(
