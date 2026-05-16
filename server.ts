@@ -56,15 +56,13 @@ async function startServer() {
   // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
   
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  const ai = GEMINI_API_KEY ? new GoogleGenAI({
-      apiKey: GEMINI_API_KEY,
+  const ai = new GoogleGenAI({
       httpOptions: {
           headers: {
               'User-Agent': 'aistudio-build',
           }
       }
-  }) : null;
+  });
 
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
@@ -1476,7 +1474,6 @@ async function startServer() {
     bot.command('play', downloadSong);
 
     bot.command('ai', async (ctx) => {
-        if (!ai) return ctx.reply("❌ Fitur AI tidak tersedia (API Key tidak diset).");
         const args = ctx.message.text.split(' ').slice(1).join(' ');
         if (!args) return ctx.reply("Format: /ai [pertanyaan]");
         
