@@ -1419,6 +1419,7 @@ async function startServer() {
     });
 
     const downloadSong = async (ctx: any) => {
+      return ctx.reply("🚧 <b>Fitur musik (/play & /lagu) sedang dalam pemeliharaan (maintenance). Mohon tunggu kabar selanjutnya.</b>", { parse_mode: 'HTML' });
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
