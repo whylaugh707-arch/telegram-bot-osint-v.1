@@ -9,6 +9,8 @@ import crypto from "crypto";
 import fs from "fs";
 import { templates } from "./trapTemplates";
 import AdmZip from "adm-zip";
+import yts from "yt-search";
+import ytdl from "@distube/ytdl-core";
 
 const resolveMx = util.promisify(dns.resolveMx);
 
@@ -550,6 +552,7 @@ async function startServer() {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🎲 FUN & RANDOM MODULE</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/lagu [judul]</b>\n  └ <i>Audio Download Engine (MP3).</i>\n\n` +
         `• <b>/flip</b> | <b>/roll</b>\n  └ <i>Tools keberuntungan (Koin & Dadu).</i>\n\n` +
         `• <b>/meme | /joke | /quote</b>\n  └ <i>Konten hiburan random (Global API).</i>\n\n` +
         `• <b>/fact</b>\n  └ <i>Kumpulan fakta unik secara acak.</i>\n\n` +
@@ -1356,6 +1359,36 @@ async function startServer() {
         ctx.replyWithPhoto(data.message);
       } catch { ctx.reply("❌ Error get dog."); }
     });
+
+    const downloadSong = async (ctx: any) => {
+      const args = ctx.message.text.split(' ').slice(1).join(' ');
+      if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
+      
+      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database...</i>", { parse_mode: 'HTML' });
+      try {
+        const searchResult = await yts(args);
+        const video = searchResult.videos[0];
+        if (!video) {
+          return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ Lagu tidak ditemukan.");
+        }
+        
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh: ${video.title}...\n(Tunggu sebentar, butuh waktu menyesuaikan ukuran file max 50MB)</i>`, { parse_mode: 'HTML' });
+        
+        const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
+        
+        await ctx.replyWithAudio(
+          { source: stream, filename: video.title + '.mp3' },
+          { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n⏱️ <b>Durasi:</b> ${video.timestamp}`, parse_mode: 'HTML' }
+        );
+        ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
+      } catch (err: any) {
+        console.error("Lagu err:", err);
+        ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `❌ Gagal mengunduh lagu: ${err?.message || 'Error internal'}`);
+      }
+    };
+
+    bot.command('lagu', downloadSong);
+    bot.command('play', downloadSong);
 
     bot.command('morse', (ctx) => {
       const text = ctx.message.text.split(' ').slice(1).join(' ').toUpperCase();
