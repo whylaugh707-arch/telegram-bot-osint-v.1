@@ -488,8 +488,9 @@ async function startServer() {
     
     const mainKeyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🇮🇩 LOCAL OSINT', 'menu_osint_basic'), Markup.button.callback('📡 GLOBAL RECON', 'menu_osint_adv')],
-      [Markup.button.callback('🛠️ HARDWARE TOOLS', 'menu_tools'), Markup.button.callback('🎣 STEALTH LOGGER', 'menu_logger')],
-      [Markup.button.callback('🎲 RANDOM MODULE', 'menu_fun'), Markup.button.callback('ℹ️ TERMINAL INFO', 'menu_help')]
+      [Markup.button.callback('🛠️ HARD TOOLS', 'menu_tools'), Markup.button.callback('🎣 STEALTH LOG', 'menu_logger')],
+      [Markup.button.callback('🎲 MINI GAMES', 'menu_games'), Markup.button.callback('🎵 MEDIA SYNC', 'menu_media')],
+      [Markup.button.callback('ℹ️ TERMINAL INFO', 'menu_help')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -548,15 +549,41 @@ async function startServer() {
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
-    bot.action('menu_fun', (ctx) => {
+    bot.action('menu_games', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎲 FUN & RANDOM MODULE</b>\n` +
+      const txt = `<b>🎲 MINI GAMES (20+ FITUR)</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `• <b>/lagu [judul]</b>\n  └ <i>Audio Download Engine (MP3).</i>\n\n` +
-        `• <b>/flip</b> | <b>/roll</b>\n  └ <i>Tools keberuntungan (Koin & Dadu).</i>\n\n` +
-        `• <b>/meme | /joke | /quote</b>\n  └ <i>Konten hiburan random (Global API).</i>\n\n` +
-        `• <b>/fact</b>\n  └ <i>Kumpulan fakta unik secara acak.</i>\n\n` +
-        `• <b>/cat</b> | <b>/dog</b>\n  └ <i>Eksibisi visual hewan peliharaan.</i>\n` +
+        `• <b>/suit [batu/gunting/kertas]</b>\n` +
+        `• <b>/math</b> (Tebak hasil matematika hitung cepat)\n` +
+        `• <b>/dadu</b> (Kocok dadu standar)\n` +
+        `• <b>/coinflip</b> (Lempar koin Head/Tail)\n` +
+        `• <b>/susunkata</b> (Main acak kata)\n` +
+        `• <b>/tebakangka</b> (1-10)\n` +
+        `• <b>/khodam [nama]</b> (Cek khodam lucu)\n` +
+        `• <b>/ramal [nama]</b> (Ramalan AI lucu)\n` +
+        `• <b>/jodoh [nama1] [nama2]</b> (Kalkulator jodoh)\n` +
+        `• <b>/kartu</b> (Ambil kartu remi)\n` +
+        `• <b>/roulette</b> (Russian Roulette spin)\n` +
+        `• <b>/werewolf</b> (Ambil role werewolf)\n` +
+        `• <b>/8ball [teks]</b> (Magic 8-ball)\n` +
+        `• <b>/tarot</b> (Ramalan kartu tarot acak)\n` +
+        `• <b>/doa</b> (Doa dan motivasi random)\n` +
+        `• <b>/tod</b> (Truth or Dare acak)\n` +
+        `• <b>/meme</b> | <b>/joke</b> | <b>/quote</b>\n` +
+        `• <b>/fact</b> (Fakta unik global)\n` +
+        `• <b>/cat</b> | <b>/dog</b>\n` +
+        `• <b>/gombal [nama]</b> (Gombalan maut)\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_media', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🎵 MEDIA & DOWNLOADS</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `• <b>/lagu [judul]</b>\n  └ <i>Audio Download Engine (MP3) High Speed.</i>\n\n` +
+        `• <b>/play [judul]</b>\n  └ <i>Sama dengan /lagu.</i>\n` +
         `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ Kembali', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -1372,9 +1399,9 @@ async function startServer() {
           return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ Lagu tidak ditemukan.");
         }
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh: ${video.title}...\n(Tunggu sebentar, butuh waktu menyesuaikan ukuran file max 50MB)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh Audio: ${video.title}...\n(Proses bypass kecepatan tinggi sedang berjalan...)</i>`, { parse_mode: 'HTML' });
         
-        const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
+        const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio', dlChunkSize: 0 });
         
         await ctx.replyWithAudio(
           { source: stream, filename: video.title + '.mp3' },
@@ -1389,6 +1416,146 @@ async function startServer() {
 
     bot.command('lagu', downloadSong);
     bot.command('play', downloadSong);
+
+    // --- 20+ MINI GAMES ---
+    bot.command('suit', (ctx) => {
+      const choices = ['batu', 'gunting', 'kertas'];
+      const args = ctx.message.text.split(' ')[1]?.toLowerCase();
+      if (!args || !choices.includes(args)) return ctx.reply("Format: /suit [batu/gunting/kertas]");
+      const botChoice = choices[Math.floor(Math.random() * choices.length)];
+      let result = 'KITA SERI! 😑';
+      if (
+        (args === 'batu' && botChoice === 'gunting') ||
+        (args === 'gunting' && botChoice === 'kertas') ||
+        (args === 'kertas' && botChoice === 'batu')
+      ) { result = 'KAMU MENANG! 🎉'; }
+      else if (args !== botChoice) { result = 'KAMU KALAH! 🤡'; }
+      ctx.reply(`Kamu: ${args.toUpperCase()}\nBot: ${botChoice.toUpperCase()}\n\n${result}`);
+    });
+
+    bot.command('math', (ctx) => {
+      const ops = ['+', '-', '*'];
+      const op = ops[Math.floor(Math.random() * ops.length)];
+      const a = Math.floor(Math.random() * 50) + 1;
+      const b = Math.floor(Math.random() * 20) + 1;
+      const ans = op === '+' ? a+b : op === '-' ? a-b : a*b;
+      ctx.reply(`🧮 <b>QUICK MATHS</b>\nBerapa hasil dari: <b>${a} ${op} ${b} = ?</b>\n\n<tg-spoiler>Jawaban: ${ans}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('dadu', (ctx) => {
+      const num = Math.floor(Math.random() * 6) + 1;
+      ctx.reply(`🎲 Kamu melempar dadu dan mendapat angka: <b>${num}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('coinflip', (ctx) => {
+      const res = Math.random() > 0.5 ? 'HEADS (Angka)' : 'TAILS (Gambar)';
+      ctx.reply(`🪙 Koin dilempar dan hasilnya: <b>${res}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('susunkata', (ctx) => {
+      const words = ['hacker', 'phishing', 'malware', 'firewall', 'server', 'database', 'payload', 'system', 'network', 'cyber'];
+      const word = words[Math.floor(Math.random() * words.length)];
+      const scrambled = word.split('').sort(() => 0.5 - Math.random()).join('');
+      ctx.reply(`🔡 <b>SUSUN KATA</b>\nCoba susun huruf ini menjadi istilah IT:\n<b>${scrambled.toUpperCase()}</b>\n\n<tg-spoiler>Jawaban: ${word.toUpperCase()}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tebakangka', (ctx) => {
+      const a = Math.floor(Math.random() * 10) + 1;
+      ctx.reply(`🔢 <b>TEBAK ANGKA</b>\nAku sudah memilih angka dari 1 - 10.\n\n<tg-spoiler>Angka itu adalah: ${a}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('khodam', (ctx) => {
+      const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Kamu';
+      const k = ['Macan Putih', 'Naga Sakti', 'Kuntilanak Merah', 'Kucing Oren', 'Tuyul Racing', 'Siluman Ular', 'Bebek Ngesot', 'Kosong (Tidak Ada)', 'Kulkas 2 Pintu', 'Spion Motor'];
+      const res = k[Math.floor(Math.random() * k.length)];
+      ctx.reply(`👻 <b>CEK KHODAM</b>\nNama: ${nama}\nKhodam kamu: <b>${res}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('ramal', (ctx) => {
+      const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Kamu';
+      const r = ['Akan kaya raya tahun depan!', 'Akan menemukan jodoh secepatnya!', 'Akan kesandung batu besok', 'Harus lebih banyak minum air putih', 'Sedang dirindukan seseorang', 'Akan mendapat rezeki nomplok', 'Akan menangis bahagia hari ini'];
+      const res = r[Math.floor(Math.random() * r.length)];
+      ctx.reply(`🔮 <b>RAMALAN HARI INI</b>\nNama: ${nama}\nRamalan: <i>${res}</i>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('jodoh', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 3) return ctx.reply("Format: /jodoh [Nama1] [Nama2]");
+      const pct = Math.floor(Math.random() * 101);
+      ctx.reply(`💘 <b>KALKULATOR JODOH</b>\n${args[1]} 💞 ${args[2]}\n\nTingkat Kecocokan: <b>${pct}%</b>\n${pct > 80 ? 'Wow! Kalian sangat serasi!' : pct > 40 ? 'Hmm, boleh juga.' : 'Sebaiknya cari yang lain...'}`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('kartu', (ctx) => {
+      const suits = ['♠️ Terop', '♥️ Hati', '♣️ Keriting', '♦️ Wajik'];
+      const values = ['As', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
+      const a = suits[Math.floor(Math.random() * suits.length)];
+      const b = values[Math.floor(Math.random() * values.length)];
+      ctx.reply(`🃏 Kamu menarik kartu: <b>${b} ${a}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('roulette', (ctx) => {
+      const bullet = Math.floor(Math.random() * 6);
+      if (bullet === 0) return ctx.reply("🔫 💥 DORRR!!! Kamu tertembak (Russian Roulette)!");
+      ctx.reply("🔫 <i>Click...</i> Selamat, peluru kosong. Kamu selamat.", {parse_mode: 'HTML'});
+    });
+
+    bot.command('werewolf', (ctx) => {
+      const roles = ['🐺 Werewolf', '🧙‍♀️ Seer', '🛡️ Bodyguard', '🧑‍🌾 Villager', '🃏 Fool'];
+      const r = roles[Math.floor(Math.random() * roles.length)];
+      ctx.reply(`🌕 <b>WEREWOLF ROLE</b>\nRole kamu adalah: <b>${r}</b>!`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('8ball', (ctx) => {
+      const q = ctx.message.text.split(' ').slice(1).join(' ');
+      if(!q) return ctx.reply("Format: /8ball [pertanyaan]");
+      const a = ['Ya, pasti.', 'Bisa jadi.', 'Tentu saja tidak.', 'Sangat meragukan.', 'Tanya lagi nanti.', 'My sources say no.', 'Tentu.'];
+      const res = a[Math.floor(Math.random() * a.length)];
+      ctx.reply(`🎱 <b>MAGIC 8-BALL</b>\nPertanyaan: <i>${q}</i>\nJawaban: <b>${res}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tarot', (ctx) => {
+      const cards = ['The Fool (Awal baru)', 'The Magician (Kekuatan)', 'The High Priestess (Intuisi)', 'Death (Perubahan)', 'The Tower (Kehancuran)', 'The Sun (Kebahagiaan)', 'The Star (Harapan)'];
+      const c = cards[Math.floor(Math.random() * cards.length)];
+      ctx.reply(`🎴 <b>TAROT READING</b>\nKartu yang ditarik: <b>${c}</b>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('doa', (ctx) => {
+      const d = ['Semoga hari ini rezekimu lancar!', 'Tetap semangat, jangan menyerah!', 'Semoga segala urusanmu dimudahkan.', 'Jaga kesehatan, dunia butuh kamu!', 'Semoga impianmu segera terwujud!'];
+      const res = d[Math.floor(Math.random() * d.length)];
+      ctx.reply(`🤲 <b>MOTIVASI HARI INI</b>\n<i>"${res}"</i>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tod', (ctx) => {
+      const t = ['Beritahu rahasia terbesarmu!', 'Kapan terakhir kali menangis?', 'Siapa crush kamu saat ini?', 'Pernah ngompol di celana?'];
+      const d = ['Kirim foto jelek kamu sekarang!', 'Chat mantan kamu bilang rindu!', 'Ganti PP wa sama gambar monyet seharian!', 'Kirim VN nyanyi balonku!'];
+      const isTruth = Math.random() > 0.5;
+      const res = isTruth ? `🔵 <b>TRUTH</b>\n${t[Math.floor(Math.random() * t.length)]}` : `🔴 <b>DARE</b>\n${d[Math.floor(Math.random() * d.length)]}`;
+      ctx.reply(res, {parse_mode: 'HTML'});
+    });
+
+    bot.command('gombal', (ctx) => {
+      const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Sayang';
+      const g = [`${nama}, tau bedanya kamu sama modem? Modem connect ke internet, kamu connect ke hatiku.`, `Sejak kenal ${nama}, aku lupa cara sedih.`, `Pisa miring karena terpesona senyum ${nama}.`];
+      ctx.reply(`💕 <b>GOMBALAN</b>\n<i>"${g[Math.floor(Math.random() * g.length)]}"</i>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tebaknegara', (ctx) => {
+      const t = [{c:'🇯🇵', a:'Jepang'}, {c:'🇮🇩', a:'Indonesia'}, {c:'🇺🇸', a:'Amerika'}, {c:'🇰🇷', a:'Korea'}, {c:'🇷🇺', a:'Rusia'}];
+      const items = t[Math.floor(Math.random() * t.length)];
+      ctx.reply(`🌍 <b>TEBAK BENDERA</b>\nBendera apakah ini: ${items.c} ?\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tebakkata', (ctx) => {
+      const t = [{q:'Selalu di depan, tak terlihat?', a:'Masa Depan'}, {q:'Bisa dipegang tak bisa dilempar?', a:'Janji'}, {q:'Punya gigi tak bisa menggigit?', a:'Sisir'}];
+      const items = t[Math.floor(Math.random() * t.length)];
+      ctx.reply(`🤔 <b>TEBAK KATA</b>\n${items.q}\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
+
+    bot.command('tebakhewan', (ctx) => {
+      const t = [{q:'Hidup di air & darat, melompat.', a:'Katak'}, {q:'Belalai panjang.', a:'Gajah'}, {q:'Leher panjang, makan daun atas.', a:'Jerapah'}];
+      const items = t[Math.floor(Math.random() * t.length)];
+      ctx.reply(`🐾 <b>TEBAK HEWAN</b>\n${items.q}\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
+    });
 
     bot.command('morse', (ctx) => {
       const text = ctx.message.text.split(' ').slice(1).join(' ').toUpperCase();
