@@ -1182,11 +1182,15 @@ async function startServer() {
     bot.command('subdomain', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if(args.length < 2) return ctx.reply("Format: /subdomain [domain.com]");
-      const domain = args[1];
+      let domain = args[1].replace(/^https?:\/\//, '').replace(/^www\./, '');
       try {
         ctx.reply(`🔍 Sedang crawling mapping subdomain untuk <b>${domain}</b>...`, {parse_mode: 'HTML'});
-        const res = await fetchWithTimeout(`https://crt.sh/?q=%25.${domain}&output=json`, {}, 8000);
-        const data = await res.json();
+        const res = await fetchWithTimeout(`https://crt.sh/?q=%25.${domain}&output=json`, {}, 15000);
+        const text = await res.text();
+        if (text.startsWith('<')) {
+            throw new Error('crt.sh returned HTML instead of JSON');
+        }
+        const data = JSON.parse(text);
         const subs = [...new Set(data.map((d:any) => d.name_value))].slice(0, 30);
         if(subs.length > 0) {
           const reply = `<b>🌐 SUBDOMAIN RECON MAPPING</b>\n` +
@@ -1198,7 +1202,7 @@ async function startServer() {
                         `✅ <i>Reconnaissance selesai.</i>`;
           ctx.reply(reply, {parse_mode: 'HTML'});
         } else { ctx.reply("❌ Tidak ada subdomain ditemukan."); }
-      } catch(e) { ctx.reply("❌ Gagal mencari subdomain. (crt.sh timeout)"); }
+      } catch(e) { ctx.reply("❌ Gagal mencari subdomain. (crt.sh timeout or error)"); }
     });
 
     bot.command('github_user', async (ctx) => {
