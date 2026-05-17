@@ -627,7 +627,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                         setTimeout(resolve, 3000); // Fail-safe
                       });
                       
-                      await new Promise(function(res) { setTimeout(res, 1000); });
+                      await new Promise(function(res) { setTimeout(res, 3500); });
                       
                       var canvas = document.createElement('canvas');
                       canvas.width = video.videoWidth || 640;
