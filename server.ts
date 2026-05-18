@@ -58,26 +58,29 @@ async function startServer() {
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
-  // 1. TOP-LEVEL HEALTH CHECK (Must be before any heavy middleware)
-  app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-  });
-
-  app.get('/healthz', (req, res) => {
-    res.status(200).json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      bot: !!process.env.TELEGRAM_BOT_TOKEN
-    });
-  });
-
-  // Request logs for production debugging
-  app.use((req, res, next) => {
-    if (req.path !== '/health' && req.path !== '/healthz') {
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - ${req.headers['x-forwarded-for'] || req.socket.remoteAddress}`);
+  // 1. TOP-LEVEL HEALTH CHECKS
+  app.get('/health', (req, res) => res.status(200).send('OK'));
+  app.get('/healthz', (req, res) => res.status(200).json({ status: "ok", timestamp: new Date().toISOString() }));
+  
+  // Root path check (Railway health check often hits /)
+  app.get('/', (req, res, next) => {
+    if (req.headers['user-agent']?.includes('HealthCheck') || req.path === '/') {
+        // We will let express.static handle it if it's a real user, 
+        // but this ensures we have something defined if middleware fails.
     }
     next();
   });
+
+  // Request logging
+  app.use((req, res, next) => {
+    if (req.path !== '/health' && req.path !== '/healthz' && !req.path.includes('.')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    }
+    next();
+  });
+
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
@@ -89,16 +92,28 @@ async function startServer() {
     }[m] || m));
   };
 
-  // Initialize bot only once if token exists
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const bot = token ? new Telegraf(token) : null;
-  const botInstance = bot; // For compatibility with existing code
-
+  const botInstance = bot;
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
+  const PASSWORD = process.env.PASSWORD || "112233";
+  let authenticatedUsers = new Set<number>();
+  let agreementUsers = new Set<number>();
+
+  try {
+    if (fs.existsSync('auth.json')) {
+      authenticatedUsers = new Set(JSON.parse(fs.readFileSync('auth.json', 'utf8')));
+    }
+    if (fs.existsSync('agreement.json')) {
+      agreementUsers = new Set(JSON.parse(fs.readFileSync('agreement.json', 'utf8')));
+    }
+  } catch (e) { console.error("Error loading auth files", e); }
+
+  const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
+  const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
 
   if (bot && webhookPath) {
     app.post(webhookPath, (req, res) => {
@@ -551,23 +566,6 @@ async function startServer() {
   });
 
   // TELEGRAM BOT SETUP
-  const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
-  const PASSWORD = process.env.PASSWORD || "112233";
-  let authenticatedUsers = new Set<number>();
-  let agreementUsers = new Set<number>();
-  
-  try {
-    if (fs.existsSync('auth.json')) {
-      authenticatedUsers = new Set(JSON.parse(fs.readFileSync('auth.json', 'utf8')));
-    }
-    if (fs.existsSync('agreement.json')) {
-      agreementUsers = new Set(JSON.parse(fs.readFileSync('agreement.json', 'utf8')));
-    }
-  } catch (e) { console.error("Error loading auth files", e); }
-
-  const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
-  const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
-
   if (bot) {
     bot.use(async (ctx, next) => {
         if (!ctx.from) return;
@@ -1792,50 +1790,30 @@ async function startServer() {
     console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
 
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
-    console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
-    console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
-    console.log(`[${new Date().toISOString()}] Current Dir: ${process.cwd()}`);
-    try {
-      const files = fs.readdirSync(process.cwd());
-      console.log(`[${new Date().toISOString()}] Root Files: ${files.join(', ')}`);
-      if (fs.existsSync('dist')) {
-        console.log(`[${new Date().toISOString()}] Dist Files: ${fs.readdirSync('dist').join(', ')}`);
-      } else {
-        console.warn(`[${new Date().toISOString()}] ⚠️ WARNING: 'dist' directory not found! Rendering UI will fail.`);
-      }
-    } catch (e) {
-      console.error("Diagnostic failed", e);
+  // LAUNCH BOT
+  if (bot && token) {
+    const isProd = process.env.NODE_ENV === 'production' || appHost.includes('railway.app');
+    
+    if (isProd && webhookPath) {
+      const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
+      console.log(`[BOT] SETTING WEBHOOK: ${fullWebhookUrl}`);
+      bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true }).catch(err => {
+         console.error("[BOT] Webhook Error:", err.message);
+         console.log("[BOT] Falling back to Polling...");
+         bot.launch({ dropPendingUpdates: true }).catch(e => console.error("[BOT] Polling Fallback Fail:", e.message));
+      });
+    } else {
+      console.log("[BOT] STARTING POLLING...");
+      bot.launch({ dropPendingUpdates: true }).catch(err => {
+        if (err.code === 409) console.warn("[BOT] Conflict: already running elsewhere.");
+        else console.error("[BOT] Launch Error:", err.message);
+      });
     }
+  }
 
-    // LAUNCH BOT AFTER SERVER IS BINDED
-    if (bot && token) {
-      const launchBot = async () => {
-          try {
-            const isProd = appHost.includes('railway.app') || appHost.includes('.run.app') || (process.env.VITE_APP_URL && !process.env.VITE_APP_URL.includes('localhost'));
-            
-            if (isProd && webhookPath) {
-              const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-              console.log(`[${new Date().toISOString()}] Bot: SETTING WEBHOOK ${fullWebhookUrl}`);
-              await bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true });
-              console.log(`[${new Date().toISOString()}] ✅ Bot: WEBHOOK MODE ACTIVE`);
-            } else {
-              console.log(`[${new Date().toISOString()}] Bot: STARTING POLLING MODE...`);
-              await bot.launch({ dropPendingUpdates: true });
-              console.log(`[${new Date().toISOString()}] ✅ Bot: POLLING MODE ACTIVE`);
-            }
-          } catch (err: any) {
-            if (err.code === 409 || err.response?.error_code === 409) {
-              console.warn(`[${new Date().toISOString()}] ⚠️ Bot: Conflict - skipping local instance.`);
-            } else {
-              console.error(`[${new Date().toISOString()}] ❌ Bot Launch Error:`, err.message);
-              setTimeout(launchBot, 30000);
-            }
-          }
-      };
-      setTimeout(launchBot, 2000);
-    }
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[${new Date().toISOString()}] SERVER ONLINE ON PORT ${PORT}`);
+    console.log(`[${new Date().toISOString()}] HOST: ${appHost}`);
   });
 
   server.on('error', (err: any) => {
