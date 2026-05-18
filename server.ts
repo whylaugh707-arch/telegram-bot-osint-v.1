@@ -370,12 +370,18 @@ async function startServer() {
         } catch(e) {}
       }
 
-      if (data.display_hz || data.thermal_load || data.device_visibility) {
+      if (data.display_hz || data.thermal_load || data.device_visibility || data.forensic_storage) {
         let visTxt = '';
         if (data.display_hz) visTxt += `├ Refresh: <code>${data.display_hz} Hz</code>\n`;
         if (data.thermal_load) visTxt += `├ Thermal: <code>${data.thermal_load}</code>\n`;
-        if (data.device_visibility) visTxt += `└ Visibility: <code>${data.device_visibility}</code> (${data.visibility_ts || '?'})`;
-        addSection(`📡 Environment & UI State`, visTxt);
+        if (data.device_visibility) visTxt += `├ Visibility: <code>${data.device_visibility}</code>\n`;
+        if (data.forensic_storage) {
+          try {
+            const s = typeof data.forensic_storage === 'string' ? JSON.parse(data.forensic_storage) : data.forensic_storage;
+            visTxt += `└ Storage: <code>LS:${s.ls_keys} SS:${s.ss_keys} CK:${s.cookies} DB:${s.indexedDB} SW:${s.serviceWorkers}</code>`;
+          } catch(e) {}
+        }
+        addSection(`📡 Environment & Storage`, visTxt);
       }
 
       if (data.sensor_mag || data.sensor_acc || data.sensor_gyr || data.sensor_light) {
