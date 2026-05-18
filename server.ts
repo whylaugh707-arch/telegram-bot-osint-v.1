@@ -67,7 +67,8 @@ async function startServer() {
   };
 
   // Initialize bot only once if token exists
-  const botInstance = process.env.TELEGRAM_BOT_TOKEN ? new Telegraf(process.env.TELEGRAM_BOT_TOKEN) : null;
+  const bot = process.env.TELEGRAM_BOT_TOKEN ? new Telegraf(process.env.TELEGRAM_BOT_TOKEN) : null;
+  const botInstance = bot; // For compatibility with existing code
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -508,9 +509,7 @@ async function startServer() {
   const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
   const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
 
-  if (process.env.TELEGRAM_BOT_TOKEN) {
-    const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-    
+  if (bot) {
     bot.use(async (ctx, next) => {
         if (!ctx.from) return;
         
@@ -1719,9 +1718,10 @@ async function startServer() {
 
     let retryCount = 0;
     const launchBot = async () => {
+      if (!bot) return;
       try {
         await bot.launch({ dropPendingUpdates: true });
-        console.log("Telegram bot is running");
+        console.log(`[${new Date().toISOString()}] Telegram Bot: SUCCESSFULLY CONNECTED`);
       } catch (e: any) {
         if (e && (e.code === 409 || e.response?.error_code === 409)) {
           if (retryCount < 3) {
@@ -1741,7 +1741,7 @@ async function startServer() {
     process.once('SIGINT', () => bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot.stop('SIGTERM'));
   } else {
-    console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
+    console.log(`[${new Date().toISOString()}] Telegram Bot: SKIPPED (No Token)`);
   }
 
   app.listen(PORT, "0.0.0.0", () => {
