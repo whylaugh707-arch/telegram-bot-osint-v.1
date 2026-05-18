@@ -5,8 +5,11 @@ import DomainTools from './components/DomainTools';
 import EmailTools from './components/EmailTools';
 import SocialScanner from './components/SocialScanner';
 import StealthLogger from './components/StealthLogger';
+import IndoOsint from './components/IndoOsint';
+import DorkGenerator from './components/DorkGenerator';
+import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen } from 'lucide-react';
 
-type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger';
+type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
@@ -57,7 +60,13 @@ export default function App() {
             active={activeTab === 'social'} 
             onClick={() => setActiveTab('social')} 
             icon={<UserSearch className="w-4 h-4" />} 
-            label="SOCIAL_RECON" 
+            label="GLOBAL_SCANNER" 
+          />
+          <NavButton 
+            active={activeTab === 'indo'} 
+            onClick={() => setActiveTab('indo')} 
+            icon={<Fingerprint className="w-4 h-4" />} 
+            label="INDO_OSINT" 
           />
           <NavButton 
             active={activeTab === 'ip'} 
@@ -76,6 +85,12 @@ export default function App() {
             onClick={() => setActiveTab('email')} 
             icon={<Mail className="w-4 h-4" />} 
             label="SMTP_AUDIT" 
+          />
+          <NavButton 
+            active={activeTab === 'dork'} 
+            onClick={() => setActiveTab('dork')} 
+            icon={<BookOpen className="w-4 h-4" />} 
+            label="DORK_ENGINE" 
           />
           
           <div className="mt-8 mb-4 px-4 py-2 bg-[#00ff00]/10 border-l-4 border-[#00ff00] text-[11px] font-bold tracking-tighter">
@@ -127,9 +142,11 @@ export default function App() {
 
             <div className="p-0 h-full overflow-hidden">
               {activeTab === 'social' && <SocialScanner />}
+              {activeTab === 'indo' && <IndoOsint />}
               {activeTab === 'ip' && <IpTools />}
               {activeTab === 'domain' && <DomainTools />}
               {activeTab === 'email' && <EmailTools />}
+              {activeTab === 'dork' && <DorkGenerator />}
               {activeTab === 'logger' && <StealthLogger />}
             </div>
           </div>

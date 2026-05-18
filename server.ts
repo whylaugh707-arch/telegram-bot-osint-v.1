@@ -185,6 +185,147 @@ async function startServer() {
     `);
   });
 
+  // OSINT API ENDPOINTS FOR FRONTEND UI
+  app.post('/api/osint/username', async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+    
+    // Platforms list (similar to bot command)
+    const platforms = [
+        { name: "GitHub", url: `https://github.com/${username}` },
+        { name: "Twitter", url: `https://twitter.com/${username}` },
+        { name: "Instagram", url: `https://www.instagram.com/${username}/` },
+        { name: "TikTok", url: `https://www.tiktok.com/@${username}` },
+        { name: "YouTube", url: `https://www.youtube.com/@${username}` },
+        { name: "Facebook", url: `https://www.facebook.com/${username}` },
+        { name: "Pinterest", url: `https://www.pinterest.com/${username}` },
+        { name: "Reddit", url: `https://www.reddit.com/user/${username}` },
+        { name: "Steam", url: `https://steamcommunity.com/id/${username}` },
+        { name: "GitLab", url: `https://gitlab.com/${username}` },
+        { name: "OnlyFans", url: `https://onlyfans.com/${username}` },
+        { name: "PornHub", url: `https://www.pornhub.com/users/${username}` },
+        { name: "Kaskus", url: `https://www.kaskus.co.id/profile/${username}` },
+        { name: "Kompasiana", url: `https://www.kompasiana.com/${username}` },
+        { name: "Blogger", url: `https://${username}.blogspot.com` },
+        { name: "WordPress", url: `https://${username}.wordpress.com` },
+        { name: "MobileLegends", url: `https://m.mobilelegends.com/en/search/user?keyword=${username}` },
+        { name: "Detik", url: `https://news.detik.com/search?query=${username}` },
+        { name: "Bukalapak", url: `https://www.bukalapak.com/u/${username}` },
+        { name: "Tokopedia", url: `https://www.tokopedia.com/people/${username}` },
+        { name: "Traveloka", url: `https://www.traveloka.com/en-id/user/${username}` },
+        { name: "Bstation", url: `https://www.bilibili.tv/en/space/${username}` },
+        { name: "Shopee", url: `https://shopee.co.id/${username}` }
+    ];
+
+    const results = await Promise.all(platforms.map(async (platform) => {
+        try {
+            const response = await fetchWithTimeout(platform.url, { method: 'GET' }, 3000);
+            return {
+                name: platform.name,
+                url: platform.url,
+                found: response.status === 200,
+                status: response.status
+            };
+        } catch (e) {
+            return { name: platform.name, url: platform.url, found: false, status: 'TIMEOUT' };
+        }
+    }));
+
+    res.json({ username, results });
+  });
+
+  app.get('/api/osint/ip', async (req, res) => {
+    const ip = req.query.query || req.query.ip || '';
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,continent,country,regionName,city,district,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query`);
+        const data = await response.json();
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ status: 'fail', message: 'System timeout' });
+    }
+  });
+
+  app.get('/api/osint/whois', async (req, res) => {
+    const domain = String(req.query.domain || req.query.q || '').replace(/https?:\/\//, '').replace(/\/$/, '');
+    try {
+        const response = await fetch(`https://networkcalc.com/api/dns/whois/${domain}`);
+        const data = await response.json();
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: 'WHOIS lookup failed' });
+    }
+  });
+
+  app.get('/api/osint/dns', async (req, res) => {
+    const domain = String(req.query.domain || req.query.q || '').replace(/https?:\/\//, '').replace(/\/$/, '');
+    try {
+        const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
+        const data = await response.json();
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: 'DNS lookup failed' });
+    }
+  });
+
+  app.get('/api/osint/email', async (req, res) => {
+    const email = String(req.query.email || '');
+    if (!email.includes('@')) return res.status(400).json({ error: 'Invalid email' });
+    const domain = email.split("@")[1];
+    try {
+        const records = await resolveMx(domain);
+        res.json({ email, domain, validFormat: true, mxRecords: records });
+    } catch (e) {
+        res.status(500).json({ email, domain, validFormat: true, mxRecords: [], error: true, message: 'MX fetch failed' });
+    }
+  });
+
+  app.get('/api/osint/nik', (req, res) => {
+    const nik = String(req.query.nik || '');
+    if (!/^\d{16}$/.test(nik)) return res.status(400).json({ error: 'NIK must be 16 digits' });
+
+    const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
+    const prov = nik.substring(0, 2);
+    const kab = nik.substring(2, 4);
+    const kec = nik.substring(4, 6);
+    let tgl = parseInt(nik.substring(6, 8), 10);
+    const bln = nik.substring(8, 10);
+    let thn = parseInt(nik.substring(10, 12), 10);
+    const urut = nik.substring(12, 16);
+
+    let gender = "Laki-laki";
+    if (tgl >= 40) {
+      gender = "Perempuan";
+      tgl -= 40;
+    }
+    const currentYear = new Date().getFullYear() % 100;
+    thn = thn > currentYear ? 1900 + thn : 2000 + thn;
+
+    res.json({
+      nik, gender, 
+      birthDate: `${tgl.toString().padStart(2, '0')}-${bln}-${thn}`,
+      province: provMap[prov] || "Unknown",
+      kabupatenCode: kab,
+      kecamatanCode: kec,
+      sequence: urut
+    });
+  });
+
+  app.get('/api/osint/plat', (req, res) => {
+    const platInput = String(req.query.plat || '').replace(/\s/g, '').toUpperCase();
+    const match = platInput.match(/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/);
+    if (!match) return res.status(400).json({ error: 'Invalid license plate format' });
+
+    const platMap: Record<string, string> = { "A": "Banten", "B": "DKI Jakarta, Depok, Tangerang, Bekasi", "D": "Bandung, Cimahi", "E": "Cirebon, Indramayu, Majalengka, Kuningan", "F": "Bogor, Sukabumi, Cianjur", "T": "Purwakarta, Karawang, Subang", "Z": "Garut, Tasikmalaya, Sumedang, Ciamis, Banjar", "G": "Pekalongan, Tegal, Brebes, Batang, Pemalang", "H": "Semarang", "DN": "Sulawesi Tengah", "DT": "Sulawesi Tenggara", "DD": "Makassar, Gowa, Maros", "DP": "Parepare, Palopo, Luwu", "DC": "Sulawesi Barat", "PA": "Papua", "PB": "Papua Barat", "BL": "Aceh", "BB": "Sumut (Barat)", "BK": "Sumut (Timur)/Medan", "BA": "Sumatera Barat", "BM": "Riau", "BP": "Kepulauan Riau", "BG": "Sumatera Selatan", "BN": "Bangka Belitung", "BE": "Lampung", "BD": "Bengkulu", "BH": "Jambi" };
+    const regionCode = match[1];
+    res.json({
+      plat: `${match[1]} ${match[2]} ${match[3]}`,
+      region: platMap[regionCode] || "Unknown Region",
+      code: regionCode,
+      number: match[2],
+      suffix: match[3]
+    });
+  });
+
   // ... (previous API routes continue here)
   
   // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
