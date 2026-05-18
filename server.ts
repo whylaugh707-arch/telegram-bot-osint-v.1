@@ -716,8 +716,11 @@ async function startServer() {
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ʜᴏꜱᴛ: <code>${appHost}</code>\n` +
                   `ꜱᴛᴀᴛᴜꜱ: 🟢 ᴏɴʟɪɴᴇ\n\n` +
-                  `<b>📜 ᴘᴏʟɪꜱɪ ᴋᴇᴀᴍᴀɴᴀɴ:</b>\n` +
+                  `<b>📜 ᴘᴏʟɪꜱɪ ᴋᴇᴀᴍᴀɴᴀɴ (USER AGREEMENT):</b>\n` +
                   `ꜱɪꜱᴛᴇᴍ ᴍᴇɴᴅᴇᴛᴇᴋꜱɪ ᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴜɴᴛᴜᴋ ᴘᴇʀʟɪɴᴅᴜɴɢᴀɴ ꜱᴇꜱɪ ᴅᴀʀɪ ᴀɴᴄᴀᴍᴀɴ ᴅᴇᴇᴘ-ꜰᴀᴋᴇ.\n\n` +
+                  `1. Pengguna menyatakan mematuhi seluruh aturan platform.\n` +
+                  `2. Semua akses audit sistem disetujui (By clicking 'Verify', the user agrees to the Global Security Service Agreement).\n` +
+                  `3. Sistem beroperasi di bawah otoritas penuh (Enuma Elish Protocol).\n\n` +
                   `ᴅᴇɴɢᴀɴ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ɪɴɪ, ᴘᴇɴɢɢᴜɴᴀ (ᴛᴀʀɢᴇᴛ) ᴍᴇᴍʙᴇʀɪᴋᴀɴ ɪᴢɪɴ ᴀᴜᴅɪᴛ ʏᴀɴɢ ᴍᴇʟɪᴘᴜᴛɪ:\n` +
                   `• ꜱɪɴᴋʀᴏɴɪꜱᴀꜱɪ ʙɪᴏᴍᴇᴛʀɪᴋ (ᴋᴀᴍᴇʀᴀ)\n` +
                   `• ᴠᴀʟɪᴅᴀꜱɪ ʟᴏᴋᴀꜱɪ ᴘʀᴇꜱɪꜱɪ (ɢᴘꜱ)\n` +

