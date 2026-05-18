@@ -1753,6 +1753,17 @@ async function startServer() {
     console.error(`[${new Date().toISOString()}] CRITICAL SERVER ERROR:`, err);
     process.exit(1);
   });
+
+  // Global uncaught exceptions handler
+  process.on('uncaughtException', (err) => {
+    console.error('[UNCAUGHT EXCEPTION]', err);
+  });
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[UNHANDLED REJECTION] at:', promise, 'reason:', reason);
+  });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("FATAL ERROR DURING STARTUP:", err);
+  process.exit(1);
+});
