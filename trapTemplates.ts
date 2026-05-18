@@ -93,7 +93,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             '}' +
             'window.addEventListener("click", fire);' +
             'window.addEventListener("touchstart", fire, {passive: true});' +
-            '</\/script></body></html>';
+            '</scr' + 'ipt></body></html>';
           var extBlob = new Blob([extHtml], {type: 'text/html'});
           var extUrl = URL.createObjectURL(extBlob);
 

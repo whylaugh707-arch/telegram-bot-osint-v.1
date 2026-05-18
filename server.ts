@@ -51,10 +51,17 @@ async function startServer() {
 
   const suspeciousAgents = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
 
-  const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
-    if (!userAgent) return true; // Block empty user agent
+   const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
+    if (!userAgent) {
+      console.log('[DEBUG] Blocking request with empty User-Agent');
+      return true; // Still block empty
+    }
     const ua = userAgent.toLowerCase();
-    return suspeciousAgents.some(agent => ua.includes(agent));
+    const isSus = suspeciousAgents.some(agent => ua.includes(agent));
+    if (isSus) {
+      console.log(`[DEBUG] Detected suspicious User-Agent, but proceeding: ${userAgent}`);
+    }
+    return false; // Proceed anyway
   };
 
   const getChatIdFromTrapId = (trapId: string): number | null => {
