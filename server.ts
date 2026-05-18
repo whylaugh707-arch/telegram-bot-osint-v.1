@@ -71,18 +71,11 @@ async function startServer() {
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot; // For compatibility with existing code
 
-  // Webhook path (secret)
-  const webhookPath = token ? `/telegraf/${token.split(':')[0]}` : null;
-  if (bot && webhookPath) {
-    app.use(bot.webhookCallback(webhookPath));
-  }
-
   app.get('/health', (req, res) => {
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      bot_connected: !!(bot && bot.telegram),
-      webhook_active: !!webhookPath
+      bot_connected: !!(bot && bot.telegram)
     });
   });
 
@@ -759,24 +752,13 @@ async function startServer() {
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
-    bot.command('sethost', async (ctx) => {
+    bot.command('sethost', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length > 1) {
         let newHost = args[1];
         if (!newHost.startsWith('http')) newHost = 'https://' + newHost;
         appHost = newHost;
-        await ctx.reply(`✅ <b>System Host diubah manual ke:</b>\n<code>${appHost}</code>\n\nCoba jalankan /logger kembali.`, {parse_mode: 'HTML'});
-        
-        // Re-sync webhook if in production
-        if (webhookPath && bot) {
-          try {
-            const webhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-            await bot.telegram.setWebhook(webhookUrl);
-            await ctx.reply(`🌐 <b>Webhook synced!</b>\nNew endpoint set.`, {parse_mode: 'HTML'});
-          } catch (e: any) {
-            await ctx.reply(`❌ <b>Failed to sync Webhook:</b>\n${e.message}`, {parse_mode: 'HTML'});
-          }
-        }
+        ctx.reply(`✅ <b>System Host diubah manual ke:</b>\n<code>${appHost}</code>\n\nCoba jalankan /logger kembali.`, {parse_mode: 'HTML'});
       } else {
         ctx.reply(`ℹ️ <b>Host saat ini:</b>\n<code>${appHost}</code>\n\nJika link IP Logger error (problem loading page/localhost/404), gunakan perintah:\n<code>/sethost https://URL_WEB_ANDA</code>\nAtau pastikan web app Anda sedang online.`, {parse_mode: 'HTML'});
       }
@@ -1743,52 +1725,16 @@ async function startServer() {
       ctx.reply(msg, { parse_mode: 'HTML' });
     });
 
-    let retryCount = 0;
-    const launchBot = async () => {
-      if (!bot || !token) return;
-      try {
-        // Use Webhook if in production or shared environment (like Railway)
-        const isProduction = process.env.NODE_ENV === 'production' || appHost.includes('railway.app') || appHost.includes('.run.app');
-        
-        if (isProduction && appHost && !appHost.includes('localhost') && webhookPath) {
-          console.log(`[${new Date().toISOString()}] Attempting to SET WEBHOOK on ${appHost}...`);
-          const webhookFullUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-          await bot.telegram.setWebhook(webhookFullUrl, {
-            drop_pending_updates: true
-          });
-          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: WEBHOOK MODE ACTIVE`);
-          console.log(`[${new Date().toISOString()}] Webhook URL: ${webhookFullUrl}`);
-        } else {
-          console.log(`[${new Date().toISOString()}] Attempting to connect Telegram Bot (Polling)...`);
-          await bot.launch({ dropPendingUpdates: true });
-          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: POLLING MODE ACTIVE`);
-        }
-        retryCount = 0; 
-      } catch (e: any) {
-        if (e && (e.code === 409 || e.response?.error_code === 409)) {
-          console.warn(`[${new Date().toISOString()}] ⚠️ Telegram Error 409: Conflict detected. (Bot aktif di tempat lain).`);
-          if (retryCount < 5) {
-            retryCount++;
-            console.log(`[${new Date().toISOString()}] Retrying in 10 seconds... (Attempt ${retryCount}/5)`);
-            setTimeout(launchBot, 10000);
-          } else {
-            console.error("🚨 GAGAL FATAL: Token bot ini sedang aktif di server lain.");
-            console.error("   Aplikasi web akan tetap berjalan tanpa fitur bot.");
-          }
-        } else {
-          console.error(`[${new Date().toISOString()}] ❌ Failed to run Telegram Bot:`, e.message || e);
-          setTimeout(launchBot, 30000);
-        }
-      }
-    };
-    
-    // Launch bot in background (don't await so server can start)
-    launchBot().catch(err => console.error("Background launch error:", err));
+    if (bot) {
+      bot.launch({ dropPendingUpdates: true })
+        .then(() => console.log("Telegram bot is running (Polling)"))
+        .catch(err => console.error("Failed to launch bot:", err));
+    }
 
-    process.once('SIGINT', () => bot.stop('SIGINT'));
-    process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    process.once('SIGINT', () => bot && bot.stop('SIGINT'));
+    process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
   } else {
-    console.log(`[${new Date().toISOString()}] Telegram Bot: SKIPPED (No Token)`);
+    console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
 
   app.listen(PORT, "0.0.0.0", () => {
