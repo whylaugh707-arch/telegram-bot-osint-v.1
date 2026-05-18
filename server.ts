@@ -71,30 +71,14 @@ async function startServer() {
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot; // For compatibility with existing code
 
-  // Webhook setup (secret path)
-  const webhookSecret = token ? token.split(':')[0] : null;
-  const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
-
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-  // Register Webhook Route
-  if (bot && webhookPath) {
-    app.post(webhookPath, (req, res) => {
-      bot.handleUpdate(req.body, res).catch(err => {
-        console.error("Bot Update Error:", err);
-        if (!res.headersSent) res.sendStatus(500);
-      });
-    });
-    console.log(`[${new Date().toISOString()}] Webhook Route Registered: ${webhookPath}`);
-  }
 
   app.get('/health', (req, res) => {
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      bot_ready: !!bot,
-      webhook_active: !!webhookPath
+      bot_ready: !!bot
     });
   });
 
@@ -1743,42 +1727,44 @@ async function startServer() {
 
     process.once('SIGINT', () => bot && bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
+
+    let retryCount = 0;
+    const maxRetries = 20;
+
+    const startBot = async () => {
+      if (!bot) return;
+      try {
+        console.log(`[${new Date().toISOString()}] Attempting to launch Telegram Bot (Polling)...`);
+        await bot.launch({ dropPendingUpdates: true });
+        console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: SUCCESSFULLY CONNECTED`);
+        retryCount = 0;
+      } catch (err: any) {
+        if (err.code === 409 || err.response?.error_code === 409) {
+          console.warn(`[${new Date().toISOString()}] ⚠️ Telegram 409: Conflict (Bot active elsewhere).`);
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delay = 15000;
+            console.log(`[${new Date().toISOString()}] Retrying in ${delay/1000}s... (${retryCount}/${maxRetries})`);
+            setTimeout(startBot, delay);
+          } else {
+            console.error("🚨 GAGAL FATAL: Token bot ini aktif di server lain. Silakan matikan instance lain!");
+          }
+        } else {
+          console.error("❌ Bot Launch Error:", err.message);
+          setTimeout(startBot, 30000);
+        }
+      }
+    };
+
+    startBot().catch(e => console.error("Background Bot Launch Fail:", e));
   } else {
     console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
 
-  const server = app.listen(PORT, "0.0.0.0", async () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
     console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
     console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
-
-    // LAUNCH BOT AFTER SERVER IS UP
-    if (bot && token) {
-      try {
-        const isLocal = appHost.includes('localhost') || appHost.includes('127.0.0.1');
-        
-        if (!isLocal && webhookPath) {
-          // Use Webhook for public environments (Railway, AI Studio, etc)
-          const webhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-          console.log(`[${new Date().toISOString()}] Bot: SETTING WEBHOOK to ${webhookUrl}`);
-          await bot.telegram.setWebhook(webhookUrl, { drop_pending_updates: true });
-          console.log(`[${new Date().toISOString()}] ✅ Bot: WEBHOOK MODE ACTIVE`);
-        } else {
-          // Use Polling only for Local Development
-          console.log(`[${new Date().toISOString()}] Bot: STARTING POLLING MODE...`);
-          bot.launch({ dropPendingUpdates: true }).catch(err => {
-            if (err.code === 409) {
-              console.warn("⚠️ Bot: Conflict (409) - Polling already active elsewhere. Skipping locally.");
-            } else {
-              console.error("❌ Bot: Polling Error:", err.message);
-            }
-          });
-          console.log(`[${new Date().toISOString()}] ✅ Bot: POLLING MODE ACTIVE`);
-        }
-      } catch (err: any) {
-        console.error("❌ Bot: Initialization Failed:", err.message);
-      }
-    }
   });
 
   server.on('error', (err: any) => {
