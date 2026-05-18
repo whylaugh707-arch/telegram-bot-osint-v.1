@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Link, Copy, Check, ExternalLink, Info, Zap } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function StealthLogger() {
   const [templates, setTemplates] = useState<any[]>([]);
@@ -104,6 +105,9 @@ export default function StealthLogger() {
                 <div className="p-4 bg-[#00ff00]/10 border border-[#00ff00]/40 rounded relative group">
                   <div className="text-[9px] font-bold text-[#00ff00] mb-2 tracking-widest uppercase">UNIQUE_UPLINK_URL:</div>
                   <div className="font-serif text-xs break-all pr-12 text-white font-bold select-all">{generatedLink}</div>
+                  <div className="mt-4 flex justify-center">
+                    <QRCodeCanvas value={generatedLink} size={128} bgColor="#000000" fgColor="#00ff00" />
+                  </div>
                   <button 
                     onClick={copyToClipboard}
                     className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-[#00ff00]/20 text-[#00ff00] rounded transition-all"
