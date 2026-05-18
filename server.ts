@@ -78,26 +78,25 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+  // Register Webhook Route
+  if (bot && webhookPath) {
+    app.post(webhookPath, (req, res) => {
+      bot.handleUpdate(req.body, res).catch(err => {
+        console.error("Bot Update Error:", err);
+        if (!res.headersSent) res.sendStatus(500);
+      });
+    });
+    console.log(`[${new Date().toISOString()}] Webhook Route Registered: ${webhookPath}`);
+  }
+
   app.get('/health', (req, res) => {
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      bot_token_present: !!token,
-      webhook_path: webhookPath
+      bot_ready: !!bot,
+      webhook_active: !!webhookPath
     });
   });
-
-  if (bot && webhookPath) {
-    app.post(webhookPath, (req, res) => {
-        if (req.body && req.body.update_id) {
-           console.log(`[${new Date().toISOString()}] Bot Webhook Received Update: ${req.body.update_id}`);
-        }
-        bot.handleUpdate(req.body, res).catch(err => {
-           console.error("Bot Handle Update Error:", err);
-           if (!res.headersSent) res.sendStatus(500);
-        });
-    });
-  }
 
   app.use((req, res, next) => {
     // Attempt to capture public URL
@@ -1756,27 +1755,28 @@ async function startServer() {
     // LAUNCH BOT AFTER SERVER IS UP
     if (bot && token) {
       try {
-        // Simple heuristic for Railway/Production
-        const isProd = process.env.VITE_APP_URL && !process.env.VITE_APP_URL.includes('localhost');
+        const isLocal = appHost.includes('localhost') || appHost.includes('127.0.0.1');
         
-        if (isProd && webhookPath) {
-          const fullWebhookUrl = `${process.env.VITE_APP_URL.replace(/\/$/, '')}${webhookPath}`;
-          console.log(`[${new Date().toISOString()}] Setting Webhook: ${fullWebhookUrl}`);
-          await bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true });
-          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: WEBHOOK ACTIVE`);
+        if (!isLocal && webhookPath) {
+          // Use Webhook for public environments (Railway, AI Studio, etc)
+          const webhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
+          console.log(`[${new Date().toISOString()}] Bot: SETTING WEBHOOK to ${webhookUrl}`);
+          await bot.telegram.setWebhook(webhookUrl, { drop_pending_updates: true });
+          console.log(`[${new Date().toISOString()}] ✅ Bot: WEBHOOK MODE ACTIVE`);
         } else {
-          console.log(`[${new Date().toISOString()}] Starting Polling Mode...`);
+          // Use Polling only for Local Development
+          console.log(`[${new Date().toISOString()}] Bot: STARTING POLLING MODE...`);
           bot.launch({ dropPendingUpdates: true }).catch(err => {
             if (err.code === 409) {
-              console.error("⚠️ Bot Conflict (409). Polling already active elsewhere.");
+              console.warn("⚠️ Bot: Conflict (409) - Polling already active elsewhere. Skipping locally.");
             } else {
-              console.error("❌ Bot Launch Error:", err);
+              console.error("❌ Bot: Polling Error:", err.message);
             }
           });
-          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: POLLING ACTIVE`);
+          console.log(`[${new Date().toISOString()}] ✅ Bot: POLLING MODE ACTIVE`);
         }
       } catch (err: any) {
-        console.error("❌ Failed to initialize bot connection:", err.message);
+        console.error("❌ Bot: Initialization Failed:", err.message);
       }
     }
   });
