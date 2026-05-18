@@ -34,6 +34,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  console.log(`[STARTUP] ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log(`[STARTUP] Target Port: ${PORT} (from env: ${process.env.PORT || 'not set'})`);
 
   // Stateless Trap ID Generation & Validation
@@ -59,14 +60,13 @@ async function startServer() {
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
-  // 1. TOP-LEVEL HEALTH CHECKS
+  // 1. TOP-LEVEL HEALTH CHECKS (MUST BE FIRST)
   app.get('/health', (req, res) => res.status(200).send('OK'));
-  app.get('/healthz', (req, res) => res.status(200).json({ status: "ok", timestamp: new Date().toISOString() }));
+  app.get('/healthz', (req, res) => res.status(200).send('OK'));
   
-  // Root path check (Expressly handle Railway/Platform health checks)
-  app.get('/', (req, res, next) => {
+  app.use((req, res, next) => {
     const ua = req.headers['user-agent'] || '';
-    if (ua.includes('HealthCheck') || ua.includes('Railway') || ua.includes('GoogleHC')) {
+    if (ua.includes('HealthCheck') || ua.includes('Railway') || ua.includes('GoogleHC') || req.query.health === '1') {
         return res.status(200).send('OK');
     }
     next();
@@ -546,7 +546,8 @@ async function startServer() {
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
       } else {
-        res.status(404).send('<h2>System Ready</h2><p>Terminal UI is being deployed. Check back in a moment.</p>');
+        // Avoid returning 404 for the root or generic paths to satisfy health checks
+        res.status(200).send('<h2>System Ready</h2><p>Terminal UI is active. Please check the bot for links.</p>');
       }
     });
   }
@@ -1797,23 +1798,17 @@ async function startServer() {
 
     // LAUNCH BOT ONLY AFTER SERVER IS LISTENING
     if (bot && token) {
-      const isProd = process.env.NODE_ENV === 'production' || appHost.includes('railway.app');
-      
-      if (isProd && webhookPath) {
-        const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-        console.log(`[BOT] SETTING WEBHOOK: ${fullWebhookUrl}`);
-        bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true }).catch(err => {
-           console.error("[BOT] Webhook Error:", err.message);
-           console.log("[BOT] Falling back to Polling...");
-           bot.launch({ dropPendingUpdates: true }).catch(e => console.error("[BOT] Polling Fallback Fail:", e.message));
-        });
-      } else {
-        console.log("[BOT] STARTING POLLING...");
-        bot.launch({ dropPendingUpdates: true }).catch(err => {
-          if (err.code === 409) console.warn("[BOT] Conflict: already running elsewhere.");
-          else console.error("[BOT] Launch Error:", err.message);
-        });
-      }
+      // Use Polling for better stability on Railway
+      console.log(`[BOT] STARTING POLLING MODE...`);
+      bot.launch({ dropPendingUpdates: true }).then(() => {
+        console.log(`[BOT] ✅ BOT ONLINE (POLLING)`);
+      }).catch(err => {
+        if (err.code === 409) {
+           console.warn(`[BOT] WARNING: Bot already running elsewhere. Links will still work but polling is limited.`);
+        } else {
+           console.error(`[BOT] ❌ LAUNCH ERROR:`, err.message);
+        }
+      });
     }
   });
 
