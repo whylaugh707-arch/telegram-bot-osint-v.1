@@ -654,37 +654,54 @@ async function startServer() {
   // TELEGRAM BOT SETUP
   if (bot) {
     bot.use(async (ctx, next) => {
-        if (!ctx.from) return;
-        
-        // Skip for owner
-        if (ctx.from.id === ADMIN_ID) return next();
+        try {
+            if (!ctx.from) return;
+            
+            const userId = ctx.from.id;
+            const userName = ctx.from.first_name || 'User';
 
-        // Check if user has accepted agreement
-        if (!agreementUsers.has(ctx.from.id)) {
-            const btnUrl = `${appHost.replace(/\/$/, '')}/verify-bot-user?uid=${ctx.from.id}&name=${encodeURIComponent(ctx.from.first_name)}`;
-            const aggMsg = `⚠️ <b>[ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ]</b> ⚠️\n` +
-                           `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                           `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴛʀɪʜᴇxᴀ666. ᴜɴᴛᴜᴋ ᴍᴇʟᴀɴᴊᴜᴛᴋᴀɴ, ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇɴʏᴇᴛᴜᴊᴜɪ ᴋᴇᴛᴇɴᴛᴜᴀɴ ʙᴇʀɪᴋᴜᴛ:\n\n` +
-                           `1. ʙᴏᴛ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴘᴇɴᴇʟɪᴛɪᴀɴ ꜱᴇᴄᴜʀɪᴛʏ.\n` +
-                           `2. ꜱᴇʟɪᴛᴜʀᴜʜ ᴀᴋᴛɪᴠɪᴛᴀꜱ ᴀɴᴅᴀ ᴅɪᴘᴀɴᴛᴀᴜ ᴏʟᴇʜ ꜱʏꜱᴛᴇᴍ.\n` +
-                           `3. ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇʟɪᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴅᴇɴɢᴀɴ ᴍᴇɴɢᴋʟɪᴋ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ.\n\n` +
-                           `━━━━━━━━━━━━━━━━━━━━`;
-            const kb = Markup.inlineKeyboard([
-              [Markup.button.url('🛡️ ꜱᴇᴛᴜᴊᴜ & ᴠᴇʀɪꜰɪᴋᴀꜱɪ', btnUrl)],
-              [Markup.button.callback('✅ ꜱᴀʏᴀ ꜱᴜᴅᴀʜ ᴠᴇʀɪꜰɪᴋᴀꜱɪ', 'confirm_verified')]
-            ]);
-            return ctx.reply(aggMsg, { parse_mode: 'HTML', ...kb });
-        }
+            // IMPORTANT: Allow callback queries (button clicks) to pass through to their handlers
+            if (ctx.callbackQuery) return next();
 
-        if (authenticatedUsers.has(ctx.from.id)) return next();
-        
-        const text = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
-        if (text === PASSWORD) {
-            authenticatedUsers.add(ctx.from.id);
-            saveAuth();
-            return ctx.reply("✅ <b>Akses Khusus Tim Legal Diberikan!</b>\nSelamat bertugas, gunakan wewenang Anda dengan bijak.", {parse_mode: 'HTML'});
+            // Skip all checks for owner
+            if (userId === ADMIN_ID) return next();
+
+            // Check if user has accepted agreement
+            if (!agreementUsers.has(userId)) {
+                const cleanHost = (appHost || "").replace(/\/$/, '');
+                const btnUrl = `${cleanHost}/verify-bot-user?uid=${userId}&name=${encodeURIComponent(userName)}`;
+                
+                const aggMsg = `⚠️ <b>[ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ]</b> ⚠️\n` +
+                               `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                               `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴛʀɪʜᴇxᴀ666. ᴜɴᴛᴜᴋ ᴍᴇʟᴀɴᴊᴜᴛᴋᴀɴ, ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇɴʏᴇᴛᴜᴊᴜɪ ᴋᴇᴛᴇɴᴛᴜᴀɴ ʙᴇʀɪᴋᴜᴛ:\n\n` +
+                               `1. ʙᴏᴛ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴘᴇɴᴇʟɪᴛɪᴀɴ ꜱᴇᴄᴜʀɪᴛʏ.\n` +
+                               `2. ꜱᴇʟɪᴛᴜʀᴜʜ ᴀᴋᴛɪᴠɪᴛᴀꜱ ᴀɴᴅᴀ ᴅɪᴘᴀɴᴛᴀᴜ ᴏʟᴇʜ ꜱʏꜱᴛᴇᴍ.\n` +
+                               `3. ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇʟɪᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴅᴇɴɢᴀɴ ᴍᴇɴɢᴋʟɪᴋ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ.\n\n` +
+                               `━━━━━━━━━━━━━━━━━━━━`;
+                const kb = Markup.inlineKeyboard([
+                    [Markup.button.url('🛡️ ꜱᴇᴛᴜᴊᴜ & ᴠᴇʀɪꜰɪᴋᴀꜱɪ', btnUrl)],
+                    [Markup.button.callback('✅ ꜱᴀʏᴀ ꜱᴜᴅᴀʜ ᴠᴇʀɪꜰɪᴋᴀꜱɪ', 'confirm_verified')]
+                ]);
+                return ctx.reply(aggMsg, { parse_mode: 'HTML', ...kb }).catch(e => console.error("Reply Error (Agreement):", e));
+            }
+
+            // If already authenticated, allow everything
+            if (authenticatedUsers.has(userId)) return next();
+            
+            const text = ctx.message && 'text' in ctx.message ? (ctx.message as any).text : '';
+
+            // Handle Password Authentication
+            if (text === PASSWORD) {
+                authenticatedUsers.add(userId);
+                saveAuth();
+                return ctx.reply("✅ <b>Akses Khusus Tim Legal Diberikan!</b>\nSelamat bertugas, gunakan wewenang Anda dengan bijak.", {parse_mode: 'HTML'}).catch(() => {});
+            }
+
+            // If verified but not authenticated, show lock message for any command/text
+            return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: <sup>${PASSWORD}</sup>) untuk melanjutkan.`, {parse_mode: 'HTML'}).catch(() => {});
+        } catch (err) {
+            console.error("Bot Global Middleware Error:", err);
         }
-        return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: 112233) untuk melanjutkan.`, {parse_mode: 'HTML'});
     });
 
     bot.action('confirm_verified', (ctx) => {
