@@ -1745,7 +1745,11 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`=================================`);
+    console.log(`SERVER IS RUNNING SUCCESSFULLY!`);
+    console.log(`PORT: ${PORT}`);
+    console.log(`TIME: ${new Date().toISOString()}`);
+    console.log(`=================================`);
   });
 }
 
