@@ -33,7 +33,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // Stateless Trap ID Generation & Validation
   const generateTrapId = (chatId: number) => {
