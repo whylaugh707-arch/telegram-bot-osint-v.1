@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity } from 'lucide-react';
+import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen } from 'lucide-react';
 import IpTools from './components/IpTools';
 import DomainTools from './components/DomainTools';
 import EmailTools from './components/EmailTools';
@@ -7,7 +7,6 @@ import SocialScanner from './components/SocialScanner';
 import StealthLogger from './components/StealthLogger';
 import IndoOsint from './components/IndoOsint';
 import DorkGenerator from './components/DorkGenerator';
-import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen } from 'lucide-react';
 
 type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork';
 

