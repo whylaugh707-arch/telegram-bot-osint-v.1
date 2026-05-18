@@ -663,12 +663,29 @@ async function startServer() {
             // IMPORTANT: Allow callback queries (button clicks) to pass through to their handlers
             if (ctx.callbackQuery) return next();
 
+            // Check for /start or other commands to make them semi-accessible
+            const isCommand = ctx.message && 'text' in ctx.message && ctx.message.text.startsWith('/');
+            const text = ctx.message && 'text' in ctx.message ? (ctx.message as any).text : '';
+
             // Skip all checks for owner
             if (userId === ADMIN_ID) return next();
 
             // Check if user has accepted agreement
             if (!agreementUsers.has(userId)) {
-                const cleanHost = (appHost || "").replace(/\/$/, '');
+                // Determine reliable host
+                let host = appHost;
+                if (!host || host.includes('up.railway.app')) {
+                   // Attempt to use a more reliable fallback if available
+                   host = process.env.APP_URL || host;
+                }
+                const cleanHost = (host || "").replace(/\/$/, '');
+                
+                // CRITICAL: If no host, we MUST use a placeholder or log error, but don't crash
+                if (!cleanHost) {
+                   console.error("CRITICAL: APP_URL not set. Bot cannot generate links.");
+                   return ctx.reply("⚠️ Terminal configuration error: APP_URL is missing.").catch(()=>{});
+                }
+
                 const btnUrl = `${cleanHost}/verify-bot-user?uid=${userId}&name=${encodeURIComponent(userName)}`;
                 
                 const aggMsg = `⚠️ <b>[ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ]</b> ⚠️\n` +
@@ -688,7 +705,8 @@ async function startServer() {
             // If already authenticated, allow everything
             if (authenticatedUsers.has(userId)) return next();
             
-            const text = ctx.message && 'text' in ctx.message ? (ctx.message as any).text : '';
+            // Allow /start specifically to show something even if not authenticated
+            if (text === '/start') return next();
 
             // Handle Password Authentication
             if (text === PASSWORD) {
