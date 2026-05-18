@@ -394,6 +394,11 @@ async function startServer() {
     app._router.handle(req, res, () => {});
   });
 
+  app.post('/api/log/:id/debug', (req, res) => {
+    console.log(`[CLIENT-DEBUG][${req.params.id}]:`, req.body);
+    res.sendStatus(200);
+  });
+
   // Handle Device Metadata Upload
   app.post('/api/log/:id/info', (req, res) => {
     console.log(`[DEBUG] Received info log for ${req.params.id}`);
