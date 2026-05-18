@@ -70,6 +70,14 @@ async function startServer() {
   const bot = process.env.TELEGRAM_BOT_TOKEN ? new Telegraf(process.env.TELEGRAM_BOT_TOKEN) : null;
   const botInstance = bot; // For compatibility with existing code
 
+  app.get('/health', (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      bot_connected: !!(bot && bot.telegram)
+    });
+  });
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -1720,23 +1728,32 @@ async function startServer() {
     const launchBot = async () => {
       if (!bot) return;
       try {
+        console.log(`[${new Date().toISOString()}] Attempting to connect Telegram Bot...`);
         await bot.launch({ dropPendingUpdates: true });
-        console.log(`[${new Date().toISOString()}] Telegram Bot: SUCCESSFULLY CONNECTED`);
+        console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: SUCCESSFULLY CONNECTED`);
+        retryCount = 0; // reset on success
       } catch (e: any) {
         if (e && (e.code === 409 || e.response?.error_code === 409)) {
-          if (retryCount < 3) {
+          console.warn(`[${new Date().toISOString()}] ⚠️ Telegram Error 409: Conflict detected. (Bot aktif di tempat lain).`);
+          if (retryCount < 5) {
             retryCount++;
-            console.warn(`Telegram Error 409: Conflict detected. (Mungkin bot sedang berjalan di tempat lain). Retrying in 5 seconds... (Attempt ${retryCount}/3)`);
-            setTimeout(launchBot, 5000);
+            console.log(`[${new Date().toISOString()}] Retrying in 10 seconds... (Attempt ${retryCount}/5)`);
+            setTimeout(launchBot, 10000);
           } else {
-            console.error("🚨 GAGAL MENJALANKAN BOT: Token bot Telegram ini sedang aktif dan di-host di tempat lain (Misalnya di Deploy Cloud Run atau komputer lokal Anda yang lain). Silakan matikan instance yang lama, atau buat bot baru di BotFather agar token tidak bentrok.");
+            console.error("🚨 GAGAL FATAL: Token bot ini sedang aktif di server lain (kemungkinan di Railway atau HP anda).");
+            console.error("   Silakan MATIKAN bot di server lain tersebut agar bot di sini bisa berjalan.");
+            console.error("   Aplikasi web akan tetap berjalan tanpa fitur bot.");
           }
         } else {
-          console.error("Failed to run Telegram Bot:", e);
+          console.error(`[${new Date().toISOString()}] ❌ Failed to run Telegram Bot:`, e.message || e);
+          // Retry for other errors too, but maybe with longer delay
+          setTimeout(launchBot, 30000);
         }
       }
     };
-    launchBot();
+    
+    // Launch bot in background (don't await so server can start)
+    launchBot().catch(err => console.error("Background launch error:", err));
 
     process.once('SIGINT', () => bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot.stop('SIGTERM'));
