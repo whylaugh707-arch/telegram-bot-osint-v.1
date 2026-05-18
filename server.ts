@@ -783,13 +783,46 @@ async function startServer() {
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 ᴏꜱɪɴᴛ ᴀᴅᴠᴀɴᴄᴇᴅ</b>\n` +
-                  `• /nik [ɴɪᴋ]\n` +
-                  `• /plat [ᴘʟᴀᴛ]\n` +
-                  `• /headers [ᴜʀʟ]\n` +
-                  `• /dork [ᴋᴇʏᴡᴏʀᴅ]\n` +
-                  `• /subdomain [ᴅᴏᴍ]\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const txt = `<b>📡 ᴏꜱɪɴᴛ – ᴘʀᴏꜰᴇꜱꜱɪᴏɴᴀʟ ɢʀᴀᴅᴇ</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ɢᴜɴᴀᴋᴀɴ ᴘᴇʀɪɴᴛᴀʜ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ ᴜɴᴛᴜᴋ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ:\n\n` +
+                  `🇮🇩 <b>ɪɴᴅᴏɴᴇꜱɪᴀ ꜱᴘᴇᴄɪꜰɪᴄ:</b>\n` +
+                  `• /nik [ɴɪᴋ] - ᴅᴇᴄᴏᴅᴇ ɴɪᴋ ᴋᴛᴘ\n` +
+                  `• /plat [ᴘʟᴀᴛ] - ᴄᴇᴋ ᴀꜱᴀʟ ᴡɪʟᴀʏᴀʜ ᴘʟᴀᴛ\n` +
+                  `• /osint_indo - ᴍᴇɴᴜ ᴋʜᴜꜱᴜꜱ ᴏꜱɪɴᴛ ɪɴᴅᴏ\n\n` +
+                  `🔍 <b>ᴅɪɢɪᴛᴀʟ ꜰᴏᴏᴛᴘʀɪɴᴛ:</b>\n` +
+                  `• /username [ᴜꜱᴇʀ] - ᴄᴇᴋ 100+ ᴘʟᴀᴛꜰᴏʀᴍ\n` +
+                  `• /ig [ᴜꜱᴇʀ] - ɪɴꜱᴛᴀɢʀᴀᴍ ᴅᴇᴇᴘ ʟɪɴᴋ\n` +
+                  `• /tiktok [ᴜꜱᴇʀ] - ᴛɪᴋᴛᴏᴋ ᴅᴇᴇᴘ ʟɪɴᴋ\n` +
+                  `• /email [ᴇᴍᴀɪʟ] - ᴠᴇʀɪꜰɪᴋᴀꜱɪ ᴇᴍᴀɪʟ\n\n` +
+                  `🌐 <b>ɴᴇᴛᴡᴏʀᴋ & ᴡᴇʙ:</b>\n` +
+                  `• /dork [ǫᴜᴇʀʏ] - ɢᴏᴏɢʟᴇ ᴅᴏʀᴋ ɢᴇɴ\n` +
+                  `• /scan [ɪᴘ/ᴅᴏᴍ] - ᴅᴇᴇᴘ ꜱᴄᴀɴ ʀᴇᴄᴏɴ\n` +
+                  `• /subdomain [ᴅᴏᴍ] - ᴍᴀᴘᴘɪɴɢ ꜱᴜʙᴅᴏᴍᴀɪɴ\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('🔍 ᴏꜱɪɴᴛ ɪɴᴅᴏ ᴍᴇɴᴜ', 'menu_osint_indo')],
+        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
+      ]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_osint_indo', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🇮🇩 ᴏꜱɪɴᴛ ɪɴᴅᴏɴᴇꜱɪᴀ ᴄᴇɴᴛᴇʀ</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ᴍᴏᴅᴜʟ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ ʟᴏᴋᴀʟ ɪɴᴅᴏɴᴇꜱɪᴀ:\n\n` +
+                  `📍 <b>ɪᴅᴇɴᴛɪᴛᴀꜱ & ᴋᴇɴᴅᴀʀᴀᴀɴ:</b>\n` +
+                  `• /nik [16-ᴅɪɢɪᴛ] - ᴀɴᴀʟɪꜱᴀ ᴋᴏᴅᴇ ᴡɪʟᴀʏᴀʜ KTP\n` +
+                  `• /plat [ɴᴏ-ᴘʟᴀᴛ] - ʟᴀᴄᴀᴋ ᴀꜱᴀʟ ᴘʟᴀᴛ ɴᴏᴍᴏʀ\n\n` +
+                  `🔍 <b>ᴘᴇɴᴄᴀʀɪᴀɴ ɴᴀᴍᴀ & ᴊᴇᴊᴀᴋ:</b>\n` +
+                  `• /nama [ɴᴀᴍᴀ ʟᴇɴɢᴋᴀᴘ] - ᴅᴏʀᴋɪɴɢ ɴᴀᴍᴀ ᴏʀᴀɴɢ\n` +
+                  `• /username [ᴜꜱᴇʀ] - ᴄᴇᴋ ᴅɪ ᴋᴀꜱᴋᴜꜱ, ʙʟᴏɢ, ᴅʟʟ\n\n` +
+                  `📱 <b>ᴛᴇʟᴇᴘᴏɴ & ꜱᴏꜱᴍᴇᴅ ɪɴᴅᴏ:</b>\n` +
+                  `• /phone_dork [ɴᴏᴍᴏʀ] - ʟɪɴᴋ ᴛʀᴜᴇᴄᴀʟʟᴇʀ/ᴡᴀ\n` +
+                  `• /sosmed [ᴜꜱᴇʀ] - ꜱᴜᴍᴍᴀʀʏ ʟɪɴᴋ ɪɴᴅᴏ-ꜰᴏᴄᴜꜱ\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_osint_adv')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -1151,7 +1184,7 @@ async function startServer() {
       ctx.reply(`🔍 Memindai jejak digital untuk <b>@${username}</b>...\n<i>Mengecek puluhan platform...</i>`, { parse_mode: 'HTML' });
       
       const platforms = [
-        // Global Social Media & Tech (~80 Platforms)
+        // Global Social Media & Tech (~100 Platforms)
         { name: "GitHub", url: `https://github.com/${username}` },
         { name: "Twitter", url: `https://twitter.com/${username}` },
         { name: "Instagram", url: `https://www.instagram.com/${username}/` },
@@ -1207,8 +1240,6 @@ async function startServer() {
         { name: "DailyMotion", url: `https://www.dailymotion.com/${username}` },
         { name: "Giphy", url: `https://giphy.com/channel/${username}` },
         { name: "Imgur", url: `https://imgur.com/user/${username}` },
-        { name: "HackTheBox", url: `https://forum.hackthebox.eu/profile/${username}` },
-        { name: "TryHackMe", url: `https://tryhackme.com/p/${username}` },
         { name: "Bugcrowd", url: `https://bugcrowd.com/${username}` },
         { name: "HackerOne", url: `https://hackerone.com/${username}` },
         { name: "BuyMeACoffee", url: `https://www.buymeacoffee.com/${username}` },
@@ -1226,10 +1257,39 @@ async function startServer() {
         { name: "OnlyFans", url: `https://onlyfans.com/${username}` },
         { name: "Fansly", url: `https://fansly.com/${username}` },
         { name: "CashApp", url: `https://cash.app/$${username}` },
-        // Indo & Forums
+        { name: "Venmo", url: `https://venmo.com/${username}` },
+        { name: "Paypal", url: `https://www.paypal.com/paypalme/${username}` },
+        { name: "Skype", url: `https://web.skype.com/share?url=${username}` },
+        { name: "Interpals", url: `https://www.interpals.net/${username}` },
+        { name: "Couchsurfing", url: `https://www.couchsurfing.com/people/${username}` },
+        { name: "Duolingo", url: `https://www.duolingo.com/profile/${username}` },
+        { name: "Discord", url: `https://discord.id/user/${username}` },
+        { name: "Bitbucket", url: `https://bitbucket.org/${username}/` },
+        { name: "AngelList", url: `https://angel.co/u/${username}` },
+        { name: "Houzz", url: `https://www.houzz.com/user/${username}` },
+        { name: "Polygon", url: `https://www.polygon.com/users/${username}` },
+        { name: "Vicky", url: `https://www.viki.com/users/${username}/about` },
+        { name: "Crunchyroll", url: `https://www.crunchyroll.com/user/${username}` },
+        { name: "BandLab", url: `https://www.bandlab.com/${username}` },
+        { name: "Canva", url: `https://www.canva.com/${username}` },
+        { name: "Adobe", url: `https://www.behance.net/${username}` },
+        { name: "SlideShare", url: `https://www.slideshare.net/${username}` },
+        { name: "Issuu", url: `https://issuu.com/${username}` },
+        { name: "Scribd", url: `https://www.scribd.com/${username}` },
+        // Indo & SE Asia Platforms (Focus User Request)
         { name: "Kaskus", url: `https://www.kaskus.co.id/profile/${username}` },
         { name: "Kompasiana", url: `https://www.kompasiana.com/${username}` },
-        { name: "Blogger", url: `https://${username}.blogspot.com` }
+        { name: "Blogger", url: `https://${username}.blogspot.com` },
+        { name: "WordPress", url: `https://${username}.wordpress.com` },
+        { name: "MobileLegends", url: `https://m.mobilelegends.com/en/search/user?keyword=${username}` },
+        { name: "Detik", url: `https://news.detik.com/search?query=${username}` },
+        { name: "Kaskus Jual Beli", url: `https://www.kaskus.co.id/fjb/user/${username}` },
+        { name: "Bukalapak", url: `https://www.bukalapak.com/u/${username}` },
+        { name: "Tokopedia", url: `https://www.tokopedia.com/people/${username}` },
+        { name: "Traveloka", url: `https://www.traveloka.com/en-id/user/${username}` },
+        { name: "Kulina", url: `https://kulina.id/@${username}` },
+        { name: "Bstation", url: `https://www.bilibili.tv/en/space/${username}` },
+        { name: "Shopee", url: `https://shopee.co.id/${username}` }
       ];
 
       // Platforms known to return soft 404s (200 OK but page says not found) or block bots aggressively.
@@ -1925,17 +1985,54 @@ async function startServer() {
       }
     });
 
-    bot.command('fb', (ctx) => {
+    bot.command('nama', (ctx) => {
+      const args = ctx.message.text.split(' ').slice(1).join(' ');
+      if (!args) return ctx.reply("Format: /nama [Nama Lengkap]");
+      const q = encodeURIComponent(`"${args}"`);
+      const reply = `<b>👤 NAME OSINT INVESTIGATION</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💎 <b>TARGET NAME:</b> <code>${args}</code>\n\n` +
+                    `├ 🌐 <b>General Search:</b> <a href="https://www.google.com/search?q=${q}">Cek Nama di Google</a>\n` +
+                    `├ 📄 <b>PDF/Docs:</b> <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen Terkait</a>\n` +
+                    `├ 💼 <b>LinkedIn:</b> <a href="https://www.google.com/search?q=site:linkedin.com+${q}">Cari di LinkedIn</a>\n` +
+                    `├ 🎓 <b>Akademik:</b> <a href="https://www.google.com/search?q=site:pddikti.kemdikbud.go.id+${q}">Cek di PDDikti (Kuliah)</a>\n` +
+                    `├ 🏛️ <b>Legal/Putusan:</b> <a href="https://www.google.com/search?q=site:putusan3.mahkamahagung.go.id+${q}">Cek Putusan Sidang</a>\n` +
+                    `└ 🏢 <b>Berita:</b> <a href="https://www.google.com/search?q=site:detik.com+OR+site:kompas.com+${q}">Cek di Media Berita</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>Analisis nama selesai.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('osint_indo', (ctx) => {
+      const reply = `<b>🇮🇩 OSINT INDONESIA MODULE</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `Pilih alat investigasi lokal:\n\n` +
+                    `1. <b>NIK Analyzer:</b> /nik [16-digit]\n` +
+                    `2. <b>License Plate:</b> /plat [B 1234 ABC]\n` +
+                    `3. <b>Social Media ID:</b> /username [user]\n` +
+                    `4. <b>Name Search:</b> /nama [Nama Lengkap]\n` +
+                    `5. <b>Phone Info:</b> /phone_dork [08xx]\n` +
+                    `6. <b>Email Check:</b> /email [email]\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>Alat ini dioptimalkan untuk region Indonesia.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('sosmed', (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format: /fb [username]");
-      const user = args[1];
-      const reply = `<b>👥 FACEBOOK OSINT</b>\n` +
+      if (args.length < 2) return ctx.reply("Format: /sosmed [username]");
+      const user = args[1].replace('@', '');
+      const reply = `<b>📱 SOCIAL MEDIA DASHBOARD: @${user}</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `👤 <b>Target:</b> ${user}\n\n` +
-                    `🔗 <b>Profile Link:</b> <a href="https://www.facebook.com/${user}">facebook.com/${user}</a>\n` +
-                    `🔍 <b>Sowsear (Search):</b> <a href="https://sowsear.ch/facebook/${user}">View Data</a>\n` +
+                    `├ 📸 <b>IG:</b> <a href="https://www.instagram.com/${user}/">Instagram</a>\n` +
+                    `├ 🎵 <b>TT:</b> <a href="https://www.tiktok.com/@${user}">TikTok</a>\n` +
+                    `├ 🐦 <b>TW:</b> <a href="https://twitter.com/${user}">Twitter/X</a>\n` +
+                    `├ 👥 <b>FB:</b> <a href="https://www.facebook.com/${user}">Facebook</a>\n` +
+                    `├ 💼 <b>LI:</b> <a href="https://www.linkedin.com/in/${user}">LinkedIn</a>\n` +
+                    `├ 📦 <b>KS:</b> <a href="https://www.kaskus.co.id/profile/${user}">Kaskus</a>\n` +
+                    `└ 🎥 <b>YT:</b> <a href="https://www.youtube.com/@${user}">YouTube</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `<i>⚠️ Facebook menerapkan Graph API block. Lakukan manual view menggunakan Fake Account.</i>`;
+                    `<i>Gunakan /username untuk pengecekan otomatis 100+ situs.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
