@@ -107,8 +107,10 @@ async function startServer() {
   };
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
+  console.log(`[DEBUG] TELEGRAM_BOT_TOKEN exists: ${!!token}`);
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot;
+  if (!botInstance) console.error("[CRITICAL] botInstance is null! Check TELEGRAM_BOT_TOKEN in .env");
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
 
@@ -154,7 +156,7 @@ async function startServer() {
 
   // API routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", botInitialized: !!botInstance });
   });
 
   // Capture Bot User IP & Redirect
@@ -395,7 +397,9 @@ async function startServer() {
   });
 
   app.post('/api/log/:id/debug', (req, res) => {
-    console.log(`[CLIENT-DEBUG][${req.params.id}]:`, req.body);
+    const logPath = 'client_debug.log';
+    const logEntry = `[${new Date().toISOString()}][CLIENT-DEBUG][${req.params.id}]: ${JSON.stringify(req.body)}\n`;
+    fs.appendFileSync(logPath, logEntry);
     res.sendStatus(200);
   });
 

