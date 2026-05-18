@@ -41,7 +41,7 @@ export default function IpTools() {
           <div className="mt-4 p-3 bg-black border border-[#00ff00]/20 flex items-center space-x-3 text-[10px]">
             <Terminal className="w-4 h-4 text-[#00ff00]" />
             <span className="text-[#00ff00]/40 uppercase tracking-widest">Local_Identity:</span>
-            <span className="font-mono text-[#00ff00] font-bold">{ownIp}</span>
+            <span className="font-serif text-[#00ff00] font-bold">{ownIp}</span>
           </div>
         )}
       </div>
@@ -55,7 +55,7 @@ export default function IpTools() {
               value={ip}
               onChange={e => setIp(e.target.value)}
               placeholder="TARGET_IP_ADDR"
-              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-mono text-sm placeholder:text-[#00ff00]/20"
+              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-serif text-sm placeholder:text-[#00ff00]/20"
             />
           </div>
           <button
@@ -69,7 +69,7 @@ export default function IpTools() {
 
         {result && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="font-mono text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">TRACE_MANIFEST</h3>
+            <h3 className="font-serif text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">TRACE_MANIFEST</h3>
             
             {result.status === 'success' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +81,7 @@ export default function IpTools() {
                 <InfoCard label="VECTOR_COORDS" value={`${result.lat}, ${result.lon}`} />
               </div>
             ) : (
-              <div className="p-4 bg-red-500/10 border border-red-500/40 text-red-500 text-xs font-mono uppercase tracking-widest">
+              <div className="p-4 bg-red-500/10 border border-red-500/40 text-red-500 text-xs font-serif uppercase tracking-widest">
                 CRITICAL_ERROR: {result.message}
               </div>
             )}
@@ -96,7 +96,7 @@ function InfoCard({ label, value }: { label: string, value: string }) {
   return (
     <div className="p-4 bg-black border border-[#00ff00]/10 hover:border-[#00ff00]/30 transition-all group">
       <div className="text-[10px] text-[#00ff00]/40 mb-2 font-bold tracking-widest group-hover:text-[#00ff00]/60 transition-colors uppercase">{label}</div>
-      <div className="font-mono text-sm text-[#00ff00] font-bold">{value || 'NULL'}</div>
+      <div className="font-serif text-sm text-[#00ff00] font-bold">{value || 'NULL'}</div>
     </div>
   );
 }

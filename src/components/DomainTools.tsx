@@ -60,7 +60,7 @@ export default function DomainTools() {
               value={domain}
               onChange={e => setDomain(e.target.value)}
               placeholder="TARGET_DOMAIN"
-              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-mono text-sm placeholder:text-[#00ff00]/20"
+              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-serif text-sm placeholder:text-[#00ff00]/20"
             />
           </div>
           <div className="flex space-x-2">
@@ -96,13 +96,13 @@ export default function DomainTools() {
 
           <div className="relative">
             {activeTab === 'whois' && whoisResult && (
-              <div className="bg-black/50 rounded border border-[#00ff00]/20 p-6 max-h-[450px] overflow-y-auto font-mono text-xs text-[#00ff00]/80 whitespace-pre-wrap leading-relaxed shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]">
+              <div className="bg-black/50 rounded border border-[#00ff00]/20 p-6 max-h-[450px] overflow-y-auto font-serif text-xs text-[#00ff00]/80 whitespace-pre-wrap leading-relaxed shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]">
                 {whoisResult}
               </div>
             )}
             
             {activeTab === 'dns' && dnsResult && (
-              <div className="bg-black/50 rounded border border-[#00ff00]/20 p-6 max-h-[450px] overflow-y-auto font-mono text-xs text-[#00ff00]/80 whitespace-pre-wrap leading-relaxed shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]">
+              <div className="bg-black/50 rounded border border-[#00ff00]/20 p-6 max-h-[450px] overflow-y-auto font-serif text-xs text-[#00ff00]/80 whitespace-pre-wrap leading-relaxed shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]">
                 {dnsResult}
               </div>
             )}

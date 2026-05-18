@@ -45,7 +45,7 @@ export default function SocialScanner() {
               value={username}
               onChange={e => setUsername(e.target.value.trim().toLowerCase())}
               placeholder="TARGET_USERNAME"
-              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-mono text-sm placeholder:text-[#00ff00]/20"
+              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-serif text-sm placeholder:text-[#00ff00]/20"
             />
           </div>
           <button
@@ -59,7 +59,7 @@ export default function SocialScanner() {
 
         {result && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="font-mono text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2 flex justify-between">
+            <h3 className="font-serif text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2 flex justify-between">
               <span>SCAN_REPORT: @{result.username}</span>
               <span>STATE: PROCESSED</span>
             </h3>
@@ -89,7 +89,7 @@ export default function SocialScanner() {
                         {item.status === 403 || item.status === 429 ? 'GRID_LOCKED' : 'NULL_DATA'}
                       </span>
                     )}
-                    <span className="text-[8px] opacity-20 font-mono">#{idx+1024}</span>
+                    <span className="text-[8px] opacity-20 font-serif">#{idx+1024}</span>
                   </div>
                 </a>
               ))}

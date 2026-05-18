@@ -57,7 +57,7 @@ export default function StealthLogger() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Configuration */}
           <div className="space-y-6">
-            <h3 className="font-mono text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">NODE_CONFIG</h3>
+            <h3 className="font-serif text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">NODE_CONFIG</h3>
             
             <div className="space-y-4">
               <div>
@@ -65,7 +65,7 @@ export default function StealthLogger() {
                 <select 
                   value={selectedTmpl}
                   onChange={e => setSelectedTmpl(e.target.value)}
-                  className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded px-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 font-mono text-sm appearance-none cursor-pointer hover:bg-[#00ff00]/5"
+                  className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded px-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 font-serif text-sm appearance-none cursor-pointer hover:bg-[#00ff00]/5"
                 >
                   {templates.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
@@ -80,7 +80,7 @@ export default function StealthLogger() {
                   value={redirectUrl}
                   onChange={e => setRedirectUrl(e.target.value)}
                   placeholder="https://google.com"
-                  className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded px-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 font-mono text-sm placeholder:text-[#00ff00]/20"
+                  className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded px-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 font-serif text-sm placeholder:text-[#00ff00]/20"
                 />
               </div>
 
@@ -97,13 +97,13 @@ export default function StealthLogger() {
 
           {/* Details & Output */}
           <div className="space-y-6">
-            <h3 className="font-mono text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">OUTPUT_STREAMS</h3>
+            <h3 className="font-serif text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">OUTPUT_STREAMS</h3>
             
             {generatedLink ? (
               <div className="space-y-4 animate-in zoom-in-95 duration-300">
                 <div className="p-4 bg-[#00ff00]/10 border border-[#00ff00]/40 rounded relative group">
                   <div className="text-[9px] font-bold text-[#00ff00] mb-2 tracking-widest uppercase">UNIQUE_UPLINK_URL:</div>
-                  <div className="font-mono text-xs break-all pr-12 text-white font-bold select-all">{generatedLink}</div>
+                  <div className="font-serif text-xs break-all pr-12 text-white font-bold select-all">{generatedLink}</div>
                   <button 
                     onClick={copyToClipboard}
                     className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-[#00ff00]/20 text-[#00ff00] rounded transition-all"

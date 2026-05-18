@@ -12,7 +12,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#00ff00] font-mono selection:bg-[#00ff00]/30 selection:text-black">
+    <div className="min-h-screen bg-[#050505] text-[#00ff00] font-serif selection:bg-[#00ff00]/30 selection:text-black">
       {/* Scanline Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-30"></div>
       
@@ -151,7 +151,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       }`}
     >
       <span className={active ? 'animate-pulse' : ''}>{icon}</span>
-      <span className="text-[11px] font-bold tracking-[0.2em]">{label}</span>
+      <span className="text-[11px] font-bold tracking-[0.2em] font-serif">{label}</span>
       {active && <div className="ml-auto text-[10px] animate-pulse">_ACTIVE</div>}
     </button>
   );
