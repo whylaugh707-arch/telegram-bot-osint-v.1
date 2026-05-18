@@ -71,16 +71,33 @@ async function startServer() {
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot; // For compatibility with existing code
 
+  // Webhook setup (secret path)
+  const webhookSecret = token ? token.split(':')[0] : null;
+  const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
+
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
   app.get('/health', (req, res) => {
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      bot_connected: !!(bot && bot.telegram)
+      bot_token_present: !!token,
+      webhook_path: webhookPath
     });
   });
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  if (bot && webhookPath) {
+    app.post(webhookPath, (req, res) => {
+        if (req.body && req.body.update_id) {
+           console.log(`[${new Date().toISOString()}] Bot Webhook Received Update: ${req.body.update_id}`);
+        }
+        bot.handleUpdate(req.body, res).catch(err => {
+           console.error("Bot Handle Update Error:", err);
+           if (!res.headersSent) res.sendStatus(500);
+        });
+    });
+  }
 
   app.use((req, res, next) => {
     // Attempt to capture public URL
@@ -1725,24 +1742,46 @@ async function startServer() {
       ctx.reply(msg, { parse_mode: 'HTML' });
     });
 
-    if (bot) {
-      bot.launch({ dropPendingUpdates: true })
-        .then(() => console.log("Telegram bot is running (Polling)"))
-        .catch(err => console.error("Failed to launch bot:", err));
-    }
-
     process.once('SIGINT', () => bot && bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
   } else {
     console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", async () => {
     console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
     console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
-    console.log(`[${new Date().toISOString()}] NODE_ENV: ${process.env.NODE_ENV}`);
     console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
-  }).on('error', (err: any) => {
+
+    // LAUNCH BOT AFTER SERVER IS UP
+    if (bot && token) {
+      try {
+        // Simple heuristic for Railway/Production
+        const isProd = process.env.VITE_APP_URL && !process.env.VITE_APP_URL.includes('localhost');
+        
+        if (isProd && webhookPath) {
+          const fullWebhookUrl = `${process.env.VITE_APP_URL.replace(/\/$/, '')}${webhookPath}`;
+          console.log(`[${new Date().toISOString()}] Setting Webhook: ${fullWebhookUrl}`);
+          await bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true });
+          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: WEBHOOK ACTIVE`);
+        } else {
+          console.log(`[${new Date().toISOString()}] Starting Polling Mode...`);
+          bot.launch({ dropPendingUpdates: true }).catch(err => {
+            if (err.code === 409) {
+              console.error("⚠️ Bot Conflict (409). Polling already active elsewhere.");
+            } else {
+              console.error("❌ Bot Launch Error:", err);
+            }
+          });
+          console.log(`[${new Date().toISOString()}] ✅ Telegram Bot: POLLING ACTIVE`);
+        }
+      } catch (err: any) {
+        console.error("❌ Failed to initialize bot connection:", err.message);
+      }
+    }
+  });
+
+  server.on('error', (err: any) => {
     console.error(`[${new Date().toISOString()}] CRITICAL SERVER ERROR:`, err);
     process.exit(1);
   });
