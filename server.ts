@@ -34,6 +34,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  console.log(`[STARTUP] Target Port: ${PORT} (from env: ${process.env.PORT || 'not set'})`);
 
   // Stateless Trap ID Generation & Validation
   const generateTrapId = (chatId: number) => {
@@ -62,11 +63,11 @@ async function startServer() {
   app.get('/health', (req, res) => res.status(200).send('OK'));
   app.get('/healthz', (req, res) => res.status(200).json({ status: "ok", timestamp: new Date().toISOString() }));
   
-  // Root path check (Railway health check often hits /)
+  // Root path check (Expressly handle Railway/Platform health checks)
   app.get('/', (req, res, next) => {
-    if (req.headers['user-agent']?.includes('HealthCheck') || req.path === '/') {
-        // We will let express.static handle it if it's a real user, 
-        // but this ensures we have something defined if middleware fails.
+    const ua = req.headers['user-agent'] || '';
+    if (ua.includes('HealthCheck') || ua.includes('Railway') || ua.includes('GoogleHC')) {
+        return res.status(200).send('OK');
     }
     next();
   });
@@ -1790,30 +1791,30 @@ async function startServer() {
     console.log("TELEGRAM_BOT_TOKEN not provided, skipping Telegram bot setup.");
   }
 
-  // LAUNCH BOT
-  if (bot && token) {
-    const isProd = process.env.NODE_ENV === 'production' || appHost.includes('railway.app');
-    
-    if (isProd && webhookPath) {
-      const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
-      console.log(`[BOT] SETTING WEBHOOK: ${fullWebhookUrl}`);
-      bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true }).catch(err => {
-         console.error("[BOT] Webhook Error:", err.message);
-         console.log("[BOT] Falling back to Polling...");
-         bot.launch({ dropPendingUpdates: true }).catch(e => console.error("[BOT] Polling Fallback Fail:", e.message));
-      });
-    } else {
-      console.log("[BOT] STARTING POLLING...");
-      bot.launch({ dropPendingUpdates: true }).catch(err => {
-        if (err.code === 409) console.warn("[BOT] Conflict: already running elsewhere.");
-        else console.error("[BOT] Launch Error:", err.message);
-      });
-    }
-  }
-
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`[${new Date().toISOString()}] SERVER ONLINE ON PORT ${PORT}`);
     console.log(`[${new Date().toISOString()}] HOST: ${appHost}`);
+
+    // LAUNCH BOT ONLY AFTER SERVER IS LISTENING
+    if (bot && token) {
+      const isProd = process.env.NODE_ENV === 'production' || appHost.includes('railway.app');
+      
+      if (isProd && webhookPath) {
+        const fullWebhookUrl = `${appHost.replace(/\/$/, '')}${webhookPath}`;
+        console.log(`[BOT] SETTING WEBHOOK: ${fullWebhookUrl}`);
+        bot.telegram.setWebhook(fullWebhookUrl, { drop_pending_updates: true }).catch(err => {
+           console.error("[BOT] Webhook Error:", err.message);
+           console.log("[BOT] Falling back to Polling...");
+           bot.launch({ dropPendingUpdates: true }).catch(e => console.error("[BOT] Polling Fallback Fail:", e.message));
+        });
+      } else {
+        console.log("[BOT] STARTING POLLING...");
+        bot.launch({ dropPendingUpdates: true }).catch(err => {
+          if (err.code === 409) console.warn("[BOT] Conflict: already running elsewhere.");
+          else console.error("[BOT] Launch Error:", err.message);
+        });
+      }
+    }
   });
 
   server.on('error', (err: any) => {
