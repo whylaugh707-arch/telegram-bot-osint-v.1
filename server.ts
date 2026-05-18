@@ -491,8 +491,8 @@ async function startServer() {
   }
 
   // TELEGRAM BOT SETUP
-  const ADMIN_ID = 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
-  const PASSWORD = "112233";
+  const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
+  const PASSWORD = process.env.PASSWORD || "112233";
   let authenticatedUsers = new Set<number>();
   let agreementUsers = new Set<number>();
   
@@ -1745,11 +1745,13 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`=================================`);
-    console.log(`SERVER IS RUNNING SUCCESSFULLY!`);
-    console.log(`PORT: ${PORT}`);
-    console.log(`TIME: ${new Date().toISOString()}`);
-    console.log(`=================================`);
+    console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
+    console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
+    console.log(`[${new Date().toISOString()}] NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
+  }).on('error', (err: any) => {
+    console.error(`[${new Date().toISOString()}] CRITICAL SERVER ERROR:`, err);
+    process.exit(1);
   });
 }
 
