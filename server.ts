@@ -58,6 +58,27 @@ async function startServer() {
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
+  // 1. TOP-LEVEL HEALTH CHECK (Must be before any heavy middleware)
+  app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+
+  app.get('/healthz', (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      bot: !!process.env.TELEGRAM_BOT_TOKEN
+    });
+  });
+
+  // Request logs for production debugging
+  app.use((req, res, next) => {
+    if (req.path !== '/health' && req.path !== '/healthz') {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - ${req.headers['x-forwarded-for'] || req.socket.remoteAddress}`);
+    }
+    next();
+  });
+
   const escapeHTML = (text: string) => {
     return text.replace(/[&<>"']/g, (m) => ({
       '&': '&amp;',
@@ -78,16 +99,6 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-  // Basic Health Check
-  app.get('/health', (req, res) => {
-    res.status(200).json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      bot: !!bot,
-      host: appHost
-    });
-  });
 
   if (bot && webhookPath) {
     app.post(webhookPath, (req, res) => {
@@ -492,15 +503,16 @@ async function startServer() {
   });
   // ==============================================
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  // Serve static files from dist if in production
+  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), 'dist'));
+
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use((req, res, next) => {
-      // Don't intercept /t or /api
-      if (req.path.startsWith('/t/') || req.path.startsWith('/api')) {
+      if (req.path.startsWith('/t/') || req.path.startsWith('/api') || req.path === '/health' || req.path === '/healthz') {
         return next();
       }
       vite.middlewares(req, res, next);
@@ -508,18 +520,26 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    
+    // SPA Fallback
     app.get('*', (req, res, next) => {
-      // Avoid sending index.html for api or /t routes by letting them fall through
-      if (req.path.startsWith('/api') || req.path.startsWith('/t/')) {
+      if (req.path.startsWith('/api') || req.path.startsWith('/t/') || req.path === '/health' || req.path === '/healthz') {
         return next();
       }
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('<h2>System Ready</h2><p>Terminal UI is being deployed. Check back in a moment.</p>');
+      }
     });
   }
 
-  // 404 Handler for API and Traps
+  // 404 Handler (Moved to the correct position at the end of the chain)
   app.use((req, res) => {
-    res.status(404).send('<h2>Error 404: Endpoint Not Found</h2>');
+    if (!res.headersSent) {
+      res.status(404).send('<h2>Error 404: Endpoint Not Found</h2>');
+    }
   });
 
   // Global Error Handler
@@ -1776,6 +1796,18 @@ async function startServer() {
     console.log(`[${new Date().toISOString()}] SERVER STARTUP SUCCESS!`);
     console.log(`[${new Date().toISOString()}] Listening on PORT: ${PORT}`);
     console.log(`[${new Date().toISOString()}] App Host: ${appHost}`);
+    console.log(`[${new Date().toISOString()}] Current Dir: ${process.cwd()}`);
+    try {
+      const files = fs.readdirSync(process.cwd());
+      console.log(`[${new Date().toISOString()}] Root Files: ${files.join(', ')}`);
+      if (fs.existsSync('dist')) {
+        console.log(`[${new Date().toISOString()}] Dist Files: ${fs.readdirSync('dist').join(', ')}`);
+      } else {
+        console.warn(`[${new Date().toISOString()}] ⚠️ WARNING: 'dist' directory not found! Rendering UI will fail.`);
+      }
+    } catch (e) {
+      console.error("Diagnostic failed", e);
+    }
 
     // LAUNCH BOT AFTER SERVER IS BINDED
     if (bot && token) {
