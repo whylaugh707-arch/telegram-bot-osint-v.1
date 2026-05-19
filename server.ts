@@ -20,6 +20,8 @@ import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import QRCode from "qrcode";
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -2300,6 +2302,74 @@ async function startServer() {
 
       } catch (err) {
         ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, `❌ <b>Error Occured:</b>\nTarget down atau protected.`, { parse_mode: 'HTML' });
+      }
+    });
+
+    // WHATSAPP BOT INTEGRATION
+    let waConnecting = false;
+    bot.command('wa_connect', async (ctx) => {
+      if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
+      waConnecting = true;
+      const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...");
+      
+      const sessionDir = `./wa_auth_${ctx.from.id}`;
+      try {
+        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+        
+        const sock = makeWASocket({
+          auth: state,
+          printQRInTerminal: false,
+          browser: ['Trihexa666', 'Chrome', '1.0.0'],
+          syncFullHistory: false
+        });
+        
+        sock.ev.on('creds.update', saveCreds);
+        
+        sock.ev.on('connection.update', async (update) => {
+          const { connection, lastDisconnect, qr } = update;
+          
+          if (qr) {
+            try {
+              const qrBuffer = await QRCode.toBuffer(qr);
+              await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: "📱 <b>SCAN QR INI</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.", parse_mode: 'HTML' });
+            } catch(e) {
+              ctx.reply("❌ Gagal mengenerate QR code.");
+            }
+          }
+          
+          if (connection === 'close') {
+            const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            console.log('WA connection closed, reconnecting:', shouldReconnect);
+            if (shouldReconnect) {
+               ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).");
+            } else {
+               ctx.reply("❌ Sesi WA Logged Out. Silakan /wa_connect ulang.");
+               waConnecting = false;
+               try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
+            }
+          } else if (connection === 'open') {
+             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis.", { parse_mode: 'HTML' });
+             waConnecting = false;
+          }
+        });
+        
+        sock.ev.on('messages.upsert', async ({ messages, type }) => {
+           if (type !== 'notify') return;
+           const m = messages[0];
+           if (m.key.fromMe) return;
+           const jid = m.key.remoteJid;
+           const text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
+           if (text.startsWith('!ping')) {
+              await sock.sendMessage(jid!, { text: 'Pong dari Trihexa666 WA bot!' });
+           } else if (text.startsWith('!help')) {
+              await sock.sendMessage(jid!, { text: '🛠️ <b>Trihexa666 WA Bot</b> 🛠️\n\n- !ping : Test ping\n- !help : Bantuan\n- !osint : Coming soon' });
+           }
+        });
+        
+      } catch (err: any) {
+        waConnecting = false;
+        ctx.reply("❌ Gagal memulai WA Bot: " + err.message);
       }
     });
 

