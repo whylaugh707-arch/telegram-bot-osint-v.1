@@ -227,7 +227,10 @@ async function startServer() {
 
     const results = await Promise.all(platforms.map(async (platform) => {
         try {
-            const response = await fetchWithTimeout(platform.url, { method: 'GET' }, 3000);
+            const response = await fetchWithTimeout(platform.url, { 
+                method: 'GET',
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+            }, 5000);
             return {
                 name: platform.name,
                 url: platform.url,
@@ -235,7 +238,7 @@ async function startServer() {
                 status: response.status
             };
         } catch (e) {
-            return { name: platform.name, url: platform.url, found: false, status: 'TIMEOUT' };
+            return { name: platform.name, url: platform.url, found: false, status: 'TIMEOUT/ERROR' };
         }
     }));
 
@@ -919,8 +922,8 @@ async function startServer() {
       [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')],
-      [Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
+      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ', 'menu_qr')],
+      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help'), Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -936,8 +939,21 @@ async function startServer() {
         [Markup.button.callback('🎣 ʟɪɴᴋ ʟᴏɢɢᴇʀ', 'menu_logger'), Markup.button.callback('📡 ᴏꜱɪɴᴛ ᴀᴅᴠ', 'menu_osint_adv')],
         [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🛠️ ᴛᴏᴏʟꜱ', 'menu_tools')],
         [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ', 'menu_alarm')],
-        [Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
+        [Markup.button.callback('📱 ǫʀ ɢᴇɴ', 'menu_qr'), Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
       ]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_qr', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ɢᴇɴᴇʀᴀᴛᴇ Qʀ ᴄᴏᴅᴇ ᴅᴀʀɪ ʟɪɴᴋ ᴀᴘᴀᴘᴜɴ!\n\n` +
+                  `👉 <b>ᴄᴀʀᴀ ᴘᴇɴɢɢᴜɴᴀᴀɴ:</b>\n` +
+                  `ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ:\n<code>/qr [ʟɪɴᴋ ᴀᴛᴀᴜ ᴛᴇᴋꜱ ᴀɴᴅᴀ]</code>\n\n` +
+                  `ᴄᴏɴᴛᴏʜ:\n<code>/qr https://google.com</code>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
