@@ -885,6 +885,12 @@ async function startServer() {
                 return ctx.reply(aggMsg, { parse_mode: 'HTML', ...kb }).catch(e => console.error("Reply Error (Agreement):", e));
             }
 
+            // Auto-authenticate Owner WhatsApp Number
+            if (userId === 628211638627 && !authenticatedUsers.has(userId)) {
+                authenticatedUsers.add(userId);
+                saveAuth();
+            }
+            
             // If already authenticated, allow everything
             if (authenticatedUsers.has(userId)) return next();
             
@@ -2307,20 +2313,61 @@ async function startServer() {
 
     // WHATSAPP BOT INTEGRATION
     let waConnecting = false;
+    let globalWaSock: any = null;
+
+    // We hook the telegram.callApi to intercept WhatsApp targeted messages
+    const originalCallApi = bot.telegram.callApi.bind(bot.telegram);
+    bot.telegram.callApi = async (method: string, payload: any, options?: any) => {
+      if (payload && typeof payload.chat_id === 'string' && payload.chat_id.startsWith('@wa_')) {
+          const jid = payload.chat_id.replace('@wa_', '') + '@s.whatsapp.net';
+          if (globalWaSock) {
+              if (method === 'sendMessage' || method === 'editMessageText') {
+                  let text = payload.text || '';
+                  text = text.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
+                  
+                  // Add simulate typing before sending
+                  await globalWaSock.sendPresenceUpdate('composing', jid);
+                  await new Promise(r => setTimeout(r, 1000 + Math.random()*1500));
+                  await globalWaSock.sendPresenceUpdate('paused', jid);
+
+                  await globalWaSock.sendMessage(jid, { text });
+                  return { message_id: Date.now() }; 
+              } else if (method === 'sendPhoto') {
+                  let caption = payload.caption || '';
+                  caption = caption.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
+                  
+                  await globalWaSock.sendPresenceUpdate('composing', jid);
+                  await new Promise(r => setTimeout(r, 1500));
+                  await globalWaSock.sendPresenceUpdate('paused', jid);
+
+                  let source = payload.photo;
+                  if (typeof source === 'object' && source.source) source = source.source;
+                  await globalWaSock.sendMessage(jid, { image: source, caption });
+                  return { message_id: Date.now() }; 
+              }
+          }
+          return {};
+      }
+      return originalCallApi(method, payload, options);
+    };
+
     bot.command('wa_connect', async (ctx) => {
       if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
       waConnecting = true;
       const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...");
       
-      const sessionDir = `./wa_auth_${ctx.from.id}`;
+      const sessionDir = `./wa_auth_global`;
       try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         
         const sock = makeWASocket({
           auth: state,
           printQRInTerminal: false,
-          browser: ['Trihexa666', 'Chrome', '1.0.0'],
-          syncFullHistory: false
+          browser: ['Ubuntu', 'Chrome', '20.0.04'],
+          syncFullHistory: false,
+          markOnlineOnConnect: true,
+          generateHighQualityLinkPreview: true,
+          defaultQueryTimeoutMs: undefined
         });
         
         sock.ev.on('creds.update', saveCreds);
@@ -2338,18 +2385,21 @@ async function startServer() {
           }
           
           if (connection === 'close') {
+            globalWaSock = null;
             const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
             console.log('WA connection closed, reconnecting:', shouldReconnect);
             if (shouldReconnect) {
                ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).");
+               // Usually Baileys will just crash or we need to restart it automatically, pm2 will handle restart if it throws error
             } else {
-               ctx.reply("❌ Sesi WA Logged Out. Silakan /wa_connect ulang.");
+               ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.");
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
             }
           } else if (connection === 'open') {
-             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis.", { parse_mode: 'HTML' });
+             globalWaSock = sock;
+             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis dan mewarisi semua command Telegram.", { parse_mode: 'HTML' });
              waConnecting = false;
           }
         });
@@ -2358,12 +2408,30 @@ async function startServer() {
            if (type !== 'notify') return;
            const m = messages[0];
            if (m.key.fromMe) return;
+           
            const jid = m.key.remoteJid;
+           if (!jid || jid.includes('@g.us')) return; // Ignore groups to avoid ban/spam
+           
+           const senderNumber = jid.split('@')[0];
            const text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
-           if (text.startsWith('!ping')) {
-              await sock.sendMessage(jid!, { text: 'Pong dari Trihexa666 WA bot!' });
-           } else if (text.startsWith('!help')) {
-              await sock.sendMessage(jid!, { text: '🛠️ <b>Trihexa666 WA Bot</b> 🛠️\n\n- !ping : Test ping\n- !help : Bantuan\n- !osint : Coming soon' });
+           
+           if (text.startsWith('/')) {
+             await sock.readMessages([m.key]);
+             
+             // Inject to Telegram context 
+             const fakeUpdate = {
+                 update_id: Math.floor(Math.random() * 10000000),
+                 message: {
+                     message_id: Math.floor(Math.random() * 10000),
+                     from: { id: parseInt(senderNumber), is_bot: false, first_name: m.pushName || "WA User" },
+                     chat: { id: `@wa_${senderNumber}`, type: 'private' },
+                     date: Date.now(),
+                     text: text,
+                     entities: [{ type: 'bot_command', offset: 0, length: text.split(' ')[0].length }]
+                 }
+             };
+             
+             bot.handleUpdate(fakeUpdate as any).catch(console.error);
            }
         });
         

