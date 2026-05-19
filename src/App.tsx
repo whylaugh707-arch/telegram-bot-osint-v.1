@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen } from 'lucide-react';
+import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen, QrCode } from 'lucide-react';
 import IpTools from './components/IpTools';
 import DomainTools from './components/DomainTools';
 import EmailTools from './components/EmailTools';
@@ -7,8 +7,9 @@ import SocialScanner from './components/SocialScanner';
 import StealthLogger from './components/StealthLogger';
 import IndoOsint from './components/IndoOsint';
 import DorkGenerator from './components/DorkGenerator';
+import QrGenerator from './components/QrGenerator';
 
-type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork';
+type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
@@ -101,6 +102,12 @@ export default function App() {
             icon={<Zap className="w-4 h-4" />} 
             label="STEALTH_LOGGER" 
           />
+          <NavButton 
+            active={activeTab === 'qr'} 
+            onClick={() => setActiveTab('qr')} 
+            icon={<QrCode className="w-4 h-4" />} 
+            label="QR_GENERATOR" 
+          />
           
           <div className="mt-8 mb-6 px-4 py-2 bg-[#ff0000]/10 border-l-4 border-[#ff0000] text-[11px] font-bold tracking-tighter text-[#ff0000]">
             SYSTEM_STATUS
@@ -147,6 +154,7 @@ export default function App() {
               {activeTab === 'email' && <EmailTools />}
               {activeTab === 'dork' && <DorkGenerator />}
               {activeTab === 'logger' && <StealthLogger />}
+              {activeTab === 'qr' && <QrGenerator />}
             </div>
           </div>
         </div>
