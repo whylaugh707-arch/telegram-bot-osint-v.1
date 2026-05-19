@@ -931,7 +931,8 @@ async function startServer() {
       [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
       [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
       [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ', 'menu_qr')],
-      [Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help'), Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
+      [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')],
+      [Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
     ]);
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
@@ -947,8 +948,24 @@ async function startServer() {
         [Markup.button.callback('🎣 ʟɪɴᴋ ʟᴏɢɢᴇʀ', 'menu_logger'), Markup.button.callback('📡 ᴏꜱɪɴᴛ ᴀᴅᴠ', 'menu_osint_adv')],
         [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🛠️ ᴛᴏᴏʟꜱ', 'menu_tools')],
         [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ', 'menu_alarm')],
-        [Markup.button.callback('📱 ǫʀ ɢᴇɴ', 'menu_qr'), Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
+        [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('📱 ǫʀ ɢᴇɴ', 'menu_qr')],
+        [Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
       ]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_wa', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ɪɴᴛᴇɢʀᴀᴛɪᴏɴ</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ʜᴜʙᴜɴɢᴋᴀɴ ʙᴏᴛ ɪɴɪ ᴋᴇ ɴᴏᴍᴏʀ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ ꜱᴇʙᴀɢᴀɪ ʙᴏᴛ ᴀᴋᴛɪꜰ!\n` +
+                  `ꜱᴇᴍᴜᴀ ꜰɪᴛᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴋᴀɴ ᴛᴇʀꜱᴇᴅɪᴀ ᴅɪ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ.\n\n` +
+                  `👉 <b>ᴄᴀʀᴀ ᴘᴇɴɢɢᴜɴᴀᴀɴ:</b>\n` +
+                  `ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ: <code>/wa_connect</code>\n\n` +
+                  `⚠️ <b>ᴘᴇʀɪɴɢᴀᴛᴀɴ:</b>\n` +
+                  `ɢᴜɴᴀᴋᴀɴ ɴᴏᴍᴏʀ ᴋᴇᴅᴜᴀ/ʙᴏᴛ, ᴊᴀɴɢᴀɴ ɴᴏᴍᴏʀ ᴘʀɪʙᴀᴅɪ ᴜɴᴛᴜᴋ ᴍᴇɴɢʜɪɴᴅᴀʀɪ ʙᴀɴ.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -2363,7 +2380,7 @@ async function startServer() {
         const sock = makeWASocket({
           auth: state,
           printQRInTerminal: false,
-          browser: ['Ubuntu', 'Chrome', '20.0.04'],
+          browser: ['Windows', 'Chrome', '120.0.0.0'], // Safe web interface masking
           syncFullHistory: false,
           markOnlineOnConnect: true,
           generateHighQualityLinkPreview: true,
@@ -2415,9 +2432,15 @@ async function startServer() {
            const senderNumber = jid.split('@')[0];
            const text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
            
-           if (text.startsWith('/')) {
+           if (text) {
              await sock.readMessages([m.key]);
              
+             // Analyze entities if it's a command
+             let entities: any[] = [];
+             if (text.startsWith('/')) {
+                 entities.push({ type: 'bot_command', offset: 0, length: text.split(' ')[0].length });
+             }
+
              // Inject to Telegram context 
              const fakeUpdate = {
                  update_id: Math.floor(Math.random() * 10000000),
@@ -2425,9 +2448,9 @@ async function startServer() {
                      message_id: Math.floor(Math.random() * 10000),
                      from: { id: parseInt(senderNumber), is_bot: false, first_name: m.pushName || "WA User" },
                      chat: { id: `@wa_${senderNumber}`, type: 'private' },
-                     date: Date.now(),
+                     date: Math.floor(Date.now()/1000),
                      text: text,
-                     entities: [{ type: 'bot_command', offset: 0, length: text.split(' ')[0].length }]
+                     entities: entities.length > 0 ? entities : undefined
                  }
              };
              
