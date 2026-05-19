@@ -20,10 +20,10 @@ import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
-import * as baileys_module from "@whiskeysockets/baileys";
-// Fix esbuild default export issue
-const makeWASocket = (baileys_module as any).default || (baileys_module as any).makeWASocket || baileys_module;
-const { useMultiFileAuthState, DisconnectReason } = baileys_module;
+import pkg from "@whiskeysockets/baileys";
+const makeWASocket = (pkg as any).default || (pkg as any).makeWASocket || pkg;
+const { useMultiFileAuthState, DisconnectReason } = pkg;
+
 
 import QRCode from "qrcode";
 
