@@ -144,15 +144,8 @@ async function startServer() {
   }
 
   app.use((req, res, next) => {
-    // Attempt to capture public URL
-    const hostObj = req.headers['x-forwarded-host'] || req.headers.host;
-    if (hostObj) {
-      const hostStr = Array.isArray(hostObj) ? hostObj[0] : hostObj;
-      if (hostStr.includes('.run.app') || hostStr.includes('.railway.app') || hostStr.includes('ais-dev')) {
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        appHost = `${protocol}://${hostStr}`;
-      }
-    }
+    // Dynamic host checking disabled by user request. 
+    // Always use the fixed Railway URL for bot generation.
     next();
   });
 
