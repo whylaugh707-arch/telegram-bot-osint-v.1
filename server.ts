@@ -70,7 +70,7 @@ async function startServer() {
     }
   };
 
-  // Default to the Railway App URL as requested. It will still update dynamically based on host headers.
+  // Default to the Railway App URL as requested.
   let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
