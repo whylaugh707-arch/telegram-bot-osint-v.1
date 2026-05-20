@@ -2504,13 +2504,10 @@ async function startServer() {
         // [4] HTTP BANNER GRABBING
         let bannerInfo = "HTTP Unreachable";
         try {
-           const httpRes = await fetch(`http://${target}`, { redirect: 'manual', signal: AbortSignal.timeout(3000) });
-           bannerInfo = `Server: ${httpRes.headers.get('server') || 'Hidden'}\nX-Powered-By: ${httpRes.headers.get('x-powered-by') || 'Hidden'}\nStatus: ${httpRes.status}`;
-        } catch(e) {
-           try {
-              const httpsRes = await fetch(`https://${target}`, { redirect: 'manual', signal: AbortSignal.timeout(3000) });
-              bannerInfo = `Server: ${httpsRes.headers.get('server') || 'Hidden'}\nStatus: ${httpsRes.status}`;
-           } catch(e) {}
+           const httpRes = await fetch(`http://${target}`, { timeout: 2000 } as any);
+           bannerInfo = `Status: ${httpRes.status}\nServer: ${httpRes.headers.get('server') || 'Unknown'}`;
+        } catch (e) {
+           bannerInfo = "No HTTP Response on port 80";
         }
         
         const finalTxt = `✅ <b>DEEP_SCAN_COMPLETED:</b> <code>${target}</code>\n` +
