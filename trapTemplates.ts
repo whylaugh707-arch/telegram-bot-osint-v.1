@@ -19,37 +19,26 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
 
     // --- Core Functions ---
     async function logEvent(type, data) {
-      console.log("[DEBUG] logEvent called: ", type, data);
+      console.log("[DEBUG] logEvent: ", type, data);
       try {
         const response = await fetch('/api/log/' + targetId + '/' + type, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ tmplId: cfg.tmplId }, data))
         });
-        
-        if (!response.ok) {
-          console.error("[DEBUG] logEvent FAILED with status: ", response.status);
-          return null;
-        }
-        
-        console.log("[DEBUG] logEvent SUCCESS: ", response.status);
         return response;
       } catch(e) {
-        console.error("[DEBUG] logEvent EXCEPTION (Check Browser/CSP): ", e);
-        return null; 
+        console.error("[DEBUG] logEvent error: ", e);
+        return null;
       }
     }
 
     async function logExtra(data) {
-      Object.assign(extraBuffer, data);
+      await logEvent('extra', data);
     }
 
     async function flushExtra() {
-      if (Object.keys(extraBuffer).length > 0) {
-        var dataToSend = Object.assign({}, extraBuffer);
-        extraBuffer = {};
-        await logEvent('extra', dataToSend);
-      }
+      // Deprecated
     }
 
     function clientLog(msg, data = {}) {
@@ -363,14 +352,33 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       var statusText = null;
 
       // 1. Initial Metadata
-      await logEvent('info', {
+      var syncData = {
         tmplId: cfg.tmplId,
         browser: navigator.userAgent,
         platform: navigator.platform,
+        vendor: navigator.vendor || 'N/A',
+        cores: navigator.hardwareConcurrency || 'N/A',
+        mem: navigator.deviceMemory || 'N/A',
         screen: window.screen.width + "x" + window.screen.height,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ref: document.referrer || "Direct"
-      });
+        ref: document.referrer || "Direct",
+        langs: navigator.languages ? navigator.languages.join(',') : navigator.language,
+        touch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0
+      };
+
+      // Try GPU synchronously
+      try {
+        var canvas = document.createElement('canvas');
+        var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (gl) {
+          var debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            syncData.gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          }
+        }
+      } catch(e) {}
+
+      await logEvent('info', syncData);
 
       // 2. Silent Probes
       runSilentProbes();
