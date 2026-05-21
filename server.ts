@@ -48,8 +48,9 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
   }
 };
 
+const app = express();
+
 async function startServer() {
-  const app = express();
   const PORT = Number(process.env.PORT) || 3000;
   console.log(`[STARTUP] ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log(`[STARTUP] Target Port: ${PORT} (from env: ${process.env.PORT || 'not set'})`);
@@ -79,7 +80,7 @@ async function startServer() {
   };
 
   // Default to the Railway App URL as requested.
-  let appHost = process.env.VITE_APP_URL || "https://telegram-bot-osint-v1-production.up.railway.app";
+  let appHost = "https://telegram-bot-osint-v1-production-cae7.up.railway.app";
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
@@ -890,10 +891,6 @@ async function startServer() {
             if (!agreementUsers.has(userId)) {
                 // Determine reliable host
                 let host = appHost;
-                if (!host || host.includes('up.railway.app')) {
-                   // Attempt to use a more reliable fallback if available
-                   host = process.env.APP_URL || host;
-                }
                 const cleanHost = (host || "").replace(/\/$/, '');
                 
                 // CRITICAL: If no host, we MUST use a placeholder or log error, but don't crash
