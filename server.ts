@@ -142,6 +142,7 @@ async function startServer() {
   const PASSWORD = process.env.PASSWORD || "112233";
   let authenticatedUsers = new Set<number>();
   let agreementUsers = new Set<number>();
+  let waUnlockedUsers = new Set<number>();
 
   try {
     if (fs.existsSync('auth.json')) {
@@ -150,10 +151,14 @@ async function startServer() {
     if (fs.existsSync('agreement.json')) {
       agreementUsers = new Set(JSON.parse(fs.readFileSync('agreement.json', 'utf8')));
     }
+    if (fs.existsSync('wa_auth.json')) {
+      waUnlockedUsers = new Set(JSON.parse(fs.readFileSync('wa_auth.json', 'utf8')));
+    }
   } catch (e) { console.error("Error loading auth files", e); }
 
   const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
   const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
+  const saveWaAuth = () => { fs.writeFileSync('wa_auth.json', JSON.stringify([...waUnlockedUsers])); };
 
   if (bot && webhookPath) {
     app.post(webhookPath, (req, res) => {
@@ -1097,6 +1102,15 @@ async function startServer() {
 
     bot.action('menu_wa', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
+      if (!ctx.from) return;
+      if (!waUnlockedUsers.has(ctx.from.id)) {
+        const txt = `🔒 <b>ꜰɪᴛᴜʀ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ᴛᴇʀᴋᴜɴᴄɪ</b>\n\n` +
+                    `ꜱɪʟᴀʜᴋᴀɴ ᴍᴀꜱᴜᴋᴋᴀɴ ᴘᴀꜱꜱᴡᴏʀᴅ ᴜɴᴛᴜᴋ ᴍᴇᴍʙᴜᴋᴀ. ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ:\n\n` +
+                    `<code>/wa_login [password]</code>`;
+        const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+        ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+        return;
+      }
       const txt = `<b>📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ɪɴᴛᴇɢʀᴀᴛɪᴏɴ</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ʜᴜʙᴜɴɢᴋᴀɴ ʙᴏᴛ ɪɴɪ ᴋᴇ ɴᴏᴍᴏʀ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ ꜱᴇʙᴀɢᴀɪ ʙᴏᴛ ᴀᴋᴛɪꜰ!\n` +
@@ -2883,7 +2897,23 @@ async function startServer() {
        startWAConnection();
     }
 
+    bot.command('wa_login', async (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("💬 <b>Format Salah</b>\nGunakan: <code>/wa_login [password]</code>", {parse_mode: 'HTML'});
+      if (args[1] === "19281933") {
+        if (!ctx.from) return;
+        waUnlockedUsers.add(ctx.from.id);
+        saveWaAuth();
+        ctx.reply("✅ <b>Akses WhatsApp Bot Terbuka!</b>\nSilahkan gunakan menu WA Bot kembali.", {parse_mode: 'HTML'});
+      } else {
+        ctx.reply("❌ <b>Password Salah!</b>", {parse_mode: 'HTML'});
+      }
+    });
+
     bot.command('wa_connect', async (ctx) => {
+      if (!ctx.from || !waUnlockedUsers.has(ctx.from.id)) {
+        return ctx.reply("🔒 <b>Fitur Terkunci</b>\nSilahkan login terlebih dahulu menggunakan: <code>/wa_login [password]</code>", {parse_mode: 'HTML'});
+      }
       if (globalWaSock) return ctx.reply("✅ WA Bot sudah terkoneksi sebelumnya.");
       if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
       waConnecting = true;
