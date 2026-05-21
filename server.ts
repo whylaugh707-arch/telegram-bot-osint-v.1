@@ -2793,13 +2793,36 @@ async function startServer() {
         
         sock.ev.on('creds.update', saveCreds);
         
+        let lastQrMessageId: number | null = null;
+        let qrCount = 0;
+
         sock.ev.on('connection.update', async (update: any) => {
           const { connection, lastDisconnect, qr } = update;
           
           if (qr && ctx) {
+            qrCount++;
+            if (qrCount > 5) {
+               waConnecting = false;
+               if (lastQrMessageId) {
+                  ctx.telegram.deleteMessage(ctx.chat.id, lastQrMessageId).catch(() => {});
+               }
+               ctx.reply("❌ <b>Koneksi Dibatalkan</b>\nQR code tidak di-scan setelah beberapa menit. Silahkan ulangi perintah /wa_connect jika ingin menyambungkan kembali.", { parse_mode: 'HTML' }).catch(() => {});
+               try {
+                  sock.logout().catch(() => {});
+                  sock.end(undefined);
+               } catch(e){}
+               return;
+            }
+
             try {
               const qrBuffer = await QRCode.toBuffer(qr);
-              await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: "📱 <b>SCAN QR INI</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.", parse_mode: 'HTML' }).catch(() => {});
+              if (lastQrMessageId) {
+                 await ctx.telegram.deleteMessage(ctx.chat.id, lastQrMessageId).catch(() => {});
+              }
+              const qrMsg = await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: `📱 <b>SCAN QR INI [Percobaan ${qrCount}/5]</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.`, parse_mode: 'HTML' }).catch(() => null);
+              if (qrMsg) {
+                 lastQrMessageId = qrMsg.message_id;
+              }
             } catch(e) {
               if (ctx) ctx.reply("❌ Gagal mengenerate QR code.").catch(() => {});
             }
@@ -2820,6 +2843,9 @@ async function startServer() {
             }
           } else if (connection === 'open') {
              globalWaSock = sock;
+             if (lastQrMessageId && ctx) {
+                ctx.telegram.deleteMessage(ctx.chat.id, lastQrMessageId).catch(() => {});
+             }
              if (ctx) ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon otomatis.", { parse_mode: 'HTML' }).catch(() => {});
              else console.log("✅ WA Auto-Connected on Startup");
              waConnecting = false;
