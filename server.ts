@@ -964,7 +964,7 @@ async function startServer() {
             }
 
             // If verified but not authenticated, show lock message for any command/text
-            return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: <sup>${PASSWORD}</sup>) untuk melanjutkan.`, {parse_mode: 'HTML'}).catch(() => {});
+            return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: <code>${PASSWORD}</code>) untuk melanjutkan.`, {parse_mode: 'HTML'}).catch(() => {});
         } catch (err) {
             console.error("Bot Global Middleware Error:", err);
         }
