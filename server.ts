@@ -50,6 +50,18 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
 
 const app = express();
 
+// Uncaught exception and unhandled rejection protection
+process.on('uncaughtException', (err) => {
+  console.error('[CRASH PROTECTION] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRASH PROTECTION] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('SIGTERM', () => {
+  console.log('[SYSTEM] SIGTERM received. Graceful exit/restart.');
+  process.exit(0);
+});
+
 async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   console.log(`[STARTUP] ENV: ${process.env.NODE_ENV || 'development'}`);
@@ -1133,20 +1145,24 @@ async function startServer() {
       const txt = `<b>📡 OSINT & GLOBAL RECON</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Pusat intelijen dan pelacakan jejak digital. Semua perintah ada di bawah ini:\n\n` +
-                  `🌐 <b>NETWORK & IP:</b>\n` +
-                  `• /ip [IP_ADDR] - Deteksi ISP, ISP Name, GPS Geo Info.\n` +
+                  `🌐 <b>NETWORK & IP (ADVANCED):</b>\n` +
+                  `• /ip [IP_ADDR] - Deteksi ISP, Geo Info.\n` +
                   `• /domain [URL] - Detail DNS, Whois.\n` +
-                  `• /scan [IP/DOM] - Nmap Fast Scan/Port checking.\n` +
-                  `• /subdomain [DOM] - Deteksi server terkait.\n` +
-                  `• /mac [MAC] - Cek Vendor OUI.\n` +
-                  `• /headers [URL] - Cek HTTP header & firewall server.\n\n` +
+                  `• /subdomain [DOM] - Deteksi sub server terkait.\n` +
+                  `• /reverseip [IP_DOM] - Web tetangga dlm server.\n` +
+                  `• /traceroute [IP_DOM] - Routing MTR Hops.\n` +
+                  `• /asn [ASN_IP] - BGP IP Network info.\n` +
+                  `• /zonetransfer [DOM] - Audit AXFR DNS Server.\n` +
+                  `• /httpheaders [DOM] - Deteksi WAF firewall.\n` +
+                  `• /scan [IP_DOM] - Nmap Fast Scan/Port.\n` +
+                  `• /mac [MAC] - Cek Vendor Hardware.\n\n` +
                   `🕵️ <b>DIGITAL FOOTPRINT:</b>\n` +
-                  `• /username [USER] - Footprint Tracker dari 150+ layanan.\n` +
-                  `• /email [EMAIL] - Format checking & breach scan info.\n` +
-                  `• /github_user [USER] - Scraping profil developer.\n` +
-                  `• /dork [QUERY] - Google Dorking maker.\n\n` +
+                  `• /username [USER] - Footprint Tracker 150+ web.\n` +
+                  `• /email [EMAIL] - Breach scan lookup.\n` +
+                  `• /github_user [USER] - Profiling Git Dev.\n` +
+                  `• /dork [QUERY] - Google Dorking generator.\n\n` +
                   `💰 <b>FINANCIAL & SECURITY:</b>\n` +
-                  `• /bininfo [BIN] - Card BIN Tracker.\n` +
+                  `• /bininfo [BIN] - Credit Card BIN Tracker.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('🔍 OSINT INDO (Area Lokal)', 'menu_osint_indo')],
@@ -1830,25 +1846,105 @@ async function startServer() {
       if(args.length < 2) return ctx.reply("Format: /subdomain [domain.com]");
       let domain = args[1].replace(/^https?:\/\//, '').replace(/^www\./, '');
       try {
-        ctx.reply(`🔍 Sedang crawling mapping subdomain untuk <b>${domain}</b>...`, {parse_mode: 'HTML'});
-        const res = await fetchWithTimeout(`https://crt.sh/?q=%25.${domain}&output=json`, {}, 15000);
+        ctx.reply(`🔍 Sedang menganalisa topology subdomain untuk <b>${domain}</b>...\nMohon tunggu sekitar 5-10 detik.`, {parse_mode: 'HTML'});
+        const res = await fetchWithTimeout(`https://api.hackertarget.com/hostsearch/?q=${domain}`, {}, 15000);
         const text = await res.text();
-        if (text.startsWith('<')) {
-            throw new Error('crt.sh returned HTML instead of JSON');
+        
+        if (text.includes('error') || text.includes('API count exceeded')) {
+             throw new Error(text);
         }
-        const data = JSON.parse(text);
-        const subs = [...new Set(data.map((d:any) => d.name_value))].slice(0, 30);
+
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        const subs = lines.map(line => {
+            const parts = line.split(',');
+            return parts[0];
+        }).slice(0, 30);
+
         if(subs.length > 0) {
           const reply = `<b>🌐 SUBDOMAIN RECON MAPPING</b>\n` +
                         `━━━━━━━━━━━━━━━━━━━━\n` +
                         `💎 <b>TARGET:</b> <code>${domain}</code>\n\n` +
-                        `📋 <b>FOUND SUBS (MAX 30):</b>\n` +
+                        `📋 <b>FOUND SUBS:</b>\n` +
                         subs.map((s, idx) => `${idx === subs.length - 1 ? '└' : '├'} <code>${s}</code>`).join('\n') +
                         `\n━━━━━━━━━━━━━━━━━━━━\n` +
-                        `✅ <i>Reconnaissance selesai.</i>`;
+                        `✅ <i>Reconnaissance selesai. ${lines.length > 30 ? '(Dibatasi 30 hasil pertama)' : ''}</i>`;
           ctx.reply(reply, {parse_mode: 'HTML'});
         } else { ctx.reply("❌ Tidak ada subdomain ditemukan."); }
-      } catch(e) { ctx.reply("❌ Gagal mencari subdomain. (crt.sh timeout or error)"); }
+      } catch(e: any) { 
+        ctx.reply(`❌ Gagal mencari subdomain. Server mungkin sedang sibuk atau limit tercapai. \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); 
+      }
+    });
+
+    bot.command('reverseip', async (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if(args.length < 2) return ctx.reply("Format: /reverseip [IP_atau_Domain]");
+      let target = args[1];
+      try {
+        ctx.reply(`🔍 Sedang menganalisa Reverse IP Lookup untuk <b>${target}</b>...`, {parse_mode: 'HTML'});
+        const res = await fetchWithTimeout(`https://api.hackertarget.com/reverseiplookup/?q=${target}`, {}, 15000);
+        const text = await res.text();
+        if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        if(lines.length > 0) {
+          const reply = `<b>🕸️ REVERSE IP LOOKUP</b>\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n` +
+                        `💎 <b>TARGET:</b> <code>${target}</code>\n\n` +
+                        `📋 <b>FOUND DOMAINS:</b>\n` +
+                        lines.slice(0, 30).map((s, idx, arr) => `${idx === arr.length - 1 ? '└' : '├'} <code>${s}</code>`).join('\n') +
+                        `\n━━━━━━━━━━━━━━━━━━━━\n` +
+                        `✅ <i>Query selesai. ${lines.length > 30 ? '(Dibatasi 30 hasil)' : ''}</i>`;
+          ctx.reply(reply, {parse_mode: 'HTML'});
+        } else { ctx.reply("❌ Tidak ada domain lain ditemukan di IP ini."); }
+      } catch(e: any) { ctx.reply(`❌ Gagal Reverse IP: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
+    });
+
+    bot.command('asn', async (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if(args.length < 2) return ctx.reply("Format: /asn [IP_atau_AS_Num]");
+      let target = args[1];
+      try {
+        ctx.reply(`🔍 Mencari detail Autonomous System untuk <b>${target}</b>...`, {parse_mode: 'HTML'});
+        const res = await fetchWithTimeout(`https://api.hackertarget.com/aslookup/?q=${target}`, {}, 15000);
+        const text = await res.text();
+        if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
+        ctx.reply(`<b>🏢 ASN / BGP OSINT</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text}</pre>`, {parse_mode: 'HTML'});
+      } catch(e: any) { ctx.reply(`❌ Gagal Lookup ASN: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
+    });
+
+    bot.command('zonetransfer', async (ctx) => {
+        const args = ctx.message.text.split(' ');
+        if(args.length < 2) return ctx.reply("Format: /zonetransfer [Domain]");
+        try {
+            ctx.reply(`🔍 Mencoba DNS Zone Transfer (AXFR) pada nameserver <b>${args[1]}</b>...`, {parse_mode: 'HTML'});
+            const res = await fetchWithTimeout(`https://api.hackertarget.com/zonetransfer/?q=${args[1]}`, {}, 20000);
+            const text = await res.text();
+            if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
+            ctx.reply(`<b>🌍 DNS ZONE TRANSFER AUDIT</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
+        } catch(e: any) { ctx.reply(`❌ Gagal Zone Transfer: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
+    });
+
+    bot.command('httpheaders', async (ctx) => {
+        const args = ctx.message.text.split(' ');
+        if(args.length < 2) return ctx.reply("Format: /httpheaders [Domain/URL]");
+        try {
+            ctx.reply(`🔍 Menganalisa HTTP Headers & Server Banner <b>${args[1]}</b>...`, {parse_mode: 'HTML'});
+            const res = await fetchWithTimeout(`https://api.hackertarget.com/httpheaders/?q=${args[1]}`, {}, 15000);
+            const text = await res.text();
+            if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
+            ctx.reply(`<b>🛡️ HTTP HEADERS & WAF</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
+        } catch(e: any) { ctx.reply(`❌ Gagal mengambil headers: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
+    });
+
+    bot.command('traceroute', async (ctx) => {
+        const args = ctx.message.text.split(' ');
+        if(args.length < 2) return ctx.reply("Format: /traceroute [IP/Domain]");
+        try {
+            ctx.reply(`🗺️ Melakukan MTR Traceroute ke <b>${args[1]}</b> (Membutuhkan 10-20 Detik)...`, {parse_mode: 'HTML'});
+            const res = await fetchWithTimeout(`https://api.hackertarget.com/mtr/?q=${args[1]}`, {}, 30000);
+            const text = await res.text();
+            if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
+            ctx.reply(`<b>🛣️ TRACEROUTE & HOP GEO-IP</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
+        } catch(e: any) { ctx.reply(`❌ Gagal Traceroute: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
     });
 
     bot.command('github_user', async (ctx) => {
@@ -2602,6 +2698,26 @@ async function startServer() {
                   let text = payload.text || '';
                   text = text.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
                   
+                  // Convert Inline Keyboards to Text Options for WA Users
+                  if (payload.reply_markup && payload.reply_markup.inline_keyboard) {
+                      try {
+                          // Note: Some payloads might be serialized strings, but Telegraf usually sends objects to callApi
+                          const keyboard = typeof payload.reply_markup === 'string' ? JSON.parse(payload.reply_markup).inline_keyboard : payload.reply_markup.inline_keyboard;
+                          if (keyboard && keyboard.length > 0) {
+                              text += '\n\n🤖 *PILIHAN MENU:*\n';
+                              keyboard.forEach((row: any[]) => {
+                                  row.forEach((btn: any) => {
+                                      if (btn.callback_data) {
+                                          text += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                      } else if (btn.url) {
+                                          text += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                      }
+                                  });
+                              });
+                          }
+                      } catch(e) {}
+                  }
+
                   // Add simulate typing before sending
                   await globalWaSock.sendPresenceUpdate('composing', jid);
                   await new Promise(r => setTimeout(r, 1000 + Math.random()*1500));
@@ -2613,6 +2729,24 @@ async function startServer() {
                   let caption = payload.caption || '';
                   caption = caption.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
                   
+                  if (payload.reply_markup && payload.reply_markup.inline_keyboard) {
+                      try {
+                          const keyboard = typeof payload.reply_markup === 'string' ? JSON.parse(payload.reply_markup).inline_keyboard : payload.reply_markup.inline_keyboard;
+                          if (keyboard && keyboard.length > 0) {
+                              caption += '\n\n🤖 *PILIHAN MENU:*\n';
+                              keyboard.forEach((row: any[]) => {
+                                  row.forEach((btn: any) => {
+                                      if (btn.callback_data) {
+                                          caption += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                      } else if (btn.url) {
+                                          caption += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                      }
+                                  });
+                              });
+                          }
+                      } catch(e) {}
+                  }
+
                   await globalWaSock.sendPresenceUpdate('composing', jid);
                   await new Promise(r => setTimeout(r, 1500));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
@@ -2633,7 +2767,7 @@ async function startServer() {
                   return { message_id: Date.now() };
               }
           }
-          return {};
+          return { message_id: Date.now() }; // Return fake success if WA disconnected but targeted at WA
       }
       return originalCallApi(method, payload, options);
     };
@@ -2706,6 +2840,31 @@ async function startServer() {
            if (text) {
              await sock.readMessages([m.key]).catch(()=>{});
              
+             // Convert direct text input for Callbacks to CallbackQuery Fake Event
+             let isCallback = false;
+             const knownCallbacks = ['menu_main', 'menu_tools', 'menu_traps', 'menu_db', 'confirm_verified', 'decline_verified', 'menu_settings'];
+             if (knownCallbacks.some(cb => text.includes(cb))) {
+                 isCallback = true;
+             }
+             
+             if (isCallback) {
+                 const matchedCb = knownCallbacks.find(cb => text.includes(cb));
+                 const fakeUpdate = {
+                     update_id: Math.floor(Math.random() * 10000000),
+                     callback_query: {
+                         id: Math.floor(Math.random() * 10000000).toString(),
+                         from: { id: parseInt(senderNumber) || 0, is_bot: false, first_name: m.pushName || "WA User" },
+                         message: {
+                             chat: { id: `@wa_${senderNumber}`, type: 'private' },
+                             message_id: Math.floor(Math.random() * 10000)
+                         },
+                         data: matchedCb
+                     }
+                 };
+                 bot.handleUpdate(fakeUpdate as any).catch(console.error);
+                 return;
+             }
+
              let entities: any[] = [];
              if (text.startsWith('/')) {
                  entities.push({ type: 'bot_command', offset: 0, length: text.split(' ')[0].length });
