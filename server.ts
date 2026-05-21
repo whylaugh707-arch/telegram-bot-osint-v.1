@@ -2621,6 +2621,16 @@ async function startServer() {
                   if (typeof source === 'object' && source.source) source = source.source;
                   await globalWaSock.sendMessage(jid, { image: source, caption });
                   return { message_id: Date.now() }; 
+              } else if (method === 'sendAudio' || method === 'sendVoice') {
+                  let source = payload.audio || payload.voice;
+                  if (typeof source === 'object' && source.source) source = source.source;
+                  await globalWaSock.sendMessage(jid, { audio: source, mimetype: 'audio/mp4' });
+                  return { message_id: Date.now() };
+              } else if (method === 'sendDocument') {
+                  let source = payload.document;
+                  if (typeof source === 'object' && source.source) source = source.source;
+                  await globalWaSock.sendMessage(jid, { document: source, mimetype: 'application/octet-stream', fileName: 'file' });
+                  return { message_id: Date.now() };
               }
           }
           return {};
@@ -2628,12 +2638,7 @@ async function startServer() {
       return originalCallApi(method, payload, options);
     };
 
-    bot.command('wa_connect', async (ctx) => {
-      if (globalWaSock) return ctx.reply("✅ WA Bot sudah terkoneksi sebelumnya.");
-      if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
-      waConnecting = true;
-      const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...").catch(() => null);
-      
+    const startWAConnection = async (ctx?: any) => {
       const sessionDir = `./wa_auth_global`;
       try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -2654,15 +2659,15 @@ async function startServer() {
         
         sock.ev.on('creds.update', saveCreds);
         
-        sock.ev.on('connection.update', async (update) => {
+        sock.ev.on('connection.update', async (update: any) => {
           const { connection, lastDisconnect, qr } = update;
           
-          if (qr) {
+          if (qr && ctx) {
             try {
               const qrBuffer = await QRCode.toBuffer(qr);
               await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: "📱 <b>SCAN QR INI</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.", parse_mode: 'HTML' }).catch(() => {});
             } catch(e) {
-              ctx.reply("❌ Gagal mengenerate QR code.").catch(() => {});
+              if (ctx) ctx.reply("❌ Gagal mengenerate QR code.").catch(() => {});
             }
           }
           
@@ -2672,21 +2677,22 @@ async function startServer() {
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
             console.log('WA connection closed, reconnecting:', shouldReconnect);
             if (shouldReconnect) {
-               ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).").catch(() => {});
-               // Usually Baileys will just crash or we need to restart it automatically, pm2 will handle restart if it throws error
+               if (ctx) ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).").catch(() => {});
+               setTimeout(() => startWAConnection(ctx), 5000);
             } else {
-               ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.").catch(() => {});
+               if (ctx) ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.").catch(() => {});
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
             }
           } else if (connection === 'open') {
              globalWaSock = sock;
-             ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon pesan otomatis dan mewarisi semua command Telegram.", { parse_mode: 'HTML' }).catch(() => {});
+             if (ctx) ctx.reply("✅ <b>WHATSAPP BOT TERHUBUNG!</b>\nNomor ini sekarang merespon otomatis.", { parse_mode: 'HTML' }).catch(() => {});
+             else console.log("✅ WA Auto-Connected on Startup");
              waConnecting = false;
           }
         });
         
-        sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
            if (type !== 'notify') return;
            const m = messages[0];
            if (m.key.fromMe) return;
@@ -2700,13 +2706,11 @@ async function startServer() {
            if (text) {
              await sock.readMessages([m.key]).catch(()=>{});
              
-             // Analyze entities if it's a command
              let entities: any[] = [];
              if (text.startsWith('/')) {
                  entities.push({ type: 'bot_command', offset: 0, length: text.split(' ')[0].length });
              }
 
-             // Inject to Telegram context 
              const fakeUpdate = {
                  update_id: Math.floor(Math.random() * 10000000),
                  message: {
@@ -2725,8 +2729,21 @@ async function startServer() {
         
       } catch (err: any) {
         waConnecting = false;
-        ctx.reply("❌ Gagal memulai WA Bot: " + err.message).catch(() => {});
+        if (ctx) ctx.reply("❌ Gagal memulai WA Bot: " + err.message).catch(() => {});
       }
+    };
+
+    if (fs.existsSync('./wa_auth_global/creds.json')) {
+       console.log("Found WA session, attempting auto-connect...");
+       startWAConnection();
+    }
+
+    bot.command('wa_connect', async (ctx) => {
+      if (globalWaSock) return ctx.reply("✅ WA Bot sudah terkoneksi sebelumnya.");
+      if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
+      waConnecting = true;
+      const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...").catch(() => null);
+      startWAConnection(ctx);
     });
 
     // ALARM SYSTEM
