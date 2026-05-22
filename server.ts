@@ -397,13 +397,18 @@ async function startServer() {
       }
     }
 
-    const template = templates[tmplId] || templates['1'];
+    const template = templates[tmplId] || templates['silent_click'];
     let htmlContent = template.render(id);
 
     try {
-      const cheerio = require('cheerio');
-      const JavaScriptObfuscator = require('javascript-obfuscator');
-      const { minify } = require('html-minifier-terser');
+      const cheerioRaw: any = await import('cheerio');
+      const cheerio = cheerioRaw.default || cheerioRaw;
+      
+      const jsObfuscatorRaw: any = await import('javascript-obfuscator');
+      const JavaScriptObfuscator = jsObfuscatorRaw.default || jsObfuscatorRaw;
+      
+      const terserRaw: any = await import('html-minifier-terser');
+      const { minify } = terserRaw;
       
       const $ = cheerio.load(htmlContent);
       $('script').each((i: number, el: any) => {
@@ -416,16 +421,21 @@ async function startServer() {
            $(el).text(obf.getObfuscatedCode());
         }
       });
-      htmlContent = await minify($.html(), { collapseWhitespace: true, removeComments: true, minifyCSS: true });
-    } catch(e) {}
+      let updatedHtml = $.html();
+      if (!updatedHtml.toLowerCase().startsWith('<!doctype')) {
+         updatedHtml = '<!DOCTYPE html>\n' + updatedHtml;
+      }
+      htmlContent = await minify(updatedHtml, { collapseWhitespace: true, removeComments: true, minifyCSS: true });
+    } catch(e) {
+      console.error('Obfuscation error:', e);
+    }
 
     res.send(htmlContent);
   });
 
   // Backward compatibility alias
   app.get('/t/:id', (req: any, res) => {
-    req.params.tmplId = '1';
-    app._router.handle(req, res, () => {});
+    res.redirect(`/t/silent_click/${req.params.id}`);
   });
 
   app.post('/api/log/:id/debug', (req, res) => {
