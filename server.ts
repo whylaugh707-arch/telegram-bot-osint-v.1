@@ -72,12 +72,25 @@ async function startServer() {
     return Buffer.from(`${chatId}-OSINT-${crypto.randomUUID().slice(0,4)}`).toString('base64url');
   };
 
-  const suspeciousAgents = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
-
   const isSuspeciousAgent = (userAgent: string | undefined): boolean => {
     if (!userAgent) return false;
     const ua = userAgent.toLowerCase();
-    return suspeciousAgents.some(agent => ua.includes(agent)) || ua.includes('bot') || ua.includes('telegrambot');
+    
+    // Check if it's a known crawler, preview bot, or command-line tool
+    if (/(bot|spider|crawl|slurp|facebookexternalhit|whatsapp|preview|mediapartners)/i.test(ua)) {
+        // Exclude legitimate in-app browsers that happen to contain these strings
+        // E.g., Telegram in-app browser often has 'Telegram' but NOT 'bot'
+        // But what if WA crawler vs WA in-app?
+        // WA crawler = 'WhatsApp/2...'
+        // WA In-app = 'Mozilla/5.0 ... [FB_IAB...] ...'
+        if (ua.includes('mozilla/') && !ua.includes('compatible; bot') && !ua.includes('googlebot') && !ua.includes('telegrambot') && !ua.includes('facebookexternalhit')) {
+             return false; // Very likely a real browser (in-app or regular)
+        }
+        return true;
+    }
+    
+    const cmdTools = ['amphp', 'python', 'go-http-client', 'curl', 'wget'];
+    return cmdTools.some(agent => ua.includes(agent));
   };
 
   const getChatIdFromTrapId = (trapId: string): string | null => {

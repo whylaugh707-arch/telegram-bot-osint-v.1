@@ -89,7 +89,7 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
           if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
               navigator.mediaDevices.enumerateDevices().then(async function(devices) {
                   var mediaArr = devices.map(d => d.kind + ': ' + (d.label || 'unknown_device'));
-                  await logEvent('extra', { media_hardware: mediaArr.join('\n') });
+                  await logEvent('extra', { media_hardware: mediaArr.join('\\n') });
               });
           }
       } catch(e) {}
