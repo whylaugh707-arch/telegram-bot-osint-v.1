@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen, QrCode, Shield } from 'lucide-react';
+import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen, QrCode, Shield, Skull } from 'lucide-react';
 import IpTools from './components/IpTools';
 import DomainTools from './components/DomainTools';
 import EmailTools from './components/EmailTools';
@@ -8,9 +8,9 @@ import StealthLogger from './components/StealthLogger';
 import IndoOsint from './components/IndoOsint';
 import DorkGenerator from './components/DorkGenerator';
 import QrGenerator from './components/QrGenerator';
-import MikkoLink from './components/MikkoLink';
+import SantoPetrus from './components/SantoPetrus';
 
-type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'mikkolink';
+type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'santopetrus';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
@@ -110,10 +110,10 @@ export default function App() {
             label="QR_GENERATOR" 
           />
           <NavButton 
-            active={activeTab === 'mikkolink'} 
-            onClick={() => setActiveTab('mikkolink')} 
-            icon={<Shield className="w-4 h-4 text-[#00f3ff]" />} 
-            label="MIKKO_LINK" 
+            active={activeTab === 'santopetrus'} 
+            onClick={() => setActiveTab('santopetrus')} 
+            icon={<Skull className="w-4 h-4 text-[#ff0000]" />} 
+            label="SANTO_PETRUS" 
           />
           
           <div className="mt-8 mb-6 px-4 py-2 bg-[#ff0000]/10 border-l-4 border-[#ff0000] text-[11px] font-bold tracking-tighter text-[#ff0000]">
@@ -162,7 +162,7 @@ export default function App() {
               {activeTab === 'dork' && <DorkGenerator />}
               {activeTab === 'logger' && <StealthLogger />}
               {activeTab === 'qr' && <QrGenerator />}
-              {activeTab === 'mikkolink' && <MikkoLink />}
+              {activeTab === 'santopetrus' && <SantoPetrus />}
             </div>
           </div>
         </div>
