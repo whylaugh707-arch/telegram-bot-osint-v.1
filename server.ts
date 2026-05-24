@@ -3,7 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dns from "dns";
 import util from "util";
-import { Telegraf, Markup } from "telegraf";
+import { Telegraf, Markup, Telegram } from "telegraf";
 import "dotenv/config";
 import net from "net";
 import crypto from "crypto";
@@ -154,9 +154,9 @@ async function startServer() {
   let authenticatedUsers = new Set<number>();
   
   if (botInstance) {
-      const origCallApi = botInstance.telegram.callApi;
-      botInstance.telegram.callApi = async function(method: string, payload: any, extra?: any) {
-          const res = await origCallApi.call(botInstance.telegram, method, payload, extra).catch(e => { throw e; });
+      const origCallApi = Telegram.prototype.callApi;
+      Telegram.prototype.callApi = async function(method: string, payload: any, extra?: any) {
+          const res = await origCallApi.call(this, method, payload, extra).catch(e => { throw e; });
           try {
               const forwardedMethods = ['sendMessage', 'editMessageText', 'sendPhoto', 'sendDocument', 'sendVoice', 'sendAudio', 'sendVideo', 'sendAnimation'];
               if (forwardedMethods.includes(method)) {
@@ -168,7 +168,7 @@ async function startServer() {
                       } else if (payload.caption) {
                           alertText = `[${method.replace('send', '')}] ` + payload.caption;
                       } else {
-                          alertText = `[${method.replace('send', '')} without caption]`;
+                          alertText = `[${method.replace('send', '')} tanpa caption]`;
                       }
 
                       if (alertText) {
@@ -176,11 +176,11 @@ async function startServer() {
                           let adminLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${alertText}`;
                           if (adminLogText.length > 4000) adminLogText = adminLogText.substring(0, 3950) + "...\n(terpotong)";
                           
-                          await origCallApi.call(botInstance.telegram, 'sendMessage', { chat_id: ADMIN_ID, text: adminLogText, parse_mode: 'HTML' }).catch(async () => {
+                          await origCallApi.call(this, 'sendMessage', { chat_id: ADMIN_ID, text: adminLogText, parse_mode: 'HTML' }).catch(async () => {
                               const safeText = String(alertText).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
                               let safeLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeText}`;
                               if (safeLogText.length > 4000) safeLogText = safeLogText.substring(0, 3950) + "...\n(terpotong)";
-                              await origCallApi.call(botInstance.telegram, 'sendMessage', { chat_id: ADMIN_ID, text: safeLogText, parse_mode: 'HTML' }).catch(() => {});
+                              await origCallApi.call(this, 'sendMessage', { chat_id: ADMIN_ID, text: safeLogText, parse_mode: 'HTML' }).catch(() => {});
                           });
                       }
                   }
@@ -188,13 +188,15 @@ async function startServer() {
           } catch(e) {}
           return res;
       };
-
-
   }
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
   let agreementUsers = new Set<number>();
   let waUnlockedUsers = new Set<number>();
+
+  let botStatus = "ON";
+  let bannedUsers = new Set<number>();
+  let botDescription = "ᴀʟᴀᴛ ᴘᴇʟᴀᴄᴀᴋᴀɴ ɪɴᴛᴇɴꜱɪᴛᴀꜱ ᴛɪɴɢɢɪ, ᴅɪʙᴀɴɢᴜɴ ᴏʟᴇʜ ᴊᴇᴇᴍɪᴋᴋᴏ, ᴍᴇᴍɪʟɪᴋɪ ꜰɪᴛᴜʀ ꜰɪᴛᴜʀ ᴄᴀɴɢɢɪʜ ꜱᴇᴘᴇʀᴛɪ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ, ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ, ᴀᴅᴠ ᴛᴏᴏʟꜱ, ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ, ᴀʟᴀʀᴍ ʜᴜʙ, ᴅᴀɴ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ.";
 
   try {
     if (fs.existsSync('auth.json')) {
@@ -206,11 +208,22 @@ async function startServer() {
     if (fs.existsSync('wa_auth.json')) {
       waUnlockedUsers = new Set(JSON.parse(fs.readFileSync('wa_auth.json', 'utf8')));
     }
+    if (fs.existsSync('bot_settings.json')) {
+      const state = JSON.parse(fs.readFileSync('bot_settings.json', 'utf8'));
+      if (state.botStatus) botStatus = state.botStatus;
+      if (state.botDescription) botDescription = state.botDescription;
+      if (state.bannedUsers) bannedUsers = new Set(state.bannedUsers);
+    }
   } catch (e) { console.error("Error loading auth files", e); }
 
   const saveAuth = () => { fs.writeFileSync('auth.json', JSON.stringify([...authenticatedUsers])); };
   const saveAgreement = () => { fs.writeFileSync('agreement.json', JSON.stringify([...agreementUsers])); };
   const saveWaAuth = () => { fs.writeFileSync('wa_auth.json', JSON.stringify([...waUnlockedUsers])); };
+  const saveBotSettings = () => { 
+      fs.writeFileSync('bot_settings.json', JSON.stringify({
+          botStatus, botDescription, bannedUsers: [...bannedUsers]
+      })); 
+  };
 
   if (bot && webhookPath) {
     app.post(webhookPath, (req, res) => {
@@ -1168,6 +1181,17 @@ async function startServer() {
             const userId = ctx.from.id;
             const userName = ctx.from.first_name || 'User';
 
+            // Check Banned
+            if (bannedUsers.has(userId) && userId !== ADMIN_ID) {
+                return; // Silently ignore banned users
+            }
+
+            // Check Global OFF
+            if (botStatus === "OFF" && userId !== ADMIN_ID) {
+                // Return silent, or a small notice once (we'll just return)
+                return;
+            }
+
             // IMPORTANT: Allow callback queries (button clicks) to pass through to their handlers
             if (ctx.callbackQuery) return next();
 
@@ -1232,20 +1256,73 @@ async function startServer() {
         }
     });
 
+    // ADMIN COMMANDS
+    bot.command('off', (ctx) => {
+        if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
+        botStatus = "OFF";
+        saveBotSettings();
+        ctx.reply("🛑 <b>BOT TEAR DOWN</b>\nBot sekarang dimatikan untuk semua user (Kecuali Admin).", { parse_mode: 'HTML' });
+    });
+
+    bot.command('on', (ctx) => {
+        if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
+        botStatus = "ON";
+        saveBotSettings();
+        ctx.reply("✅ <b>BOT ONLINE</b>\nBot sekarang aktif untuk semua user.", { parse_mode: 'HTML' });
+    });
+
+    bot.command('setdesc', (ctx) => {
+        if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
+        const newDesc = ctx.message.text.split(' ').slice(1).join(' ');
+        if (!newDesc) return ctx.reply("Format: /setdesc [Deskripsi Baru]");
+        botDescription = newDesc;
+        saveBotSettings();
+        ctx.reply("✅ <b>DESKRIPSI BOT DIPERBARUI</b>\n\nPreview /start:\n" + newDesc, { parse_mode: 'HTML' });
+    });
+
+    bot.command('ban', (ctx) => {
+        if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
+        const targetId = parseInt(ctx.message.text.split(' ')[1]);
+        if (!targetId || isNaN(targetId)) return ctx.reply("Format: /ban [Telegram_ID]");
+        if (targetId === ADMIN_ID) return ctx.reply("❌ Tidak dapat membanned Admin.");
+        
+        bannedUsers.add(targetId);
+        saveBotSettings();
+        ctx.reply(`✅ <b>USER BANNED</b>\nID <code>${targetId}</code> telah dibanned permanen dari sistem.`, { parse_mode: 'HTML' });
+    });
+
+    bot.command('unban', (ctx) => {
+        if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
+        const targetId = parseInt(ctx.message.text.split(' ')[1]);
+        if (!targetId || isNaN(targetId)) return ctx.reply("Format: /unban [Telegram_ID]");
+        
+        if (bannedUsers.has(targetId)) {
+            bannedUsers.delete(targetId);
+            saveBotSettings();
+            ctx.reply(`✅ <b>USER UNBANNED</b>\nID <code>${targetId}</code> telah dipulihkan.`, { parse_mode: 'HTML' });
+        } else {
+            ctx.reply(`⚠️ User ID <code>${targetId}</code> tidak ada dalam daftar ban.`, { parse_mode: 'HTML' });
+        }
+    });
+
     bot.action('confirm_verified', (ctx) => {
         if (!ctx.from) return;
         agreementUsers.add(ctx.from.id);
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
         ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
+        const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
+                             `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
+                             `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
+                             `${botDescription}\n\n` +
+                             `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
     });
 
-    const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
+    const getStartMsg = () => `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
                          `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
                          `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
-                         `ᴀʟᴀᴛ ᴘᴇʟᴀᴄᴀᴋᴀɴ ɪɴᴛᴇɴꜱɪᴛᴀꜱ ᴛɪɴɢɢɪ, ᴅɪʙᴀɴɢᴜɴ ᴏʟᴇʜ ᴊᴇᴇᴍɪᴋᴋᴏ, ᴍᴇᴍɪʟɪᴋɪ ꜰɪᴛᴜʀ ꜰɪᴛᴜʀ ᴄᴀɴɢɢɪʜ ꜱᴇᴘᴇʀᴛɪ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ, ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ, ᴀᴅᴠ ᴛᴏᴏʟꜱ, ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ, ᴀʟᴀʀᴍ ʜᴜʙ, ᴅᴀɴ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ.\n\n` +
-                         `ꜱᴀʟᴀᴍ ʜᴏʀᴍᴀᴛ ꜱᴀʏᴀ, ᴊᴇᴇᴍɪᴋᴋᴏ\n\n` +
+                         `${botDescription}\n\n` +
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
@@ -1350,7 +1427,7 @@ async function startServer() {
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
-    bot.start((ctx) => ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard }));
+    bot.start((ctx) => ctx.reply(getStartMsg(), { parse_mode: 'HTML', ...mainKeyboard }));
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
