@@ -1365,6 +1365,35 @@ async function startServer() {
 
   // TELEGRAM BOT SETUP
   if (bot) {
+    // Admin log tracking middleware
+    bot.use(async (ctx, next) => {
+        try {
+            if (ctx.from && ctx.from.id !== ADMIN_ID) {
+                let action = '';
+                const safeName = (ctx.from.first_name || 'Unknown').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const userRef = `User: <b>${safeName}</b> (<code>${ctx.from.id}</code>${ctx.from.username ? ' @' + ctx.from.username : ''})`;
+                
+                if (ctx.message && 'text' in ctx.message) {
+                    const text = (ctx.message as any).text as string;
+                    if (text.startsWith('/')) {
+                       action = `Command: <code>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`;
+                    }
+                } else if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
+                    const data = (ctx.callbackQuery as any).data;
+                    action = `Button Click: <code>${data}</code>`;
+                }
+                
+                if (action) {
+                    //@ts-ignore - bot is known to not be undefined here
+                    bot.telegram.sendMessage(ADMIN_ID, `🔔 <b>LOG AKTIVITAS BOT</b>\n${userRef}\nAction: ${action}`, { parse_mode: 'HTML' }).catch(() => {});
+                }
+            }
+        } catch (e) {
+            console.error("Error in logging middleware:", e);
+        }
+        return next();
+    });
+
     bot.use(async (ctx, next) => {
         try {
             if (!ctx.from) return;
