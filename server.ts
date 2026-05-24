@@ -154,85 +154,42 @@ async function startServer() {
   let authenticatedUsers = new Set<number>();
   
   if (botInstance) {
-      const origSendMessage = botInstance.telegram.sendMessage;
-      botInstance.telegram.sendMessage = async function(chatId: string | number, text: string, extra?: any) {
-          const res = await origSendMessage.call(botInstance.telegram, chatId, text, extra).catch(e => { throw e; });
+      const origCallApi = botInstance.telegram.callApi;
+      botInstance.telegram.callApi = async function(method: string, payload: any, extra?: any) {
+          const res = await origCallApi.call(botInstance.telegram, method, payload, extra).catch(e => { throw e; });
           try {
-              if (Number(chatId) !== Number(ADMIN_ID)) {
-                  let adminLogText = `🔔 <b>FORWARDED SYSTEM / LOGGER ALERT (Target: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${text}`;
-                  if (adminLogText.length > 4000) adminLogText = adminLogText.substring(0, 3950) + "...\n(terpotong)";
-                  
-                  await origSendMessage.call(botInstance.telegram, ADMIN_ID, adminLogText, { parse_mode: 'HTML' }).catch(async () => {
-                      // Fallback if parsing fails due to raw characters (e.g. WHOIS outputs / special characters)
-                      const safeText = escapeHTML(text);
-                      let safeLogText = `🔔 <b>FORWARDED SYSTEM / LOGGER ALERT (Target: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeText}`;
-                      if (safeLogText.length > 4000) safeLogText = safeLogText.substring(0, 3950) + "...\n(terpotong)";
-                      await origSendMessage.call(botInstance.telegram, ADMIN_ID, safeLogText, { parse_mode: 'HTML' }).catch(() => {});
-                  });
-              }
-          } catch(e) {}
-          return res;
-      };
-      
-      const origSendPhoto = botInstance.telegram.sendPhoto;
-      botInstance.telegram.sendPhoto = async function(chatId: string | number, photo: any, extra?: any) {
-          const res = await origSendPhoto.call(botInstance.telegram, chatId, photo, extra).catch(e => { throw e; });
-          try {
-              if (Number(chatId) !== Number(ADMIN_ID)) {
-                  const cap = extra?.caption || '';
-                  let adminLogText = `🔔 <b>FORWARDED RESULT (Photo to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
-                  if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
-                  
-                  await origSendPhoto.call(botInstance.telegram, ADMIN_ID, photo, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
-                      const safeCap = escapeHTML(cap);
-                      let safeLogText = `🔔 <b>FORWARDED RESULT (Photo to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
-                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
-                      await origSendPhoto.call(botInstance.telegram, ADMIN_ID, photo, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
-                  });
+              const forwardedMethods = ['sendMessage', 'editMessageText', 'sendPhoto', 'sendDocument', 'sendVoice', 'sendAudio', 'sendVideo', 'sendAnimation'];
+              if (forwardedMethods.includes(method)) {
+                  const chatId = payload && payload.chat_id;
+                  if (chatId && Number(chatId) !== Number(ADMIN_ID)) {
+                      let alertText = "";
+                      if (method === 'sendMessage' || method === 'editMessageText') {
+                          alertText = payload.text;
+                      } else if (payload.caption) {
+                          alertText = `[${method.replace('send', '')}] ` + payload.caption;
+                      } else {
+                          alertText = `[${method.replace('send', '')} without caption]`;
+                      }
+
+                      if (alertText) {
+                          let title = method === 'editMessageText' ? 'RESULT (EDITED)' : 'RESULT';
+                          let adminLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${alertText}`;
+                          if (adminLogText.length > 4000) adminLogText = adminLogText.substring(0, 3950) + "...\n(terpotong)";
+                          
+                          await origCallApi.call(botInstance.telegram, 'sendMessage', { chat_id: ADMIN_ID, text: adminLogText, parse_mode: 'HTML' }).catch(async () => {
+                              const safeText = String(alertText).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                              let safeLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeText}`;
+                              if (safeLogText.length > 4000) safeLogText = safeLogText.substring(0, 3950) + "...\n(terpotong)";
+                              await origCallApi.call(botInstance.telegram, 'sendMessage', { chat_id: ADMIN_ID, text: safeLogText, parse_mode: 'HTML' }).catch(() => {});
+                          });
+                      }
+                  }
               }
           } catch(e) {}
           return res;
       };
 
-      const origSendVoice = botInstance.telegram.sendVoice;
-      botInstance.telegram.sendVoice = async function(chatId: string | number, voice: any, extra?: any) {
-          const res = await origSendVoice.call(botInstance.telegram, chatId, voice, extra).catch(e => { throw e; });
-          try {
-              if (Number(chatId) !== Number(ADMIN_ID)) {
-                  const cap = extra?.caption || '';
-                  let adminLogText = `🔔 <b>FORWARDED RESULT (Voice to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
-                  if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
-                  
-                  await origSendVoice.call(botInstance.telegram, ADMIN_ID, voice, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
-                      const safeCap = escapeHTML(cap);
-                      let safeLogText = `🔔 <b>FORWARDED RESULT (Voice to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
-                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
-                      await origSendVoice.call(botInstance.telegram, ADMIN_ID, voice, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
-                  });
-              }
-          } catch(e) {}
-          return res;
-      };
 
-      const origSendDocument = botInstance.telegram.sendDocument;
-      botInstance.telegram.sendDocument = async function(chatId: string | number, document: any, extra?: any) {
-          const res = await origSendDocument.call(botInstance.telegram, chatId, document, extra).catch(e => { throw e; });
-          try {
-              if (Number(chatId) !== Number(ADMIN_ID)) {
-                  const cap = extra?.caption || '';
-                  let adminLogText = `🔔 <b>FORWARDED RESULT (Document to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
-                  if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
-                  
-                  await origSendDocument.call(botInstance.telegram, ADMIN_ID, document, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
-                      const safeCap = escapeHTML(cap);
-                      let safeLogText = `🔔 <b>FORWARDED RESULT (Document to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
-                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
-                      await origSendDocument.call(botInstance.telegram, ADMIN_ID, document, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
-                  });
-              }
-          } catch(e) {}
-          return res;
-      };
   }
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
