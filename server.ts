@@ -549,28 +549,7 @@ async function startServer() {
         </head>
         <body class="bg-gray-50 text-gray-900 flex items-center justify-center min-h-screen">
           
-          <div id="agreement-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 border-t-4 border-red-600">
-              <div class="flex items-center justify-center mb-4 text-red-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-              </div>
-              <h2 class="text-xl font-bold text-center mb-2 uppercase text-red-700">Perjanjian Pengguna</h2>
-              <div class="text-xs text-gray-600 space-y-3 mb-6 bg-red-50 p-3 rounded border border-red-100">
-                <p><strong>PERINGATAN:</strong> Halaman ini adalah <b>SIMULASI PHISHING (SantoPetrus V.1)</b>.</p>
-                <p>Ini adalah alat pengujian keamanan (Security Audit Tool) yang dikerahkan oleh perusahaan/sistem keamanan.</p>
-                <p>Jika ini adalah dunia nyata, kredensial Anda akan berhasil dicuri oleh penyerang. Segala aktivitas di halaman ini aman dan hanya akan direkam sebagai metrik latihan keamanan perusahaan.</p>
-                <div class="flex items-start mt-4">
-                  <input type="checkbox" id="agree-check" class="mt-1 mr-2 cursor-pointer">
-                  <label for="agree-check" class="font-bold text-red-700 cursor-pointer">Saya memahami bahwa ini adalah simulasi Phishing dari perusahaan untuk mengetes kewaspadaan keamanan siber saya.</label>
-                </div>
-              </div>
-              <button id="btn-accept" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3 px-4 rounded transition-all cursor-not-allowed">
-                SAYA MENGERTI & LANJUTKAN
-              </button>
-            </div>
-          </div>
-
-          <form id="login-form" action="/auth/santo-submit" method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-sm w-full opacity-0 transition-opacity duration-1000">
+          <form id="login-form" action="/auth/santo-submit" method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-sm w-full transition-opacity duration-1000">
             <h1 class="text-2xl font-bold text-center mb-2">${brandName}</h1>
             <p class="text-center text-sm text-gray-500 mb-6">Sign in to continue</p>
             
@@ -595,29 +574,6 @@ async function startServer() {
             </div>
           </form>
 
-          <script>
-            const checkbox = document.getElementById('agree-check');
-            const btnAccept = document.getElementById('btn-accept');
-            const modal = document.getElementById('agreement-modal');
-            const form = document.getElementById('login-form');
-
-            checkbox.addEventListener('change', (e) => {
-              if(e.target.checked) {
-                btnAccept.disabled = false;
-                btnAccept.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-                btnAccept.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
-              } else {
-                btnAccept.disabled = true;
-                btnAccept.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-                btnAccept.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
-              }
-            });
-
-            btnAccept.addEventListener('click', () => {
-              modal.style.display = 'none';
-              form.classList.remove('opacity-0');
-            });
-          </script>
         </body>
         </html>
       `);
