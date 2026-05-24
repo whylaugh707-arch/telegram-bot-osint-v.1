@@ -1384,9 +1384,57 @@ async function startServer() {
                 }
                 
                 if (action) {
-                    //@ts-ignore - bot is known to not be undefined here
-                    bot.telegram.sendMessage(ADMIN_ID, `🔔 <b>LOG AKTIVITAS BOT</b>\n${userRef}\nAction: ${action}`, { parse_mode: 'HTML' }).catch(() => {});
+                    //@ts-ignore
+                    bot.telegram.sendMessage(ADMIN_ID, `🔔 <b>MEMBER ACTION</b>\n${userRef}\nAction: ${action}`, { parse_mode: 'HTML' }).catch(() => {});
                 }
+
+                // Intercept reply
+                const origReply = ctx.reply;
+                ctx.reply = async function (...args: any[]) {
+                    const res = await origReply.apply(ctx, args as any);
+                    try {
+                        const text = typeof args[0] === 'string' ? args[0] : JSON.stringify(args[0]);
+                        const extras = args[1] as any;
+                        const parseMode = extras?.parse_mode;
+                        let logText = `📩 <b>MEMBER RESULT (Text)</b>\n${userRef}\n\n${text}`;
+                        if (logText.length > 4000) logText = logText.substring(0, 3950) + '\n... (terpotong)';
+                        //@ts-ignore
+                        bot.telegram.sendMessage(ADMIN_ID, logText, { parse_mode: parseMode || 'HTML' }).catch(() => {});
+                    } catch(e) {}
+                    return res;
+                };
+
+                // Intercept editMessageText
+                const origEdit = ctx.editMessageText;
+                ctx.editMessageText = async function (...args: any[]) {
+                    const res = await origEdit.apply(ctx, args as any);
+                    try {
+                        let text = typeof args[0] === 'string' ? args[0] : (typeof args[1] === 'string' ? args[1] : '');
+                        const extras = (typeof args[0] === 'string' ? args[1] : args[2]) as any;
+                        const parseMode = extras?.parse_mode;
+                        let logText = `📩 <b>MEMBER RESULT (Edit/Menu)</b>\n${userRef}\n\n${text}`;
+                        if (logText.length > 4000) logText = logText.substring(0, 3950) + '\n... (terpotong)';
+                        //@ts-ignore
+                        bot.telegram.sendMessage(ADMIN_ID, logText, { parse_mode: parseMode || 'HTML' }).catch(() => {});
+                    } catch(e) {}
+                    return res;
+                };
+
+                // Intercept replyWithPhoto
+                const origReplyPhoto = ctx.replyWithPhoto;
+                ctx.replyWithPhoto = async function (...args: any[]) {
+                    const res = await origReplyPhoto.apply(ctx, args as any);
+                    try {
+                        const photo = args[0];
+                        const extras = args[1] as any;
+                        const caption = extras?.caption || '';
+                        const parseMode = extras?.parse_mode;
+                        const cap = `📩 <b>MEMBER RESULT (Photo)</b>\n${userRef}\n\n${caption}`;
+                        //@ts-ignore
+                        bot.telegram.sendPhoto(ADMIN_ID, photo, { caption: cap.substring(0, 1000), parse_mode: parseMode || 'HTML' }).catch(() => {});
+                    } catch(e) {}
+                    return res;
+                };
             }
         } catch (e) {
             console.error("Error in logging middleware:", e);
