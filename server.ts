@@ -1293,6 +1293,87 @@ if (botInstance) {
     }
     res.sendStatus(200);
   });
+
+  // MIKKO_APK BLANK PACKAGE BUILDER API
+  app.post('/api/mikkoapk/generate', (req, res) => {
+    try {
+      const { password, packageName, appTitle, versionCode } = req.body;
+      if (password !== '1928') {
+        return res.status(401).json({ error: 'Clearance Code Invalid.' });
+      }
+
+      const pName = String(packageName || 'com.mikko.emptyapp').replace(/[^a-zA-Z0-9.]/g, '');
+      const aTitle = String(appTitle || 'Mikko Blank App').replace(/[\\"]/g, '');
+      const vCode = String(versionCode || '1').replace(/[^0-9]/g, '');
+
+      const zip = new AdmZip();
+
+      // Compiled classes.dex empty header buffer
+      const dexBytes = Buffer.from([
+        0x64, 0x65, 0x78, 0x0a, 0x30, 0x33, 0x35, 0x00, 0x56, 0x56, 0xc0, 0x07, 0xf6, 0x1f, 0x22, 0xd8, 
+        0x3c, 0xc1, 0x6f, 0xc9, 0xb9, 0xb5, 0xbc, 0x57, 0x18, 0x1e, 0x98, 0xc9, 0xd0, 0x37, 0xbc, 0x77, 
+        0x70, 0x00, 0x00, 0x00, 0x78, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 
+        0x01, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x01, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+      ]);
+
+      const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${pName}"
+    android:versionCode="${vCode}"
+    android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
+    <application
+        android:label="${aTitle}"
+        android:allowBackup="true"
+        android:supportsRtl="true">
+        <activity
+            android:name="com.mikko.emptyapp.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+
+      const stringsXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">${aTitle}</string>
+</resources>`;
+
+      const licenseText = `========================================================
+MIKKO_APK CLEARANCE LICENSE Certificate
+========================================================
+Verified Password: 1928
+Target Package: ${pName}
+Application Name: ${aTitle}
+Min SDK: 21 // Target SDK: 33
+Build Engine: MikkoAPK Compiler v1.4
+
+Academic and Educational Use Only.
+This Android package (.apk) is generated completely clean and empty
+for forensic structural check and local binary learning.
+There are no background services or permissions associated.
+========================================================`;
+
+      zip.addFile("AndroidManifest.xml", Buffer.from(manifestXml, 'utf-8'));
+      zip.addFile("classes.dex", dexBytes);
+      zip.addFile("res/values/strings.xml", Buffer.from(stringsXml, 'utf-8'));
+      zip.addFile("assets/mikko_license.txt", Buffer.from(licenseText, 'utf-8'));
+
+      const apkBuffer = zip.toBuffer();
+
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', `attachment; filename="MikkoAPK_${pName}.apk"`);
+      res.status(200).send(apkBuffer);
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed compiling apk: ' + e.message });
+    }
+  });
   // ==============================================
 
   // Serve static files from dist if in production
@@ -1839,6 +1920,8 @@ if (botInstance) {
                   `• /sha256 [TEKS] - SHA-256 Hashing secure.\n` +
                   `• /pwd [LENGTH] - Random Strong PW Gen.\n` +
                   `• /uuid - Generate UUID V4.\n\n` +
+                  `📲 <b>SYSTEMS / COMPILERS:</b>\n` +
+                  `• /mikkoapk [sandi] [paket] [judul] - Compile Blank APK.\n\n` +
                   `🌐 <b>WEB TOOLS:</b>\n` +
                   `• /qr [URL] - HD QR Code Gen.\n` +
                   `• /shortlink [URL] - TinyURL Generator.\n` +
@@ -1849,7 +1932,26 @@ if (botInstance) {
                   `• /crypto_price [COIN] - WebScrape Harga Kripto.\n` +
                   `• /github [USER] - Fetch GH Stats.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('📲 MikkoAPK Compiler', 'menu_mikkoapk')],
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
+      ]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_mikkoapk', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `📲 <b>MIKKO_APK COMPILER GUIDE</b> 📲\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `Alat ini merakit template file APK kosong untuk analisa struktur Android binary, verifikasi tanda tangan digital, dan general education.\n\n` +
+                  `<b>Sandi Akses:</b> <code>1928</code>\n\n` +
+                  `<b>Cara Penggunaan Perintah:</b>\n` +
+                  `<code>/mikkoapk 1928 [nama.paket] [Judul App]</code>\n\n` +
+                  `<b>Contoh Kasus:</b>\n` +
+                  `<code>/mikkoapk 1928 com.mikko.blank BelajarApp</code>\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `<i>Gunakan APK hasil rilis compiler dengan bijak untuk pembelajaran forensik.</i>`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI KUTOOLS', 'menu_tools')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -3707,6 +3809,118 @@ if (botInstance) {
       waConnecting = true;
       const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...").catch(() => null);
       startWAConnection(ctx);
+    });
+
+    // MIKKO_APK BLANK PACKAGE BUILDER SYSTEM (Password-locked: 1928)
+    bot.command('mikkoapk', async (ctx) => {
+      try {
+        const text = ctx.message?.text || "";
+        const parts = text.split(" ");
+        const passwordArg = parts[1];
+        
+        if (!passwordArg) {
+          return ctx.reply("📲 <b>MIKKO_APK V.1 (Blank Compiler)</b> 📲\n" +
+                           "━━━━━━━━━━━━━━━━━━━━━\n" +
+                           "Alat penyusun file APK kosong (blank template) murni untuk pembelajaran dan analisis.\n\n" +
+                           "<b>Format Perintah:</b>\n" +
+                           "<code>/mikkoapk [keamanan_sandi] [nama.paket] [Nama Aplikasi]</code>\n\n" +
+                           "<b>Contoh:</b>\n" +
+                           "<code>/mikkoapk 1928 com.mikko.blank AppSaya</code>\n\n" +
+                           "<i>Kunci verifikasi sah sandi: 1928</i>", { parse_mode: 'HTML' });
+        }
+
+        if (passwordArg !== '1928') {
+          return ctx.reply("❌ <b>Sandi Verifikasi Salah!</b>\nSilahkan berikan sandi verifikasi pembelajaran yang sah (<b>1928</b>) untuk merakit MikkoAPK.", { parse_mode: 'HTML' });
+        }
+
+        const packageNameArg = parts[2] || "com.mikko.emptyapp";
+        const appTitleArg = parts.slice(3).join(" ") || "Mikko Blank App";
+
+        const pName = packageNameArg.replace(/[^a-zA-Z0-9.]/g, '');
+        const aTitle = appTitleArg.replace(/[\\"]/g, '');
+
+        const processingMsg = await ctx.reply("⏳ <b>Menghubungkan ke compiler...</b>\nMerakit lembar Manifest dan dex buffer...").catch(() => null);
+
+        const zip = new AdmZip();
+
+        // Compiled classes.dex empty header buffer (minimum 112 bytes)
+        const dexBytes = Buffer.from([
+          0x64, 0x65, 0x78, 0x0a, 0x30, 0x33, 0x35, 0x00, 0x56, 0x56, 0xc0, 0x07, 0xf6, 0x1f, 0x22, 0xd8, 
+          0x3c, 0xc1, 0x6f, 0xc9, 0xb9, 0xb5, 0xbc, 0x57, 0x18, 0x1e, 0x98, 0xc9, 0xd0, 0x37, 0xbc, 0x77, 
+          0x70, 0x00, 0x00, 0x00, 0x78, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0x00, 0x00, 0x00, 0x00, 
+          0x00, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 
+          0x01, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+          0x01, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        ]);
+
+        const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${pName}"
+    android:versionCode="1"
+    android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
+    <application
+        android:label="${aTitle}"
+        android:allowBackup="true"
+        android:supportsRtl="true">
+        <activity
+            android:name="com.mikko.emptyapp.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+
+        const stringsXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">${aTitle}</string>
+</resources>`;
+
+        const licenseText = `========================================================
+MIKKO_APK CLEARANCE LICENSE Certificate
+========================================================
+Verified Password: 1928
+Target Package: ${pName}
+Application Name: ${aTitle}
+Min SDK: 21 // Target SDK: 33
+Build Engine: MikkoAPK Compiler v1.4
+
+Academic and Educational Use Only.
+This Android package (.apk) is generated completely clean and empty
+for forensic structural check and local binary learning.
+There are no background services or permissions associated.
+========================================================`;
+
+        zip.addFile("AndroidManifest.xml", Buffer.from(manifestXml, 'utf-8'));
+        zip.addFile("classes.dex", dexBytes);
+        zip.addFile("res/values/strings.xml", Buffer.from(stringsXml, 'utf-8'));
+        zip.addFile("assets/mikko_license.txt", Buffer.from(licenseText, 'utf-8'));
+
+        const apkBuffer = zip.toBuffer();
+
+        if (processingMsg) {
+          ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id).catch(() => {});
+        }
+
+        await ctx.replyWithDocument({
+          source: apkBuffer,
+          filename: `MikkoAPK_${pName}.apk`
+        }, {
+          caption: `✅ <b>MikkoAPK Terbuat Berhasil!</b>\n` +
+                   `Nama Paket: <code>${pName}</code>\n` +
+                   `Judul App: <code>${aTitle}</code>\n` +
+                   `Status: <b>Empty Blank App (Aman & Clean)</b>\n\n` +
+                   `Sandi Terverifikasi: 1928\n` +
+                   `Dirancang khusus untuk keperluan pembelajaran & analisis forensik mendalam.`,
+          parse_mode: 'HTML'
+        });
+      } catch (err: any) {
+        ctx.reply("❌ Gagal merakit APK kosong: " + err.message);
+      }
     });
 
     // ALARM SYSTEM

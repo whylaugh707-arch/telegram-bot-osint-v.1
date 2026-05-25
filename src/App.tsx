@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen, QrCode, Shield, Skull } from 'lucide-react';
+import { Fingerprint, Network, Globe, Mail, UserSearch, ShieldAlert, Cpu, Zap, Activity, BookOpen, QrCode, Shield, Skull, Smartphone } from 'lucide-react';
 import IpTools from './components/IpTools';
 import DomainTools from './components/DomainTools';
 import EmailTools from './components/EmailTools';
@@ -9,8 +9,9 @@ import IndoOsint from './components/IndoOsint';
 import DorkGenerator from './components/DorkGenerator';
 import QrGenerator from './components/QrGenerator';
 import SantoPetrus from './components/SantoPetrus';
+import MikkoApk from './components/MikkoApk';
 
-type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'santopetrus';
+type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'santopetrus' | 'mikkoapk';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
@@ -115,6 +116,12 @@ export default function App() {
             icon={<Skull className="w-4 h-4 text-[#ef4444]" />} 
             label="SANTO_PETRUS" 
           />
+          <NavButton 
+            active={activeTab === 'mikkoapk'} 
+            onClick={() => setActiveTab('mikkoapk')} 
+            icon={<Smartphone className="w-4 h-4 text-[#a855f7]" />} 
+            label="MIKKO_APK" 
+          />
           
           <div className="mt-8 mb-6 px-4 py-2 bg-[#ef4444]/10 border-l-4 border-[#ef4444] text-[11px] font-bold tracking-tighter text-[#ef4444]">
             System Status
@@ -163,6 +170,7 @@ export default function App() {
               {activeTab === 'logger' && <StealthLogger />}
               {activeTab === 'qr' && <QrGenerator />}
               {activeTab === 'santopetrus' && <SantoPetrus />}
+              {activeTab === 'mikkoapk' && <MikkoApk />}
             </div>
           </div>
         </div>
