@@ -1776,7 +1776,7 @@ async function startServer() {
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });    });
+    });
 
     bot.command('nik', (ctx) => {
       const args = ctx.message.text.split(' ');
