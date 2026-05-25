@@ -100,7 +100,7 @@ export default function IndoOsint() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-black font-serif">
+    <div className="flex flex-col h-full bg-slate-950 font-display">
       <div className="p-6 border-b border-[#38bdf8]/20 bg-[#38bdf8]/5">
         <h2 className="text-xl font-bold flex items-center mb-2 tracking-tighter uppercase text-white">
           <Fingerprint className="w-5 h-5 mr-3 text-[#38bdf8]" /> Indo_Osint_Module
@@ -121,7 +121,7 @@ export default function IndoOsint() {
               value={nik}
               onChange={e => setNik(e.target.value.replace(/[^0-9]/g, '').slice(0, 16))}
               placeholder="320xxxxxxxxxxxxx"
-              className="flex-1 bg-black border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-serif"
+              className="flex-1 bg-slate-950 border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-display"
             />
             <button 
               disabled={loading === 'nik' || nik.length !== 16}
@@ -158,7 +158,7 @@ export default function IndoOsint() {
               value={plat}
               onChange={e => setPlat(e.target.value.toUpperCase())}
               placeholder="B 1234 ABC"
-              className="flex-1 bg-black border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-serif"
+              className="flex-1 bg-slate-950 border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-display"
             />
             <button 
               disabled={loading === 'plat' || !plat}
@@ -188,7 +188,7 @@ export default function IndoOsint() {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="0812xxxxxxxx atau 628xxxxxxxx"
-              className="flex-1 bg-black border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-serif"
+              className="flex-1 bg-slate-950 border border-[#38bdf8]/20 text-white rounded px-4 py-2 text-sm focus:outline-none focus:border-[#38bdf8]/60 font-display"
             />
             <button 
               disabled={loading === 'phone' || !phone}
@@ -224,7 +224,7 @@ export default function IndoOsint() {
                       href={dork.url}
                       target="_blank"
                       rel="noreferrer"
-                      className={`p-2.5 border rounded flex flex-col justify-between transition-colors bg-black/40 hover:bg-[#38bdf8]/5 border-[#38bdf8]/10 hover:border-[#38bdf8]/30`}
+                      className={`p-2.5 border rounded flex flex-col justify-between transition-colors bg-slate-950/40 hover:bg-[#38bdf8]/5 border-[#38bdf8]/10 hover:border-[#38bdf8]/30`}
                     >
                       <div>
                         <div className="text-xs font-bold text-[#38bdf8]">

@@ -30,18 +30,18 @@ export default function IpTools() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-black text-[#00ff00]">
-      <div className="p-6 border-b border-[#00ff00]/20 bg-[#00ff00]/5">
+    <div className="flex flex-col h-full bg-slate-950 text-[#38bdf8]">
+      <div className="p-6 border-b border-[#38bdf8]/20 bg-[#38bdf8]/5">
         <h2 className="text-xl font-bold flex items-center mb-2 tracking-tighter">
-          <Activity className="w-5 h-5 mr-3 text-[#00ff00]" /> IP_INTELLIGENCE
+          <Activity className="w-5 h-5 mr-3 text-[#38bdf8]" /> IP_INTELLIGENCE
         </h2>
-        <p className="text-xs text-[#00ff00]/60 uppercase tracking-widest">Locate, identify, and analyze grid nodes via IP forensics.</p>
+        <p className="text-xs text-[#38bdf8]/60 uppercase tracking-widest">Locate, identify, and analyze grid nodes via IP forensics.</p>
         
         {ownIp && (
-          <div className="mt-4 p-3 bg-black border border-[#00ff00]/20 flex items-center space-x-3 text-[10px]">
-            <Terminal className="w-4 h-4 text-[#00ff00]" />
-            <span className="text-[#00ff00]/40 uppercase tracking-widest">Local_Identity:</span>
-            <span className="font-serif text-[#00ff00] font-bold">{ownIp}</span>
+          <div className="mt-4 p-3 bg-slate-950 border border-[#38bdf8]/20 flex items-center space-x-3 text-[10px]">
+            <Terminal className="w-4 h-4 text-[#38bdf8]" />
+            <span className="text-[#38bdf8]/40 uppercase tracking-widest">Local_Identity:</span>
+            <span className="font-display text-[#38bdf8] font-bold">{ownIp}</span>
           </div>
         )}
       </div>
@@ -49,19 +49,19 @@ export default function IpTools() {
       <div className="p-6 flex-1 overflow-y-auto">
         <form onSubmit={handleSearch} className="flex space-x-3 mb-8">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#00ff00]/40" />
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#38bdf8]/40" />
             <input
               type="text"
               value={ip}
               onChange={e => setIp(e.target.value)}
               placeholder="TARGET_IP_ADDR"
-              className="w-full bg-black border border-[#00ff00]/20 text-[#00ff00] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#00ff00]/60 focus:ring-1 focus:ring-[#00ff00]/40 font-serif text-sm placeholder:text-[#00ff00]/20"
+              className="w-full bg-slate-950 border border-[#38bdf8]/20 text-[#38bdf8] rounded pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#38bdf8]/60 focus:ring-1 focus:ring-[#38bdf8]/40 font-display text-sm placeholder:text-[#38bdf8]/20"
             />
           </div>
           <button
             type="submit"
             disabled={loading || !ip}
-            className="px-6 py-2.5 bg-[#00ff00] hover:bg-[#00ff00]/80 text-black font-bold text-xs uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95"
+            className="px-6 py-2.5 bg-[#38bdf8] hover:bg-[#38bdf8]/80 text-black font-bold text-xs uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95"
           >
             {loading ? 'TRACING_ROUTE...' : 'START_TRACE'}
           </button>
@@ -69,7 +69,7 @@ export default function IpTools() {
 
         {result && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="font-serif text-[10px] font-bold text-[#00ff00]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#00ff00]/10 pb-2">TRACE_MANIFEST</h3>
+            <h3 className="font-display text-[10px] font-bold text-[#38bdf8]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#38bdf8]/10 pb-2">TRACE_MANIFEST</h3>
             
             {result.status === 'success' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +81,7 @@ export default function IpTools() {
                 <InfoCard label="VECTOR_COORDS" value={`${result.lat}, ${result.lon}`} />
               </div>
             ) : (
-              <div className="p-4 bg-red-500/10 border border-red-500/40 text-red-500 text-xs font-serif uppercase tracking-widest">
+              <div className="p-4 bg-red-500/10 border border-red-500/40 text-red-500 text-xs font-display uppercase tracking-widest">
                 CRITICAL_ERROR: {result.message}
               </div>
             )}
@@ -94,9 +94,9 @@ export default function IpTools() {
 
 function InfoCard({ label, value }: { label: string, value: string }) {
   return (
-    <div className="p-4 bg-black border border-[#00ff00]/10 hover:border-[#00ff00]/30 transition-all group">
-      <div className="text-[10px] text-[#00ff00]/40 mb-2 font-bold tracking-widest group-hover:text-[#00ff00]/60 transition-colors uppercase">{label}</div>
-      <div className="font-serif text-sm text-[#00ff00] font-bold">{value || 'NULL'}</div>
+    <div className="p-4 bg-slate-950 border border-[#38bdf8]/10 hover:border-[#38bdf8]/30 transition-all group">
+      <div className="text-[10px] text-[#38bdf8]/40 mb-2 font-bold tracking-widest group-hover:text-[#38bdf8]/60 transition-colors uppercase">{label}</div>
+      <div className="font-display text-sm text-[#38bdf8] font-bold">{value || 'NULL'}</div>
     </div>
   );
 }

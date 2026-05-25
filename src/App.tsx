@@ -16,12 +16,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
 
   return (
-    <div className="min-h-screen bg-[#020205] text-[#38bdf8] font-serif selection:bg-[#38bdf8]/30 selection:text-black">
+    <div className="min-h-screen bg-[#020205] text-[#38bdf8] font-display selection:bg-[#38bdf8]/30 selection:text-black">
       {/* Scanline Effect */}
       <div className="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(10,12,24,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(56,189,248,0.03),rgba(56,189,248,0.01),rgba(56,189,248,0.03))] bg-[length:100%_2px,3px_100%] opacity-20"></div>
       
       {/* Navbar */}
-      <header className="border-b border-[#38bdf8]/20 bg-black/90 backdrop-blur sticky top-0 z-40">
+      <header className="border-b border-[#38bdf8]/20 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-10 h-10 rounded border border-[#38bdf8]/40 flex items-center justify-center bg-[#38bdf8]/5 group hover:bg-[#38bdf8]/20 transition-all">
@@ -33,7 +33,7 @@ export default function App() {
               </h1>
               <div className="text-[10px] text-[#38bdf8]/40 flex items-center space-x-2">
                 <span className="inline-block w-2 h-2 rounded-full bg-[#38bdf8] animate-ping"></span>
-                <span>OSINT_TERMINAL_V9.3//LOCAL_INSTANCE</span>
+                <span>Intelligence Dashboard</span>
               </div>
             </div>
           </div>
@@ -55,69 +55,69 @@ export default function App() {
         {/* Sidebar Nav */}
         <div className="md:col-span-3 space-y-1">
           <div className="mb-6 px-4 py-2 bg-[#38bdf8]/10 border-l-4 border-[#38bdf8] text-[11px] font-bold tracking-tighter">
-            CORE_MODULES
+            Core Modules
           </div>
           <NavButton 
             active={activeTab === 'social'} 
             onClick={() => setActiveTab('social')} 
             icon={<UserSearch className="w-4 h-4" />} 
-            label="GLOBAL_SCANNER" 
+            label="Global Scanner" 
           />
           <NavButton 
             active={activeTab === 'indo'} 
             onClick={() => setActiveTab('indo')} 
             icon={<Fingerprint className="w-4 h-4" />} 
-            label="INDO_OSINT" 
+            label="Indo OSINT" 
           />
           <NavButton 
             active={activeTab === 'ip'} 
             onClick={() => setActiveTab('ip')} 
             icon={<Activity className="w-4 h-4" />} 
-            label="NETWORK_INTEL" 
+            label="Network Intel" 
           />
           <NavButton 
             active={activeTab === 'domain'} 
             onClick={() => setActiveTab('domain')} 
             icon={<Globe className="w-4 h-4" />} 
-            label="DNS_FORENSICS" 
+            label="DNS Forensics" 
           />
           <NavButton 
             active={activeTab === 'email'} 
             onClick={() => setActiveTab('email')} 
             icon={<Mail className="w-4 h-4" />} 
-            label="SMTP_AUDIT" 
+            label="SMTP Audit" 
           />
           <NavButton 
             active={activeTab === 'dork'} 
             onClick={() => setActiveTab('dork')} 
             icon={<BookOpen className="w-4 h-4" />} 
-            label="DORK_ENGINE" 
+            label="Dork Engine" 
           />
           
           <div className="mt-8 mb-4 px-4 py-2 bg-[#38bdf8]/10 border-l-4 border-[#38bdf8] text-[11px] font-bold tracking-tighter">
-            STEALTH_TOOLS
+            Stealth Tools
           </div>
           <NavButton 
             active={activeTab === 'logger'} 
             onClick={() => setActiveTab('logger')} 
             icon={<Zap className="w-4 h-4" />} 
-            label="STEALTH_LOGGER" 
+            label="Stealth Logger" 
           />
           <NavButton 
             active={activeTab === 'qr'} 
             onClick={() => setActiveTab('qr')} 
             icon={<QrCode className="w-4 h-4" />} 
-            label="QR_GENERATOR" 
+            label="QR Generator" 
           />
           <NavButton 
             active={activeTab === 'santopetrus'} 
             onClick={() => setActiveTab('santopetrus')} 
-            icon={<Skull className="w-4 h-4 text-[#ff0000]" />} 
+            icon={<Skull className="w-4 h-4 text-[#ef4444]" />} 
             label="SANTO_PETRUS" 
           />
           
-          <div className="mt-8 mb-6 px-4 py-2 bg-[#ff0000]/10 border-l-4 border-[#ff0000] text-[11px] font-bold tracking-tighter text-[#ff0000]">
-            SYSTEM_STATUS
+          <div className="mt-8 mb-6 px-4 py-2 bg-[#ef4444]/10 border-l-4 border-[#ef4444] text-[11px] font-bold tracking-tighter text-[#ef4444]">
+            System Status
           </div>
           <div className="px-4 py-3 border border-[#38bdf8]/10 bg-[#38bdf8]/5 rounded text-[10px] space-y-2">
             <div className="flex justify-between">
@@ -139,7 +139,7 @@ export default function App() {
 
         {/* Workspace */}
         <div className="md:col-span-9">
-          <div className="bg-black/40 backdrop-blur border border-[#38bdf8]/30 rounded shadow-[0_0_50px_rgba(56,189,248,0.08)] relative min-h-[700px]">
+          <div className="bg-slate-950/40 backdrop-blur border border-[#38bdf8]/30 rounded shadow-[0_0_50px_rgba(56,189,248,0.08)] relative min-h-[700px]">
             {/* Terminal Window Header */}
             <div className="bg-[#38bdf8]/10 border-b border-[#38bdf8]/20 px-4 py-2 flex items-center justify-between">
               <div className="flex space-x-2">
@@ -148,7 +148,7 @@ export default function App() {
                 <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
               </div>
               <div className="text-[10px] text-[#38bdf8]/70 tracking-widest opacity-80 uppercase font-bold">
-                {activeTab}_PROTOCOL_OVERRIDE
+                {activeTab}_PROTOCOL_INTERFACE
               </div>
               <div className="w-12"></div>
             </div>
@@ -183,8 +183,8 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       }`}
     >
       <span className={active ? 'text-[#38bdf8]' : ''}>{icon}</span>
-      <span className="text-[11px] font-bold tracking-[0.2em] font-serif">{label}</span>
-      {active && <div className="ml-auto text-[10px] text-[#38bdf8] animate-pulse">_ACTIVE</div>}
+      <span className="text-[11px] font-bold tracking-[0.2em] font-display">{label}</span>
+      {active && <div className="ml-auto text-[10px] text-[#38bdf8] animate-pulse"> Active</div>}
     </button>
   );
 }

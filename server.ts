@@ -1361,11 +1361,11 @@ async function startServer() {
                          `━━━━━━━━━━━━━━━━━━━━`;
     
     const mainKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🕵️ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ', 'menu_osint_adv'), Markup.button.callback('🎣 ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ', 'menu_logger')],
-      [Markup.button.callback('🛠️ ᴀᴅᴠ ᴛᴏᴏʟꜱ', 'menu_tools'), Markup.button.callback('🎮 ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ', 'menu_games')],
-      [Markup.button.callback('🎵 ᴍᴇᴅɪᴀ ᴅᴡɴʟᴅ', 'menu_media'), Markup.button.callback('⏰ ᴀʟᴀʀᴍ ʜᴜʙ', 'menu_alarm')],
-      [Markup.button.callback('📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ', 'menu_wa'), Markup.button.callback('📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ', 'menu_qr')],
-      [Markup.button.callback('⚖️ ᴛᴏꜱ & ᴀɢʀᴇᴇᴍᴇɴᴛ', 'menu_tos'), Markup.button.callback('ℹ️ ᴛᴇʀᴍɪɴᴀʟ ɪɴꜰᴏ', 'menu_help')]
+      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Stealth Logger', 'menu_logger')],
+      [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
+      [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
+      [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
+      [Markup.button.callback('⚖️ Terms of Service', 'menu_tos'), Markup.button.callback('ℹ️ Bot Info', 'menu_help')]
     ]);
 
     // Global Error Handler for "Anti Bug"
@@ -1486,8 +1486,8 @@ async function startServer() {
                   `• /bininfo [ʙɪɴ_ɴᴜᴍ] - ᴄᴇᴋ ʙɪɴ ᴋᴀʀᴛᴜ ᴋʀᴇᴅɪᴛ\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('🔍 ᴏꜱɪɴᴛ ɪɴᴅᴏ (ᴀᴅᴠ)', 'menu_osint_indo')],
-        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
+        [Markup.button.callback('🔍 OSINT INDO (Adv)', 'menu_osint_indo')],
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
@@ -1498,11 +1498,11 @@ async function startServer() {
       if (ctx.from.id !== ADMIN_ID) {
         const txt = `🔒 <b>ꜰɪᴛᴜʀ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ᴛᴇʀᴋᴜɴᴄɪ</b>\n\n` +
                     `Mohon maaf, fitur integrasi WhatsApp Bot hanya dapat diakses dan digunakan oleh <b>Admin Owner</b> saja.`;
-        const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+        const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
         ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
         return;
       }
-      const txt = `<b>📲 ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ɪɴᴛᴇɢʀᴀᴛɪᴏɴ</b>\n` +
+      const txt = `<b>📲 WhatsApp Bot ɪɴᴛᴇɢʀᴀᴛɪᴏɴ</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ʜᴜʙᴜɴɢᴋᴀɴ ʙᴏᴛ ɪɴɪ ᴋᴇ ɴᴏᴍᴏʀ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ ꜱᴇʙᴀɢᴀɪ ʙᴏᴛ ᴀᴋᴛɪꜰ!\n` +
                   `ꜱᴇᴍᴜᴀ ꜰɪᴛᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴋᴀɴ ᴛᴇʀꜱᴇᴅɪᴀ ᴅɪ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ.\n\n` +
@@ -1511,20 +1511,20 @@ async function startServer() {
                   `⚠️ <b>ᴘᴇʀɪɴɢᴀᴛᴀɴ:</b>\n` +
                   `ɢᴜɴᴀᴋᴀɴ ɴᴏᴍᴏʀ ᴋᴇᴅᴜᴀ/ʙᴏᴛ, ᴊᴀɴɢᴀɴ ɴᴏᴍᴏʀ ᴘʀɪʙᴀᴅɪ ᴜɴᴛᴜᴋ ᴍᴇɴɢʜɪɴᴅᴀʀɪ ʙᴀɴ.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_qr', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📱 ǫʀ ɢᴇɴᴇʀᴀᴛᴏʀ</b>\n` +
+      const txt = `<b>📱 QR Generator</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ɢᴇɴᴇʀᴀᴛᴇ Qʀ ᴄᴏᴅᴇ ᴅᴀʀɪ ʟɪɴᴋ ᴀᴘᴀᴘᴜɴ!\n\n` +
                   `👉 <b>ᴄᴀʀᴀ ᴘᴇɴɢɢᴜɴᴀᴀɴ:</b>\n` +
                   `ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ:\n<code>/qr [ʟɪɴᴋ ᴀᴛᴀᴜ ᴛᴇᴋꜱ ᴀɴᴅᴀ]</code>\n\n` +
                   `ᴄᴏɴᴛᴏʜ:\n<code>/qr https://google.com</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -1543,7 +1543,7 @@ async function startServer() {
              `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('💀 ꜱᴀɴᴛᴏ_ᴘᴇᴛʀᴜꜱ ᴠ.1', 'menu_santopetrus')],
-        [Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
     });
@@ -1703,7 +1703,7 @@ async function startServer() {
       const txt = `<b>🎵 ᴍᴇᴅɪᴀ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ</b>\n` +
                   `• /lagu [ᴊᴜᴅᴜʟ]\n` +
                   `• /play [ᴊᴜᴅᴜʟ]\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -1712,7 +1712,7 @@ async function startServer() {
       const txt = `<b>⏰ ᴀʟᴀʀᴍ sʏꜱᴛᴇᴍ</b>\n` +
                   `• /alarm [ᴍᴇɴɪᴛ]\n` +
                   `• /listalarm\n`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -1728,7 +1728,7 @@ async function startServer() {
                   `2. Semua akses audit sistem disetujui.\n` +
                   `3. Sistem beroperasi di bawah otoritas penuh.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -1746,7 +1746,7 @@ async function startServer() {
                   `<i>"Pengawasan ketat menjamin keamanan sistem dan integritas fungsi audit."</i>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `✅ <b>DENY UNAPPROVED ACTION. STRICT ADMIN AUDITING ACTIVE.</b>`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ ᴋᴇᴍʙᴀʟɪ', 'menu_main')]]);
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
@@ -2477,17 +2477,54 @@ async function startServer() {
 
     bot.command('phone_dork', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
-      if(!args) return ctx.reply("Format: /phone_dork [nomor_hp]");
+      if(!args) return ctx.reply("⚠️ Format: /phone_dork [nomor_hp]");
       const numInfo = args.replace(/\D/g, '');
       const numID = numInfo.startsWith('0') ? '62' + numInfo.substring(1) : numInfo;
-      const reply = `<b>📱 PHONE TRACKING DORKS</b>\n` +
+      
+      let prefix = "";
+      if (numInfo.startsWith('628')) {
+        prefix = '08' + numInfo.substring(3, 5);
+      } else if (numInfo.startsWith('08')) {
+        prefix = numInfo.substring(0, 4);
+      } else if (numInfo.startsWith('8')) {
+        prefix = '08' + numInfo.substring(1, 3);
+      }
+
+      const telkomsel = ["0811", "0812", "0813", "0821", "0822", "0823", "0851", "0852", "0853"];
+      const indosat = ["0814", "0815", "0816", "0855", "0856", "0857", "0858"];
+      const xl = ["0817", "0818", "0819", "0859", "0877", "0878"];
+      const axis = ["0831", "0832", "0833", "0838"];
+      const tri = ["0895", "0896", "0897", "0898", "0899"];
+      const smartfren = ["0881", "0882", "0883", "0884", "0885", "0886", "0887", "0888", "0889"];
+
+      let carrier = "Unknown Carrier";
+      let brand = "Lokal / Satelit / Internasional";
+      let logo = "👤";
+
+      if (telkomsel.includes(prefix)) { carrier = "Telkomsel"; brand = "Loop/Kartu AS/SimPATI/By.U"; logo = "🔴"; }
+      else if (indosat.includes(prefix)) { carrier = "Indosat Ooredoo"; brand = "IM3/Mentari"; logo = "🟡"; }
+      else if (xl.includes(prefix)) { carrier = "XL Axiata"; brand = "XL/Prioritas"; logo = "🔵"; }
+      else if (axis.includes(prefix)) { carrier = "Axis Axiata"; brand = "Axis"; logo = "🟣"; }
+      else if (tri.includes(prefix)) { carrier = "Three (3)"; brand = "Tri"; logo = "🟢"; }
+      else if (smartfren.includes(prefix)) { carrier = "Smartfren"; brand = "Smartfren"; logo = "💗"; }
+
+
+      const reply = `<b>📱 ADVANCED PHONE OSINT</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💎 <b>TARGET:</b> <code>${args}</code>\n\n` +
-                    `├ 📦 <b>Truecaller:</b> <a href="https://www.truecaller.com/search/global/${numID}">Cari Identitas</a>\n` +
-                    `├ 💬 <b>WhatsApp:</b> <a href="https://wa.me/${numID}">Check Profile</a>\n` +
-                    `└ 🔍 <b>Google:</b> <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22">Cari Jejak Digital</a>\n` +
+                    `🎯 <b>Target:</b> <code>${args}</code>\n` +
+                    `🌐 <b>Int. Format:</b> <code>+${numID}</code>\n` +
+                    `📶 <b>Provider:</b> ${logo} ${carrier} (${prefix})\n` +
+                    `📝 <b>Brand:</b> ${brand}\n\n` +
+                    `🔍 <b>INTELLIGENCE DORKS</b>\n` +
+                    `├ 📦 <a href="https://www.truecaller.com/search/global/${numID}">Truecaller Identity (Caller ID)</a>\n` +
+                    `├ 💬 <a href="https://wa.me/${numID}">WhatsApp Profile Check</a>\n` +
+                    `├ 📎 <a href="https://t.me/+${numID}">Telegram Account Search</a>\n` +
+                    `├ 🚨 <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22+AND+(leak+OR+db+OR+dump+OR+password+OR+database)">Database Leaks Audit</a>\n` +
+                    `├ 📊 <a href="https://www.google.com/search?q=site:*.id+ext:xlsx+OR+ext:pdf+OR+ext:txt+%22${args}%22">Spreadsheet Leaks (.xlsx)</a>\n` +
+                    `└ 📝 <a href="https://www.google.com/search?q=site:pastebin.com+OR+site:paste.ee+OR+site:ghostbin.co+%22${args}%22">Pastebin Logs Search</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `⚠️ <i>Tips: Gunakan aplikasi GetContact (Apps) untuk hasil nama tag terbaik.</i>`;
+                    `⚠️ <i>Info: Gunakan GetContact (Apps) untuk hasil tags penamaan terbaik pada target lokal.</i>`;
+
       ctx.reply(reply, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 

