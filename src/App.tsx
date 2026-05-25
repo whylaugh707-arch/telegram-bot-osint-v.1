@@ -16,35 +16,35 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('social');
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#00ff00] font-serif selection:bg-[#00ff00]/30 selection:text-black">
+    <div className="min-h-screen bg-[#020205] text-[#38bdf8] font-serif selection:bg-[#38bdf8]/30 selection:text-black">
       {/* Scanline Effect */}
-      <div className="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-30"></div>
+      <div className="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(10,12,24,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(56,189,248,0.03),rgba(56,189,248,0.01),rgba(56,189,248,0.03))] bg-[length:100%_2px,3px_100%] opacity-20"></div>
       
       {/* Navbar */}
-      <header className="border-b border-[#00ff00]/20 bg-black/80 backdrop-blur sticky top-0 z-40">
+      <header className="border-b border-[#38bdf8]/20 bg-black/90 backdrop-blur sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 rounded border border-[#00ff00]/40 flex items-center justify-center bg-[#00ff00]/5 group hover:bg-[#00ff00]/20 transition-all">
-              <ShieldAlert className="w-6 h-6 text-[#00ff00] animate-pulse" />
+            <div className="w-10 h-10 rounded border border-[#38bdf8]/40 flex items-center justify-center bg-[#38bdf8]/5 group hover:bg-[#38bdf8]/20 transition-all">
+              <ShieldAlert className="w-6 h-6 text-[#38bdf8] animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-[0.2em] uppercase">
-                TRIHEXA<span className="text-white/40">_HUB</span>
+              <h1 className="text-xl font-bold tracking-[0.2em] uppercase text-white">
+                TRIHEXA<span className="text-[#38bdf8]/60">_HUB</span>
               </h1>
-              <div className="text-[10px] text-[#00ff00]/40 flex items-center space-x-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-[#00ff00] animate-ping"></span>
+              <div className="text-[10px] text-[#38bdf8]/40 flex items-center space-x-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#38bdf8] animate-ping"></span>
                 <span>OSINT_TERMINAL_V9.3//LOCAL_INSTANCE</span>
               </div>
             </div>
           </div>
-          <div className="hidden lg:flex items-center space-x-6 text-[10px] tracking-widest text-[#00ff00]/60">
-            <div className="flex flex-col items-end border-r border-[#00ff00]/20 pr-6">
-              <span>UPLINK: <span className="text-[#00ff00]">STABLE</span></span>
-              <span>ENCRYPTION: <span className="text-[#00ff00]">AES-256</span></span>
+          <div className="hidden lg:flex items-center space-x-6 text-[10px] tracking-widest text-[#38bdf8]/60">
+            <div className="flex flex-col items-end border-r border-[#38bdf8]/20 pr-6">
+              <span>UPLINK: <span className="text-[#38bdf8]">STABLE</span></span>
+              <span>ENCRYPTION: <span className="text-[#38bdf8]">AES-256</span></span>
             </div>
             <div className="flex flex-col items-end">
-              <span>LATENCY: <span className="text-[#00ff00]">14MS</span></span>
-              <span>ENTITY: <span className="text-[#00ff00]">ANONYMOUS</span></span>
+              <span>LATENCY: <span className="text-[#38bdf8]">14MS</span></span>
+              <span>ENTITY: <span className="text-[#38bdf8]">ANONYMOUS</span></span>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function App() {
         
         {/* Sidebar Nav */}
         <div className="md:col-span-3 space-y-1">
-          <div className="mb-6 px-4 py-2 bg-[#00ff00]/10 border-l-4 border-[#00ff00] text-[11px] font-bold tracking-tighter">
+          <div className="mb-6 px-4 py-2 bg-[#38bdf8]/10 border-l-4 border-[#38bdf8] text-[11px] font-bold tracking-tighter">
             CORE_MODULES
           </div>
           <NavButton 
@@ -94,7 +94,7 @@ export default function App() {
             label="DORK_ENGINE" 
           />
           
-          <div className="mt-8 mb-4 px-4 py-2 bg-[#00ff00]/10 border-l-4 border-[#00ff00] text-[11px] font-bold tracking-tighter">
+          <div className="mt-8 mb-4 px-4 py-2 bg-[#38bdf8]/10 border-l-4 border-[#38bdf8] text-[11px] font-bold tracking-tighter">
             STEALTH_TOOLS
           </div>
           <NavButton 
@@ -119,35 +119,35 @@ export default function App() {
           <div className="mt-8 mb-6 px-4 py-2 bg-[#ff0000]/10 border-l-4 border-[#ff0000] text-[11px] font-bold tracking-tighter text-[#ff0000]">
             SYSTEM_STATUS
           </div>
-          <div className="px-4 py-3 border border-[#00ff00]/10 bg-[#00ff00]/5 rounded text-[10px] space-y-2">
+          <div className="px-4 py-3 border border-[#38bdf8]/10 bg-[#38bdf8]/5 rounded text-[10px] space-y-2">
             <div className="flex justify-between">
-              <span className="text-[#00ff00]/40 text-xs">CPU_LOAD</span>
+              <span className="text-[#38bdf8]/40 text-xs">CPU_LOAD</span>
               <span>12.4%</span>
             </div>
-            <div className="w-full bg-[#00ff00]/10 h-1 rounded overflow-hidden">
-              <div className="bg-[#00ff00] h-full w-[12.4%]"></div>
+            <div className="w-full bg-[#38bdf8]/10 h-1 rounded overflow-hidden">
+              <div className="bg-[#38bdf8] h-full w-[12.4%]"></div>
             </div>
             <div className="flex justify-between mt-4">
-              <span className="text-[#00ff00]/40 text-xs">MEM_USE</span>
+              <span className="text-[#38bdf8]/40 text-xs">MEM_USE</span>
               <span>442MB</span>
             </div>
-            <div className="w-full bg-[#00ff00]/10 h-1 rounded overflow-hidden">
-              <div className="bg-[#00ff00] h-full w-[40%]"></div>
+            <div className="w-full bg-[#38bdf8]/10 h-1 rounded overflow-hidden">
+              <div className="bg-[#38bdf8] h-full w-[40%]"></div>
             </div>
           </div>
         </div>
 
         {/* Workspace */}
         <div className="md:col-span-9">
-          <div className="bg-black border border-[#00ff00]/30 rounded shadow-[0_0_50px_rgba(0,255,0,0.1)] relative min-h-[700px]">
+          <div className="bg-black/40 backdrop-blur border border-[#38bdf8]/30 rounded shadow-[0_0_50px_rgba(56,189,248,0.08)] relative min-h-[700px]">
             {/* Terminal Window Header */}
-            <div className="bg-[#00ff00]/10 border-b border-[#00ff00]/20 px-4 py-2 flex items-center justify-between">
+            <div className="bg-[#38bdf8]/10 border-b border-[#38bdf8]/20 px-4 py-2 flex items-center justify-between">
               <div className="flex space-x-2">
                 <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
                 <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
                 <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
               </div>
-              <div className="text-[10px] tracking-widest opacity-40 uppercase">
+              <div className="text-[10px] text-[#38bdf8]/70 tracking-widest opacity-80 uppercase font-bold">
                 {activeTab}_PROTOCOL_OVERRIDE
               </div>
               <div className="w-12"></div>
@@ -178,13 +178,13 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       onClick={onClick}
       className={`w-full flex items-center space-x-4 px-4 py-3 transition-all duration-200 border-l-2 ${
         active 
-          ? 'bg-[#00ff00]/10 text-[#00ff00] border-[#00ff00] shadow-[inset_4px_0_0_0_#00ff00]' 
-          : 'text-[#00ff00]/40 hover:text-[#00ff00]/70 hover:bg-[#00ff00]/5 border-transparent'
+          ? 'bg-[#38bdf8]/10 text-white border-[#38bdf8] shadow-[inset_4px_0_0_0_#38bdf8]' 
+          : 'text-[#38bdf8]/40 hover:text-[#38bdf8]/70 hover:bg-[#38bdf8]/5 border-transparent'
       }`}
     >
-      <span className={active ? 'animate-pulse' : ''}>{icon}</span>
+      <span className={active ? 'text-[#38bdf8]' : ''}>{icon}</span>
       <span className="text-[11px] font-bold tracking-[0.2em] font-serif">{label}</span>
-      {active && <div className="ml-auto text-[10px] animate-pulse">_ACTIVE</div>}
+      {active && <div className="ml-auto text-[10px] text-[#38bdf8] animate-pulse">_ACTIVE</div>}
     </button>
   );
 }

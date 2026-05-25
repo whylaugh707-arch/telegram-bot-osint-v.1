@@ -1,4 +1,6 @@
 import express from "express";
+import axios from "axios";
+import { nikParser } from "nik-parser";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dns from "dns";
@@ -381,31 +383,64 @@ async function startServer() {
     const nik = String(req.query.nik || '');
     if (!/^\d{16}$/.test(nik)) return res.status(400).json({ error: 'NIK must be 16 digits' });
 
-    const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
-    const prov = nik.substring(0, 2);
-    const kab = nik.substring(2, 4);
-    const kec = nik.substring(4, 6);
-    let tgl = parseInt(nik.substring(6, 8), 10);
-    const bln = nik.substring(8, 10);
-    let thn = parseInt(nik.substring(10, 12), 10);
-    const urut = nik.substring(12, 16);
+    try {
+      const parsed = nikParser(nik);
+      const genderStr = parsed.kelamin() === 'pria' ? 'Laki-laki' : parsed.kelamin() === 'wanita' ? 'Perempuan' : 'Unknown';
+      let birthDateStr = 'Unknown';
+      try {
+        const d = parsed.lahir();
+        if (d) {
+          const bornDate = d instanceof Date ? d : new Date(d);
+          if (!isNaN(bornDate.getTime())) {
+            const day = String(bornDate.getDate()).padStart(2, '0');
+            const month = String(bornDate.getMonth() + 1).padStart(2, '0');
+            const year = bornDate.getFullYear();
+            birthDateStr = `${day}-${month}-${year}`;
+          }
+        }
+      } catch (err) {}
 
-    let gender = "Laki-laki";
-    if (tgl >= 40) {
-      gender = "Perempuan";
-      tgl -= 40;
+      res.json({
+        nik,
+        gender: genderStr,
+        birthDate: birthDateStr,
+        province: parsed.province() || 'Unknown',
+        kabupaten: parsed.kabupatenKota() || 'Unknown',
+        kecamatan: parsed.kecamatan() || 'Unknown',
+        postalCode: parsed.kodepos() || 'Unknown',
+        sequence: parsed.uniqcode() || nik.substring(12, 16),
+        isValid: parsed.isValid()
+      });
+    } catch (e) {
+      const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
+      const prov = nik.substring(0, 2);
+      const kab = nik.substring(2, 4);
+      const kec = nik.substring(4, 6);
+      let tgl = parseInt(nik.substring(6, 8), 10);
+      const bln = nik.substring(8, 10);
+      let thn = parseInt(nik.substring(10, 12), 10);
+      const urut = nik.substring(12, 16);
+
+      let gender = "Laki-laki";
+      if (tgl >= 40) {
+        gender = "Perempuan";
+        tgl -= 40;
+      }
+      const currentYear = new Date().getFullYear() % 100;
+      thn = thn > currentYear ? 1900 + thn : 2000 + thn;
+
+      res.json({
+        nik, gender, 
+        birthDate: `${tgl.toString().padStart(2, '0')}-${bln}-${thn}`,
+        province: provMap[prov] || "Unknown",
+        kabupaten: `Kode Kab: ${kab}`,
+        kecamatan: `Kode Kec: ${kec}`,
+        postalCode: 'Unknown',
+        sequence: urut,
+        isValid: false,
+        error: false
+      });
     }
-    const currentYear = new Date().getFullYear() % 100;
-    thn = thn > currentYear ? 1900 + thn : 2000 + thn;
-
-    res.json({
-      nik, gender, 
-      birthDate: `${tgl.toString().padStart(2, '0')}-${bln}-${thn}`,
-      province: provMap[prov] || "Unknown",
-      kabupatenCode: kab,
-      kecamatanCode: kec,
-      sequence: urut
-    });
   });
 
   app.get('/api/osint/plat', (req, res) => {
@@ -1717,48 +1752,80 @@ async function startServer() {
 
     bot.command('nik', (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format salah. Contoh: /nik 3201010101900001");
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /nik 3201010101900001");
       const nik = args[1];
 
       if (!/^\d{16}$/.test(nik)) {
-        return ctx.reply("❌ NIK harus terdiri dari 16 digit angka.");
+        return ctx.reply("❌ Format Salah: NIK harus terdiri dari 16 digit angka.");
       }
 
-      const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
+      try {
+        const parsed = nikParser(nik);
+        const jkStr = parsed.kelamin() === 'pria' ? 'Laki-laki 👨' : parsed.kelamin() === 'wanita' ? 'Perempuan 👩' : 'Unknown 👤';
+        
+        let bornDateStr = 'Unknown';
+        try {
+          const d = parsed.lahir();
+          if (d) {
+            const bornDate = d instanceof Date ? d : new Date(d);
+            if (!isNaN(bornDate.getTime())) {
+              const day = String(bornDate.getDate()).padStart(2, '0');
+              const month = String(bornDate.getMonth() + 1).padStart(2, '0');
+              const year = bornDate.getFullYear();
+              bornDateStr = `${day}-${month}-${year}`;
+            }
+          }
+        } catch (err) {}
 
-      const prov = nik.substring(0, 2);
-      const kab = nik.substring(2, 4);
-      const kec = nik.substring(4, 6);
-      let tgl = parseInt(nik.substring(6, 8), 10);
-      const bln = nik.substring(8, 10);
-      let thn = parseInt(nik.substring(10, 12), 10);
-      const urut = nik.substring(12, 16);
+        const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `📋 <b>NIK:</b> <code>${nik}</code>\n` +
+                      `👤 <b>Gender:</b> ${jkStr}\n` +
+                      `📅 <b>Tanggal Lahir:</b> <code>${bornDateStr}</code>\n` +
+                      `📍 <b>Informasi Wilayah:</b>\n` +
+                      `├ <b>Provinsi:</b> ${parsed.province() || 'Unknown'}\n` +
+                      `├ <b>Kabupaten/Kota:</b> ${parsed.kabupatenKota() || 'Unknown'}\n` +
+                      `├ <b>Kecamatan:</b> ${parsed.kecamatan() || 'Unknown'}\n` +
+                      `└ <b>Kode Pos (Estimasi):</b> <code>${parsed.kodepos() || 'Unknown'}</code>\n` +
+                      `🔢 <b>Nomor Urut:</b> <code>${parsed.uniqcode() || nik.substring(12, 16)}</code>\n` +
+                      `🤖 <b>Status Validasi:</b> ${parsed.isValid() ? '✅ VALID (Database Cocok)' : '⚠️ STRUKTUR COCOK (Format Benar)'}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `✅ <i>Analisis selesai dengan data wilayah penuh.</i>`;
 
-      let jk = "Laki-laki 👨";
-      if (tgl >= 40) {
-        jk = "Perempuan 👩";
-        tgl -= 40;
+        ctx.reply(reply, { parse_mode: 'HTML' });
+      } catch (e) {
+        const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
+        const prov = nik.substring(0, 2);
+        const kab = nik.substring(2, 4);
+        const kec = nik.substring(4, 6);
+        let tgl = parseInt(nik.substring(6, 8), 10);
+        const bln = nik.substring(8, 10);
+        let thn = parseInt(nik.substring(10, 12), 10);
+        const urut = nik.substring(12, 16);
+
+        let jk = "Laki-laki 👨";
+        if (tgl >= 40) {
+          jk = "Perempuan 👩";
+          tgl -= 40;
+        }
+        const currentYear = new Date().getFullYear() % 100;
+        thn = thn > currentYear ? 1900 + thn : 2000 + thn;
+
+        const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `📋 <b>NIK:</b> <code>${nik}</code>\n` +
+                      `👤 <b>Gender:</b> ${jk}\n` +
+                      `📅 <b>Lahir:</b> <code>${tgl.toString().padStart(2, '0')}-${bln}-${thn}</code>\n` +
+                      `📍 <b>Wilayah:</b>\n` +
+                      `├ Provinsi: ${provMap[prov] || "Tidak diketahui"}\n` +
+                      `├ Kode Kab: ${kab}\n` +
+                      `└ Kode Kec: ${kec}\n` +
+                      `🔢 <b>No Urut:</b> ${urut}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━\n` +
+                      `✅ <i>Analisis selesai (Sederhana).</i>`;
+
+        ctx.reply(reply, { parse_mode: 'HTML' });
       }
-      
-      const currentYear = new Date().getFullYear() % 100;
-      thn = thn > currentYear ? 1900 + thn : 2000 + thn;
-
-      const provinsi = provMap[prov] || "Tidak diketahui";
-
-      const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📋 <b>NIK:</b> <code>${nik}</code>\n` +
-                    `👤 <b>Gender:</b> ${jk}\n` +
-                    `📅 <b>Lahir:</b> <code>${tgl.toString().padStart(2, '0')}-${bln}-${thn}</code>\n` +
-                    `📍 <b>Wilayah:</b>\n` +
-                    `├ Provinsi: ${provinsi}\n` +
-                    `├ Kode Kab: ${kab}\n` +
-                    `└ Kode Kec: ${kec}\n` +
-                    `🔢 <b>No Urut:</b> ${urut}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `✅ <i>Analisis selesai.</i>`;
-
-      ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
     bot.command('plat', (ctx) => {
