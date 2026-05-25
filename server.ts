@@ -220,7 +220,7 @@ async function startServer() {
 
   let botStatus = "ON";
   let bannedUsers = new Set<number>();
-  let botDescription = "Saya adalah bot serbaguna yang siap membantu Anda dengan berbagai fitur menarik.";
+  let botDescription = `ʜᴀʟᴏ ᴘʀɪᴀ-ᴘʀɪᴀ ʏᴀɴɢ ᴛᴇʀꜱᴀᴋɪᴛɪ ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ᴛᴇʀᴍɪɴᴀʟ 🐉 ᴛʀɪʜᴇxᴀ 🐉\n\nʙᴏᴛ ɪɴɪ ᴍᴇɴʏᴇᴅɪᴀᴋᴀɴ ʙᴀɴʏᴀᴋ ꜰɪᴛᴜʀ ꜰɪᴛᴜʀ ᴀᴅᴠᴀɴᴄᴇ ꜱᴇᴄᴀʀᴀ ɢʀᴀᴛɪꜱ, ꜱᴇʟᴀᴍᴀ ᴍᴀꜱɪʜ ᴀᴅᴀ ᴏᴛᴀᴋ ᴅᴀɴ ʟᴏɢɪᴋᴀ ᴅɪʙᴀʟɪᴋɴʏᴀ ᴍᴏʜᴏɴ ɢᴜɴᴀᴋᴀɴ ᴅᴇɴɢᴀɴ ʙɪᴊᴀᴋ. \n\n"ᴋᴀᴍɪ, ᴛʀɪʜᴇxᴀ, ʙᴜᴋᴀɴ ᴋᴀᴘɪᴛᴀʟɪꜱ. ᴋᴀʀᴇɴᴀ ɪɴɪ ɢʀᴀᴛɪꜱ ᴍᴏʜᴏɴ ɢᴜɴᴀᴋᴀɴ ᴅᴇɴɢᴀɴ ᴏᴛᴀᴋ ʏᴀɴɢ ʙᴇɴᴀʀ" \n\nꜱᴀʟᴀᴍ ʜᴏʀᴍᴀᴛ ᴘᴇᴍʙᴜᴀᴛ ꜱᴀʏᴀ \n- ᴊᴇᴇᴍɪᴋᴋᴏ`;
 
   try {
     if (fs.existsSync('auth.json')) {
@@ -1388,9 +1388,8 @@ async function startServer() {
         ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
     });
 
-    const getStartMsg = () => `🤖 <b>Halo! Selamat datang di Bot.</b>\n\n` +
-                         `${botDescription}\n\n` +
-                         `Silakan pilih menu di bawah ini:`;
+    const getStartMsg = () => `<b>${botDescription}</b>\n\n` +
+                         `<i>Silakan pilih menu di bawah ini:</i>`;
     
     const mainKeyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Stealth Logger', 'menu_logger')],
