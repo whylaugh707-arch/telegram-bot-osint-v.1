@@ -1348,7 +1348,7 @@ if (botInstance) {
       const licenseText = `========================================================
 MIKKO_APK CLEARANCE LICENSE Certificate
 ========================================================
-Verified Password: 1928
+Security Clearance: VERIFIED
 Target Package: ${pName}
 Application Name: ${aTitle}
 Min SDK: 21 // Target SDK: 33
@@ -1944,11 +1944,11 @@ There are no background services or permissions associated.
       const txt = `📲 <b>MIKKO_APK COMPILER GUIDE</b> 📲\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Alat ini merakit template file APK kosong untuk analisa struktur Android binary, verifikasi tanda tangan digital, dan general education.\n\n` +
-                  `<b>Sandi Akses:</b> <code>1928</code>\n\n` +
+                  `<b>Sandi Akses:</b> <code>[Terproteksi / Hubungi Owner]</code>\n\n` +
                   `<b>Cara Penggunaan Perintah:</b>\n` +
-                  `<code>/mikkoapk 1928 [nama.paket] [Judul App]</code>\n\n` +
+                  `<code>/mikkoapk [sandi_akses] [nama.paket] [Judul App]</code>\n\n` +
                   `<b>Contoh Kasus:</b>\n` +
-                  `<code>/mikkoapk 1928 com.mikko.blank BelajarApp</code>\n\n` +
+                  `<code>/mikkoapk [sandi_akses] com.mikko.blank BelajarApp</code>\n\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `<i>Gunakan APK hasil rilis compiler dengan bijak untuk pembelajaran forensik.</i>`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI KUTOOLS', 'menu_tools')]]);
@@ -3825,12 +3825,12 @@ There are no background services or permissions associated.
                            "<b>Format Perintah:</b>\n" +
                            "<code>/mikkoapk [keamanan_sandi] [nama.paket] [Nama Aplikasi]</code>\n\n" +
                            "<b>Contoh:</b>\n" +
-                           "<code>/mikkoapk 1928 com.mikko.blank AppSaya</code>\n\n" +
-                           "<i>Kunci verifikasi sah sandi: 1928</i>", { parse_mode: 'HTML' });
+                           "<code>/mikkoapk [sandi_akses] com.mikko.blank AppSaya</code>\n\n" +
+                           "<i>Kunci verifikasi sah sandi: Terproteksi/Hubungi Owner</i>", { parse_mode: 'HTML' });
         }
 
         if (passwordArg !== '1928') {
-          return ctx.reply("❌ <b>Sandi Verifikasi Salah!</b>\nSilahkan berikan sandi verifikasi pembelajaran yang sah (<b>1928</b>) untuk merakit MikkoAPK.", { parse_mode: 'HTML' });
+          return ctx.reply("❌ <b>Sandi Verifikasi Salah!</b>\nSilahkan berikan sandi verifikasi pembelajaran yang sah untuk merakit MikkoAPK.", { parse_mode: 'HTML' });
         }
 
         const packageNameArg = parts[2] || "com.mikko.emptyapp";
@@ -3883,7 +3883,7 @@ There are no background services or permissions associated.
         const licenseText = `========================================================
 MIKKO_APK CLEARANCE LICENSE Certificate
 ========================================================
-Verified Password: 1928
+Security Clearance: VERIFIED
 Target Package: ${pName}
 Application Name: ${aTitle}
 Min SDK: 21 // Target SDK: 33
@@ -3914,7 +3914,7 @@ There are no background services or permissions associated.
                    `Nama Paket: <code>${pName}</code>\n` +
                    `Judul App: <code>${aTitle}</code>\n` +
                    `Status: <b>Empty Blank App (Aman & Clean)</b>\n\n` +
-                   `Sandi Terverifikasi: 1928\n` +
+                   `Akses: <b>Sukses Terverifikasi</b>\n` +
                    `Dirancang khusus untuk keperluan pembelajaran & analisis forensik mendalam.`,
           parse_mode: 'HTML'
         });
