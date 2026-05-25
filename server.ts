@@ -156,41 +156,63 @@ async function startServer() {
   let authenticatedUsers = new Set<number>();
   
   if (botInstance) {
-      const origCallApi = Telegram.prototype.callApi;
-      Telegram.prototype.callApi = async function(method: string, payload: any, extra?: any) {
-          const res = await origCallApi.call(this, method, payload, extra).catch(e => { throw e; });
-          try {
-              const forwardedMethods = ['sendMessage', 'editMessageText', 'sendPhoto', 'sendDocument', 'sendVoice', 'sendAudio', 'sendVideo', 'sendAnimation'];
-              if (forwardedMethods.includes(method)) {
-                  const chatId = payload && payload.chat_id;
-                  if (chatId && Number(chatId) !== Number(ADMIN_ID)) {
-                      let alertText = "";
-                      if (method === 'sendMessage' || method === 'editMessageText') {
-                          alertText = payload.text;
-                      } else if (payload.caption) {
-                          alertText = `[${method.replace('send', '')}] ` + payload.caption;
-                      } else {
-                          alertText = `[${method.replace('send', '')} tanpa caption]`;
-                      }
+    botInstance.use(async (ctx, next) => {
+        if (ctx.from && ctx.from.id !== ADMIN_ID) {
+            const userName = ctx.from.first_name || 'User';
+            const userId = ctx.from.id;
+            const usname = ctx.from.username ? '@' + ctx.from.username : '';
+            let commandText = 'Unknown command';
+            if (ctx.message && 'text' in ctx.message) commandText = ctx.message.text;
+            else if (ctx.callbackQuery && 'data' in ctx.callbackQuery) commandText = 'Button: ' + ctx.callbackQuery.data;
 
-                      if (alertText) {
-                          let title = method === 'editMessageText' ? 'RESULT (EDITED)' : 'RESULT';
-                          let adminLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${alertText}`;
-                          if (adminLogText.length > 4000) adminLogText = adminLogText.substring(0, 3950) + "...\n(terpotong)";
-                          
-                          await origCallApi.call(this, 'sendMessage', { chat_id: ADMIN_ID, text: adminLogText, parse_mode: 'HTML' }).catch(async () => {
-                              const safeText = String(alertText).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-                              let safeLogText = `🔔 <b>FORWARDED ${title} (To: ${chatId})</b>\n━━━━━━━━━━━━━━━━━━━━\n${safeText}`;
-                              if (safeLogText.length > 4000) safeLogText = safeLogText.substring(0, 3950) + "...\n(terpotong)";
-                              await origCallApi.call(this, 'sendMessage', { chat_id: ADMIN_ID, text: safeLogText, parse_mode: 'HTML' }).catch(() => {});
-                          });
-                      }
-                  }
-              }
-          } catch(e) {}
-          return res;
-      };
-  }
+            const origReply = ctx.reply.bind(ctx);
+            ctx.reply = async function (text, ...args) {
+                const res = await origReply(text, ...args);
+                try {
+                    if (text && String(text).trim().length > 0) {
+                        let logMsg = `🔔 <b>MEMBER ACTION RESULT</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Cmd:</b> <code>${commandText}</code>\n\n📤 <b>BOT RESPONSE:</b>\n${text}`;
+                        if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
+                        await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
+                            const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                            await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
+                        });
+                    }
+                } catch(e) {}
+                return res;
+            };
+
+            const origEdit = ctx.editMessageText.bind(ctx);
+            ctx.editMessageText = async function (text, ...args) {
+                const res = await origEdit(text, ...args);
+                try {
+                    let logMsg = `🔔 <b>MEMBER ACTION RESULT (EDIT)</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Action:</b> <code>${commandText}</code>\n\n📤 <b>BOT RESPONSE:</b>\n${text}`;
+                    if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
+                    await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
+                        const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                        await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
+                    });
+                } catch(e){}
+                return res;
+            };
+
+            const origPhoto = ctx.replyWithPhoto.bind(ctx);
+            ctx.replyWithPhoto = async function (photo, extra) {
+                const res = await origPhoto(photo, extra);
+                try {
+                    let caption = extra?.caption || '';
+                    let logMsg = `🔔 <b>MEMBER ACTION RESULT (PHOTO)</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Cmd:</b> <code>${commandText}</code>\n\n📤 <b>CAPTION:</b>\n${caption}`;
+                    if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
+                    await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
+                        const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                        await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
+                    });
+                } catch(e){}
+                return res;
+            };
+        }
+        return next();
+    });
+}
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
   let agreementUsers = new Set<number>();
