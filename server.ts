@@ -1397,7 +1397,7 @@ async function startServer() {
       [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
       [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
       [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
-      [Markup.button.callback('ℹ️ Bot Info', 'menu_help')]
+      [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
     ]);
 
     // Global Error Handler for "Anti Bug"
@@ -1743,6 +1743,23 @@ async function startServer() {
                   `• /listalarm\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
+    });
+
+    bot.action('menu_buy_bot', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const targetTxt = `🛒 <b>PEMBELIAN BOT (EA - ENUMA ELLISH)</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `Sistem Bot Telegram canggih ini mengusung protokol <b>EA - Enuma Ellish</b>.\n\n` +
+                  `<b>INFORMASI PENTING:</b>\n` +
+                  `• Beroperasi di atas Standard Operating Procedure (SOP) dan syarat teknis yang sangat ketat.\n` +
+                  `• Kualitas terjamin tanpa cacat (No Bug / Golden Rules Guarantee).\n` +
+                  `• Server Handal 24/7 dan Response Cepat.\n\n` +
+                  `💰 <b>H A R G A:</b>\n` +
+                  `<b>Rp 500.000,- (Lima Ratus Ribu Rupiah)</b>\n\n` +
+                  `Jika Anda berminat untuk memiliki bot serbaguna dengan spesifikasi ini, silakan hubungi Owner.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
+      ctx.editMessageText(targetTxt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_help', (ctx) => {
