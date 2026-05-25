@@ -198,7 +198,7 @@ async function startServer() {
 
   let botStatus = "ON";
   let bannedUsers = new Set<number>();
-  let botDescription = "ᴀʟᴀᴛ ᴘᴇʟᴀᴄᴀᴋᴀɴ ɪɴᴛᴇɴꜱɪᴛᴀꜱ ᴛɪɴɢɢɪ, ᴅɪʙᴀɴɢᴜɴ ᴏʟᴇʜ ᴊᴇᴇᴍɪᴋᴋᴏ, ᴍᴇᴍɪʟɪᴋɪ ꜰɪᴛᴜʀ ꜰɪᴛᴜʀ ᴄᴀɴɢɢɪʜ ꜱᴇᴘᴇʀᴛɪ ᴏꜱɪɴᴛ & ʀᴇᴄᴏɴ, ꜱᴛᴇᴀʟᴛʜ ʟᴏɢɢᴇʀ, ᴀᴅᴠ ᴛᴏᴏʟꜱ, ᴄᴏᴍᴘʟᴇx ɢᴀᴍᴇꜱ, ᴀʟᴀʀᴍ ʜᴜʙ, ᴅᴀɴ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ.";
+  let botDescription = "Advanced intelligence processing terminal. Providing core analytics, footprint tracking, and system tracing with high-grade reliability. \n\nDeveloped & Authored by Jeemikko.";
 
   try {
     if (fs.existsSync('auth.json')) {
@@ -385,6 +385,7 @@ async function startServer() {
 
     try {
       const parsed = nikParser(nik);
+      const PROVINCES = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'}; const provName = PROVINCES[nik.substring(0,2)] || parsed.province() || 'Unknown';
       const genderStr = parsed.kelamin() === 'pria' ? 'Laki-laki' : parsed.kelamin() === 'wanita' ? 'Perempuan' : 'Unknown';
       let birthDateStr = 'Unknown';
       try {
@@ -400,14 +401,23 @@ async function startServer() {
         }
       } catch (err) {}
 
+      let prov = "Data wilayah belum tersedia";
+      let kab = "Data wilayah belum tersedia";
+      let kec = "Data wilayah belum tersedia";
+      let pos = "Data wilayah belum tersedia";
+      try { prov = provName || "Data wilayah belum tersedia"; } catch (err) {}
+      try { kab = parsed.kabupatenKota() || "Data wilayah belum tersedia"; } catch (err) {}
+      try { kec = parsed.kecamatan() || "Data wilayah belum tersedia"; } catch (err) {}
+      try { pos = parsed.kodepos() ? String(parsed.kodepos()) : "Data wilayah belum tersedia"; } catch (err) {}
+
       res.json({
         nik,
         gender: genderStr,
         birthDate: birthDateStr,
-        province: parsed.province() || 'Unknown',
-        kabupaten: parsed.kabupatenKota() || 'Unknown',
-        kecamatan: parsed.kecamatan() || 'Unknown',
-        postalCode: parsed.kodepos() || 'Unknown',
+        province: prov,
+        kabupaten: kab,
+        kecamatan: kec,
+        postalCode: pos,
         sequence: parsed.uniqcode() || nik.substring(12, 16),
         isValid: parsed.isValid()
       });
@@ -1346,19 +1356,15 @@ async function startServer() {
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
         ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
-        const startMsgText = `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
-                             `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
-                             `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
-                             `${botDescription}\n\n` +
-                             `━━━━━━━━━━━━━━━━━━━━`;
+        const startMsgText = getStartMsg();
         ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
     });
 
-    const getStartMsg = () => `━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━\n\n` +
-                         `<b>ᴛʀɪʜᴇxᴀ666 - ᴘʀɪɴᴄᴇ ᴏꜰ ᴏꜱɪɴᴛ ᴀɴᴅ ʟᴏɢɢᴇʀ ʟɪɴᴋ ᴠ.1</b>\n\n` +
-                         `<b>ᴏᴡɴᴇʀ : ᴡʜʏʟᴀᴜɢʜ404</b>\n\n` +
+    const getStartMsg = () => `<blockquote><b>TriHEXA Intelligence Hub v9.3</b>\n` +
+                         `<i>Advanced Analytics & Tracker Services</i></blockquote>\n\n` +
+                         `<b>Owner:</b> WHYLAUGH404\n\n` +
                          `${botDescription}\n\n` +
-                         `━━━━━━━━━━━━━━━━━━━━`;
+                         `<i>Please select an operational module below:</i>`;
     
     const mainKeyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Stealth Logger', 'menu_logger')],
@@ -1466,24 +1472,21 @@ async function startServer() {
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const safeName = (ctx.from?.first_name || 'ᴜꜱᴇʀ').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-      const txt = `<b>━━━━━━━ ᴛʀɪʜᴇxᴀ666 ━━━━━━━</b>\n` +
-        `<b>⚔️ ᴇʟɪᴛᴇ ᴏꜱɪɴᴛ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴠ.1</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `👋 ʜᴀʟᴏ <b>${safeName}</b>,\n` +
-        `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ᴄᴇɴᴛᴇʀ ᴏᴘᴇʀᴀꜱɪ. sɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴏᴅᴜʟ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:`;
+      const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+      const txt = `${getStartMsg()}\n` +
+        `<i>Session Active for: ${safeName}</i>`;
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
     });
 
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 ʟᴏᴄᴀʟ ᴏꜱɪɴᴛ (ʙᴀꜱɪᴄ)</b>\n` +
+      const txt = `<b>🇮🇩 Local OSINT (Basic)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `ᴘᴇʀɪɴᴛᴀʜ ᴅᴀꜱᴀʀ ɪɴᴠᴇꜱᴛɪɢᴀꜱɪ & ᴘᴇʀᴇᴛᴀꜱᴀɴ ɪɴꜰᴏ:\n\n` +
-                  `• /ip [ɪᴘ_ᴀᴅᴅʀ] - ɪᴘ ɢᴇᴏ & ɪꜱᴘ ᴛʀᴀᴄᴋ\n` +
-                  `• /domain [ᴅᴏᴍᴀɪɴ] - ᴡʜᴏɪꜱ & ᴅɴꜱ ʀᴇᴄᴏʀᴅꜱ\n` +
-                  `• /phone_dork [ɴᴏᴍᴏʀ] - ᴄᴇᴋ ᴘʀᴏᴠɪᴅᴇʀ\n` +
-                  `• /bininfo [ʙɪɴ_ɴᴜᴍ] - ᴄᴇᴋ ʙɪɴ ᴋᴀʀᴛᴜ ᴋʀᴇᴅɪᴛ\n` +
+                  `Perintah Dasar Investigasi & Recon:\n\n` +
+                  `• /ip [ɪᴘ_ᴀᴅᴅʀ] - IP Geo & ISP Track\n` +
+                  `• /domain [ᴅᴏᴍᴀɪɴ] - WHOIS & DNS Records\n` +
+                  `• /phone_dork [ɴᴏᴍᴏʀ] - Cek Provider\n` +
+                  `• /bininfo [ʙɪɴ_ɴᴜᴍ] - Cek BIN Kartu Kredit\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('🔍 OSINT INDO (Adv)', 'menu_osint_indo')],
@@ -1496,20 +1499,20 @@ async function startServer() {
       ctx.answerCbQuery().catch(() => {});
       if (!ctx.from) return;
       if (ctx.from.id !== ADMIN_ID) {
-        const txt = `🔒 <b>ꜰɪᴛᴜʀ ᴡʜᴀᴛꜱᴀᴘᴘ ʙᴏᴛ ᴛᴇʀᴋᴜɴᴄɪ</b>\n\n` +
+        const txt = `🔒 <b>Fitur WhatsApp Bot Terkunci</b>\n\n` +
                     `Mohon maaf, fitur integrasi WhatsApp Bot hanya dapat diakses dan digunakan oleh <b>Admin Owner</b> saja.`;
         const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
         ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
         return;
       }
-      const txt = `<b>📲 WhatsApp Bot ɪɴᴛᴇɢʀᴀᴛɪᴏɴ</b>\n` +
+      const txt = `<b>📲 WhatsApp Bot Integration</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `ʜᴜʙᴜɴɢᴋᴀɴ ʙᴏᴛ ɪɴɪ ᴋᴇ ɴᴏᴍᴏʀ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ ꜱᴇʙᴀɢᴀɪ ʙᴏᴛ ᴀᴋᴛɪꜰ!\n` +
                   `ꜱᴇᴍᴜᴀ ꜰɪᴛᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴋᴀɴ ᴛᴇʀꜱᴇᴅɪᴀ ᴅɪ ᴡʜᴀᴛꜱᴀᴘᴘ ᴀɴᴅᴀ.\n\n` +
-                  `👉 <b>ᴄᴀʀᴀ ᴘᴇɴɢɢᴜɴᴀᴀɴ:</b>\n` +
-                  `ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ: <code>/wa_connect</code>\n\n` +
-                  `⚠️ <b>ᴘᴇʀɪɴɢᴀᴛᴀɴ:</b>\n` +
-                  `ɢᴜɴᴀᴋᴀɴ ɴᴏᴍᴏʀ ᴋᴇᴅᴜᴀ/ʙᴏᴛ, ᴊᴀɴɢᴀɴ ɴᴏᴍᴏʀ ᴘʀɪʙᴀᴅɪ ᴜɴᴛᴜᴋ ᴍᴇɴɢʜɪɴᴅᴀʀɪ ʙᴀɴ.\n` +
+                  `👉 <b>Cara Penggunaan:</b>\n` +
+                  `Ketik perintah: <code>/wa_connect</code>\n\n` +
+                  `⚠️ <b>Peringatan:</b>\n` +
+                  `Gunakan nomor kedua/bot, jangan nomor pribadi untuk menghindari blokir.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -1519,10 +1522,10 @@ async function startServer() {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>📱 QR Generator</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `ɢᴇɴᴇʀᴀᴛᴇ Qʀ ᴄᴏᴅᴇ ᴅᴀʀɪ ʟɪɴᴋ ᴀᴘᴀᴘᴜɴ!\n\n` +
-                  `👉 <b>ᴄᴀʀᴀ ᴘᴇɴɢɢᴜɴᴀᴀɴ:</b>\n` +
-                  `ᴋᴇᴛɪᴋ ᴘᴇʀɪɴᴛᴀʜ:\n<code>/qr [ʟɪɴᴋ ᴀᴛᴀᴜ ᴛᴇᴋꜱ ᴀɴᴅᴀ]</code>\n\n` +
-                  `ᴄᴏɴᴛᴏʜ:\n<code>/qr https://google.com</code>\n` +
+                  `Generate QR Code dari link apapun!\n\n` +
+                  `👉 <b>Cara Penggunaan:</b>\n` +
+                  `Ketik perintah:\n<code>/qr [Teks atau URL]</code>\n\n` +
+                  `Contoh:\n<code>/qr https://google.com</code>\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -1540,9 +1543,9 @@ async function startServer() {
                `🔗 <code>${trapUrl}</code>\n\n`;
       });
       msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 ɪɴꜰᴏ: ꜱᴇᴍᴜᴀ ᴅᴀᴛᴀ (ɪᴘ, ᴄᴀᴍ, ɢᴘꜱ) ᴀᴋᴀɴ ᴅɪᴋɪʀɪᴍ ᴋᴇ ꜱɪɴɪ.\n`;
+             `💡 Info: Semua data tangkapan akan dikirim ke sini.\n`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('💀 ꜱᴀɴᴛᴏ_ᴘᴇᴛʀᴜꜱ ᴠ.1', 'menu_santopetrus')],
+        [Markup.button.callback('🛡️ Santo Petrus v1', 'menu_santopetrus')],
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
@@ -1700,17 +1703,17 @@ async function startServer() {
 
     bot.action('menu_media', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🎵 ᴍᴇᴅɪᴀ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ</b>\n` +
-                  `• /lagu [ᴊᴜᴅᴜʟ]\n` +
-                  `• /play [ᴊᴜᴅᴜʟ]\n`;
+      const txt = `<b>🎵 Media Downloader</b>\n` +
+                  `• /lagu [Search Query]\n` +
+                  `• /play [Search Query]\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
 
     bot.action('menu_alarm', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>⏰ ᴀʟᴀʀᴍ sʏꜱᴛᴇᴍ</b>\n` +
-                  `• /alarm [ᴍᴇɴɪᴛ]\n` +
+      const txt = `<b>⏰ Alarm System</b>\n` +
+                  `• /alarm [Menit]\n` +
                   `• /listalarm\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -1723,7 +1726,7 @@ async function startServer() {
                   `ʜᴏꜱᴛ: <code>${appHost}</code>\n` +
                   `ꜱᴛᴀᴛᴜꜱ: 🟢 ᴏɴʟɪɴᴇ\n\n` +
                   `<b>📜 ᴘᴏʟɪꜱɪ ᴋᴇᴀᴍᴀɴᴀɴ (USER AGREEMENT):</b>\n` +
-                  `ꜱɪꜱᴛᴇᴍ ᴍᴇɴᴅᴇᴛᴇᴋꜱɪ ᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴜɴᴛᴜᴋ ᴘᴇʀʟɪɴᴅᴜɴɢᴀɴ ꜱᴇꜱɪ ᴅᴀʀɪ ᴀɴᴄᴀᴍᴀɴ ᴅᴇᴇᴘ-ꜰᴀᴋᴇ.\n\n` +
+                  `Sistem mendeteksi verifikasi identitas untuk perlindungan sesi.\n\n` +
                   `1. Pengguna menyatakan mematuhi seluruh aturan platform.\n` +
                   `2. Semua akses audit sistem disetujui.\n` +
                   `3. Sistem beroperasi di bawah otoritas penuh.\n` +
@@ -1761,6 +1764,7 @@ async function startServer() {
 
       try {
         const parsed = nikParser(nik);
+        const PROVINCES = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'}; const provName = PROVINCES[nik.substring(0,2)] || parsed.province() || 'Unknown';
         const jkStr = parsed.kelamin() === 'pria' ? 'Laki-laki 👨' : parsed.kelamin() === 'wanita' ? 'Perempuan 👩' : 'Unknown 👤';
         
         let bornDateStr = 'Unknown';
@@ -1777,16 +1781,25 @@ async function startServer() {
           }
         } catch (err) {}
 
+        let prov = "Data belum tersedia";
+        let kab = "Data belum tersedia";
+        let kec = "Data belum tersedia";
+        let pos = "Data belum tersedia";
+        try { prov = provName || "Data belum tersedia"; } catch(e){}
+        try { kab = parsed.kabupatenKota() || "Data belum tersedia"; } catch(e){}
+        try { kec = parsed.kecamatan() || "Data belum tersedia"; } catch(e){}
+        try { pos = parsed.kodepos() ? String(parsed.kodepos()) : "Data belum tersedia"; } catch(e){}
+
         const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
                       `📋 <b>NIK:</b> <code>${nik}</code>\n` +
                       `👤 <b>Gender:</b> ${jkStr}\n` +
                       `📅 <b>Tanggal Lahir:</b> <code>${bornDateStr}</code>\n` +
                       `📍 <b>Informasi Wilayah:</b>\n` +
-                      `├ <b>Provinsi:</b> ${parsed.province() || 'Unknown'}\n` +
-                      `├ <b>Kabupaten/Kota:</b> ${parsed.kabupatenKota() || 'Unknown'}\n` +
-                      `├ <b>Kecamatan:</b> ${parsed.kecamatan() || 'Unknown'}\n` +
-                      `└ <b>Kode Pos (Estimasi):</b> <code>${parsed.kodepos() || 'Unknown'}</code>\n` +
+                      `├ <b>Provinsi:</b> ${prov}\n` +
+                      `├ <b>Kabupaten/Kota:</b> ${kab}\n` +
+                      `├ <b>Kecamatan:</b> ${kec}\n` +
+                      `└ <b>Kode Pos (Estimasi):</b> <code>${pos}</code>\n` +
                       `🔢 <b>Nomor Urut:</b> <code>${parsed.uniqcode() || nik.substring(12, 16)}</code>\n` +
                       `🤖 <b>Status Validasi:</b> ${parsed.isValid() ? '✅ VALID (Database Cocok)' : '⚠️ STRUKTUR COCOK (Format Benar)'}\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
