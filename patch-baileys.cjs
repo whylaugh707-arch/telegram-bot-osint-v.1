@@ -74,6 +74,23 @@ export function hkdf(ikm, length, options = {}) {
 
   return crypto.hkdfSync(digest, ikmBuf, saltBuf, infoBuf, length);
 }
+
+export function expandAppStateKeys(keyData) {
+  const expanded = hkdf(keyData, 160, { info: 'App State Keys' });
+  return {
+    indexKey: expanded.slice(0, 32),
+    valueEncryptionKey: expanded.slice(32, 64),
+    valueMacKey: expanded.slice(64, 96),
+    snapshotMacKey: expanded.slice(96, 128),
+    patchMacKey: expanded.slice(128, 160)
+  };
+}
+
+export class LTHashAntiTampering {
+  subtractThenAdd(base, subtract, add) {
+    return new Uint8Array(128);
+  }
+}
 `;
 
 fs.writeFileSync(path.join(distDir, 'index.js'), indexJsContent, 'utf8');
@@ -89,6 +106,16 @@ export declare function hkdf(
     info?: Uint8Array | Buffer | string;
   }
 ): Buffer;
+export declare class LTHashAntiTampering {
+  subtractThenAdd(base: Uint8Array, subtract: Uint8Array[], add: Uint8Array[]): Uint8Array;
+}
+export declare function expandAppStateKeys(keyData: Uint8Array): {
+  indexKey: Uint8Array;
+  patchMacKey: Uint8Array;
+  snapshotMacKey: Uint8Array;
+  valueEncryptionKey: Uint8Array;
+  valueMacKey: Uint8Array;
+};
 `;
 
 fs.writeFileSync(path.join(distDir, 'index.d.ts'), indexDtsContent, 'utf8');
