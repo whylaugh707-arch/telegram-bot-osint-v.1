@@ -1867,16 +1867,25 @@ There are no background services or permissions associated.
 
     bot.action('menu_osint_indo', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 OSINT INDONESIA CENTER</b>\n` +
+      const txt = `<b>🇮🇩 OSINT INDONESIA CENTER (ADVANCED)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `Pusat pencarian dataset dan identitas lokal publik: \n\n` +
-                  `📍 <b>IDENTITAS SIPIL:</b>\n` +
-                  `• /nik [16-DIGIT] - OSINT Decode No KTP.\n\n` +
-                  `🚘 <b>IDENTITAS KENDARAAN:</b>\n` +
-                  `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat.\n\n` +
-                  `📞 <b>KOMUNIKASI & LOKAL:</b>\n` +
-                  `• /phone_dork [NOMOR] - Cek HLR Provider Lokal.\n` +
-                  `• /nama [NAMA] - Indexer Publik & KPU.\n` +
+                  `Pusat pencarian dataset dan intelijen lokal:\n\n` +
+                  `📍 <b>CIVIL IDENTITY (Identitas Sipil)</b>\n` +
+                  `• /nik [16-DIGIT] - OSINT Decode KTP (Real)\n` +
+                  `• /kk [16-DIGIT] - Parse Kartu Keluarga (Real)\n` +
+                  `• /paspor [NO-PASPOR] - Validasi Tipe & Format\n\n` +
+                  `💰 <b>FINANCIAL & TAX (Keuangan)</b>\n` +
+                  `• /npwp [15/16 DIGIT] - OSINT KPP & Kode NPWP\n` +
+                  `• /rekening [NO-REK] - Investigasi Dork Fraud\n` +
+                  `• /qris [PAYLOAD] - EMVCo Decoder Data QRIS\n` +
+                  `• /bank_indo [NAMA] - Database Kode Bank & BI-FAST\n\n` +
+                  `📞 <b>KOMUNIKASI, KENDARAAN & PUBLIC INFRA</b>\n` +
+                  `• /hlr [NOMOR] - Advanced Prefix Provider Lookup\n` +
+                  `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat Kendaraan\n` +
+                  `• /kodepos [KECAMATAN] - Dorking Pencarian Kodepos\n` +
+                  `• /nama [NAMA] - Indexer Publik, KPU, Putusan MA\n` +
+                  `• /lpse [NAMA VENDOR] - OSINT E-Procurement\n` +
+                  `• /bpom [NAMA PRODUK] - Dorking BPOM Legal Validation\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -2133,6 +2142,211 @@ There are no background services or permissions associated.
                     `✅ <i>ᴀɴᴀʟɪꜱɪꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
 
       ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('kk', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format: /kk [16-digit No KK]");
+      const kk = args[1];
+      if (!/^\d{16}$/.test(kk)) return ctx.reply("❌ Format Salah: KK harus terdiri dari 16 digit angka.");
+      
+      const provStr = kk.substring(0, 2);
+      const PROVINCES: Record<string, string> = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'};
+      const provName = PROVINCES[provStr] || 'Unknown';
+      const dd = kk.substring(6, 8);
+      const mm = kk.substring(8, 10);
+      const yy = kk.substring(10, 12);
+      
+      const reply = `<b>🧑‍👩‍👧‍👦 OSINT KARTU KELUARGA (KK)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NO KK:</b> <code>${kk}</code>\n\n` + 
+                    `📍 <b>WILAYAH (Estimasi):</b>\n` +
+                    `├ Provinsi: ${provName} (Kode: ${provStr})\n` +
+                    `├ Kab/Kota Kode: ${kk.substring(2, 4)}\n` +
+                    `└ Kecamatan Kode: ${kk.substring(4, 6)}\n\n` +
+                    `📅 <b>TANGGAL PENCATATAN KELUARGA:</b>\n` +
+                    `└ ${dd}-${mm}-20${yy} (Indikasi Log Cetak)\n\n` +
+                    `🔢 <b>NO URUT KOMPUTER:</b> <code>${kk.substring(12, 16)}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>Analisis Struktur Kartu Keluarga Selesai.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('npwp', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format: /npwp [Nomor NPWP 15/16 Digit]");
+      let npwp = args[1].replace(/[^0-9]/g, '');
+      if (npwp.length !== 15 && npwp.length !== 16) return ctx.reply("❌ NPWP harus terdiri dari 15 atau 16 digit.");
+      
+      const idWp = npwp.substring(0, 1);
+      let jenisWp = "Unknown";
+      if (idWp === '0' || idWp === '1' || idWp === '2' || idWp === '3') jenisWp = "Wajib Pajak Badan / Instansi";
+      if (idWp === '4' || idWp === '5' || idWp === '6') jenisWp = "Wajib Pajak Pengusaha / Pribadi Non-Karyawan";
+      if (idWp === '7' || idWp === '8' || idWp === '9') jenisWp = "Wajib Pajak Pribadi Karyawan";
+      
+      const kpp = npwp.substring(9, 12);
+      const cabang = npwp.substring(12, 15);
+      
+      const formatNpwp = npwp.length === 15 ? 
+        `${npwp.substring(0,2)}.${npwp.substring(2,5)}.${npwp.substring(5,8)}.${npwp.substring(8,9)}-${npwp.substring(9,12)}.${npwp.substring(12,15)}` : npwp;
+      
+      const reply = `<b>💳 OSINT NPWP DECODER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NOMOR PAJAK:</b> <code>${formatNpwp}</code>\n\n` +
+                    `👤 <b>KLASIFIKASI KATEGORI:</b>\n└ ${jenisWp}\n\n` +
+                    `🏢 <b>KODE KPP (Kantor Pelayanan Pajak):</b>\n└ <code>${kpp}</code>\n\n` +
+                    `📍 <b>STATUS PUSAT/CABANG:</b>\n└ ${cabang === '000' ? 'Pusat (000)' : 'Cabang ('+cabang+')'}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>NPWP Format Decoded.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('qris', (ctx) => {
+      const payload = ctx.message.text.substring(6).trim();
+      if (!payload) return ctx.reply("⚠️ Format: /qris [Teks Kode QRIS dari Scanner]");
+      
+      let merchantName = "N/A / Gagal Baca";
+      let merchantCity = "N/A / Gagal Baca";
+      let merchantCategoryCode = "N/A";
+      let merchantCriteria = "N/A";
+      
+      try {
+        let i = 0;
+        let p = payload;
+        while(i < p.length) {
+          if (p.length - i < 4) break;
+          const tag = p.substring(i, i+2);
+          const len = parseInt(p.substring(i+2, i+4));
+          const val = p.substring(i+4, i+4+len);
+          if (tag === '59') merchantName = val;
+          if (tag === '60') merchantCity = val;
+          if (tag === '52') merchantCategoryCode = val;
+          if (tag === '58') merchantCriteria = val; // Country Code
+          i += 4 + len;
+        }
+      } catch(e) {}
+      
+      const reply = `<b>🏦 QRIS VIRTUAL DECODER (EMVCo Protocol)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📝 <b>NAMA MERCHANT:</b> <code>${merchantName}</code>\n` +
+                    `🏙️ <b>KOTA LOKASI:</b> <code>${merchantCity}</code>\n` +
+                    `🗂️ <b>KATEGORI (MCC):</b> <code>${merchantCategoryCode}</code>\n` +
+                    `🌎 <b>NEGARA SERVER:</b> <code>${merchantCriteria}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>Raw Payload EMV Decoding Sukses.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('rekening', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format: /rekening [Nomor Rekening]");
+      const rek = args[1];
+      const q = encodeURIComponent(`"${rek}"`);
+      const reply = `<b>💳 BANK FRAUD OSINT DORKING</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🔍 <b>REKENING PENCARIAN:</b> <code>${rek}</code>\n\n` +
+                    `<b>Mencari riwayat penipuan / indikasi spam:</b>\n` +
+                    `1. <b>Google Deep Dork:</b> <a href="https://www.google.com/search?q=${q}+penipu+OR+scam+OR+waspada">Investigasi via Web</a>\n` +
+                    `2. <b>CekRekening Pusat:</b> Cek mandiri di <i>cekrekening.id</i>\n` +
+                    `3. <b>Kredibel Profiler:</b> <a href="https://www.kredibel.co.id/search/${rek}">Cek di Database Kredibel</a>\n` +
+                    `4. <b>X.com (Twitter) Audit:</b> <a href="https://twitter.com/search?q=${rek}">Cek di Twitter / Viral</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('paspor', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format: /paspor [Nomor Paspor Indonesia]");
+      let paspor = args[1].toUpperCase();
+      let valid = false;
+      let type = "Unknown (Tidak sesuai format standar Imigrasi)";
+      
+      if (/^[A-Z]{1,2}[0-9]{7}$/.test(paspor)) {
+        valid = true;
+        type = paspor.startsWith('X') ? 'E-Paspor (Polikarbonat)' : 'Paspor Biasa / E-Paspor Umum';
+      }
+      
+      const reply = `<b>🛂 PASSPORT INDONESIA ANALYZER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📖 <b>NO PASPOR:</b> <code>${paspor}</code>\n\n` +
+                    `🤖 <b>VALIDASI FORMAT:</b> ${valid ? '✅ STRUKTUR VALID' : '❌ INVALID FORMAT'}\n` +
+                    `🏷️ <b>TIPE PASPOR (Estimasi Reguler):</b> ${type}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Catatan: Modul tidak terhubung dengan Ditjen Imigrasi, hanya memvalidasi standar enkripsi serialisasi dokumen.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('bank_indo', (ctx) => {
+      const args = ctx.message.text.substring(10).trim().toLowerCase();
+      if (!args) return ctx.reply("⚠️ Format: /bank_indo [Nama Bank]. Contoh: /bank_indo bca");
+      
+      const bankDb: Record<string, string> = {
+        'bca': 'Bank Central Asia | Kode SWIFT/Bank: 014',
+        'mandiri': 'Bank Mandiri | Kode SWIFT/Bank: 008',
+        'bni': 'Bank Negara Indonesia | Kode SWIFT/Bank: 009',
+        'bri': 'Bank Rakyat Indonesia | Kode SWIFT/Bank: 002',
+        'bsi': 'Bank Syariah Indonesia | Kode SWIFT/Bank: 451',
+        'cimb': 'Bank CIMB Niaga | Kode SWIFT/Bank: 022',
+        'permata': 'Bank Permata | Kode SWIFT/Bank: 013',
+        'danamon': 'Bank Danamon | Kode SWIFT/Bank: 011',
+        'mega': 'Bank Mega | Kode SWIFT/Bank: 426',
+        'jenius': 'BTPN (Jenius) | Kode SWIFT/Bank: 213',
+        'jago': 'Bank Jago | Kode SWIFT/Bank: 542',
+        'seabank': 'SeaBank / Kesejahteraan Ekonomi | Kode SWIFT/Bank: 535',
+        'blu': 'BCA Digital (blu) | Kode SWIFT/Bank: 501',
+        'artos': 'Bank Artos (Jago) | Kode SWIFT/Bank: 542'
+      };
+      
+      let found = "";
+      for (const [k, v] of Object.entries(bankDb)) {
+        if (k.includes(args) || args.includes(k)) {
+            found += `• <b>${v}</b>\n`;
+        }
+      }
+      if (!found) found = "❌ Tidak ditemukan di database lokal server.";
+      ctx.reply(`<b>🏦 KODE TRANSFER BANK (INDO)</b>\n━━━━━━━━━━━━━━━━━━━━\nPencarian Entitas: <i>${args.toUpperCase()}</i>\n\n${found}\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
+    });
+
+    bot.command('kodepos', (ctx) => {
+      const args = ctx.message.text.substring(8).trim();
+      if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Daerah]");
+      const q = encodeURIComponent(`"Kode Pos" ${args} site:kodepos.nomor.net`);
+      ctx.reply(`<b>📮 KODEPOS GOOGLE DORKING</b>\n━━━━━━━━━━━━━━━━━━━━\nDaerah Analisis: <code>${args}</code>\n\n` +
+                `🔍 <a href="https://www.google.com/search?q=${q}">Klik Disini untuk Cari via Directory Pusat</a>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('hlr', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format: /hlr [08xx / 628xx]");
+      let p = args[1].replace(/[^0-9]/g, '');
+      if (p.startsWith('62')) p = '0' + p.substring(2);
+      
+      let provider = "Unknown / Routing Tidak Terdaftar";
+      let prefix = p.substring(0, 4);
+      
+      if (['0811','0812','0813','0821','0822','0823','0851','0852','0853'].includes(prefix)) provider = "Telkomsel / Halo";
+      else if (['0814','0815','0816','0855','0856','0857','0858'].includes(prefix)) provider = "Indosat Ooredoo Hutchison";
+      else if (['0817','0818','0819','0859','0877','0878'].includes(prefix)) provider = "XL Axiata";
+      else if (['0831','0832','0833','0838'].includes(prefix)) provider = "Axis / ALXA";
+      else if (['0895','0896','0897','0898','0899'].includes(prefix)) provider = "Three (3 / Hutchison)";
+      else if (['0881','0882','0883','0884','0885','0886','0887','0888','0889'].includes(prefix)) provider = "Smartfren Telecom";
+      
+      const reply = `<b>📡 ADVANCED HLR LOOKUP (INDO)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📱 <b>NOMOR TARGET:</b> <code>${p}</code>\n` +
+                    `📋 <b>ROUTING PREFIX (HLR):</b> <code>${prefix}</code>\n` +
+                    `🏢 <b>PROVIDER INFRASTRUCTURE:</b>\n└ ${provider}\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Data bersumber dari sistem Prefix Nasional Telekomunikasi (Berdasarkan pengalokasian awal nomor).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('lpse', (ctx) => {
+      const args = ctx.message.text.substring(5).trim();
+      if (!args) return ctx.reply("⚠️ Format: /lpse [Nama Vendor / Proyek]");
+      const q = encodeURIComponent(`"${args}" site:lpse.*.go.id`);
+      ctx.reply(`<b>🏢 LPSE & PROCUREMENT DORK (BUMN/Pemerintah)</b>\n━━━━━━━━━━━━━━━━━━━━\nQuery Filter: <code>${args}</code>\n\n` +
+                `🔍 <a href="https://www.google.com/search?q=${q}">Scan Database E-Procurement LPSE</a>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('bpom', (ctx) => {
+      const args = ctx.message.text.substring(5).trim();
+      if (!args) return ctx.reply("⚠️ Format: /bpom [Nama Produk / Perusahaan]");
+      const q = encodeURIComponent(`"${args}" site:cekbpom.pom.go.id`);
+      ctx.reply(`<b>💊 BPOM & DRUG/FOOD SAFETY DORK</b>\n━━━━━━━━━━━━━━━━━━━━\nTarget Filter: <code>${args}</code>\n\n` +
+                `🔍 <a href="https://www.google.com/search?q=${q}">Scan Registrasi & Sertifikasi BPOM</a>\n` +
+                `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('leak', async (ctx) => {
@@ -3588,17 +3802,20 @@ There are no background services or permissions associated.
     });
 
     bot.command('osint_indo', (ctx) => {
-      const reply = `<b>🇮🇩 OSINT INDONESIA MODULE</b>\n` +
+      const reply = `<b>🇮🇩 OSINT INDONESIA MODULE (ADVANCED)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `Pilih alat investigasi lokal:\n\n` +
-                    `1. <b>NIK Analyzer:</b> /nik [16-digit]\n` +
-                    `2. <b>License Plate:</b> /plat [B 1234 ABC]\n` +
-                    `3. <b>Social Media ID:</b> /username [user]\n` +
-                    `4. <b>Name Search:</b> /nama [Nama Lengkap]\n` +
-                    `5. <b>Phone Info:</b> /phone_dork [08xx]\n` +
-                    `6. <b>Email Check:</b> /email [email]\n\n` +
+                    `1. <b>Civil ID (KTP/KK):</b> /nik [Nomor] & /kk [Nomor]\n` +
+                    `2. <b>Finansial (NPWP/QRIS):</b> /npwp [Nomor] & /qris [Teks]\n` +
+                    `3. <b>Pencarian Identitas:</b> /nama [Nama Lengkap]\n` +
+                    `4. <b>Kejahatan / Penipuan:</b> /rekening [No Rekening]\n` +
+                    `5. <b>Tracking Provider HLR:</b> /hlr [08xx...]\n` +
+                    `6. <b>Cari Kode Bank/Pos:</b> /bank_indo [bank] & /kodepos [kecamatan]\n` +
+                    `7. <b>Kendaraan:</b> /plat [B 123 ABC]\n` +
+                    `8. <b>Imigrasi:</b> /paspor [Nomor]\n` +
+                    `9. <b>Kementerian:</b> /lpse [Tender] & /bpom [Produk]\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `<i>Alat ini dioptimalkan untuk region Indonesia.</i>`;
+                    `<i>Alat ini mengkombinasikan decoding algoritma dan dorking mendalam untuk region Nusantara.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
