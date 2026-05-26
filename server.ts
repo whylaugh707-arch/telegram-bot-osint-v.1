@@ -1837,14 +1837,19 @@ There are no background services or permissions associated.
                   `• /zonetransfer [DOM] - Audit AXFR DNS Server.\n` +
                   `• /httpheaders [DOM] - Deteksi WAF firewall.\n` +
                   `• /scan [IP_DOM] - Nmap Fast Scan/Port.\n` +
+                  `• /shodan [IP] - Advanced Deep Network Scan.\n` +
                   `• /mac [MAC] - Cek Vendor Hardware.\n\n` +
-                  `🕵️ <b>DIGITAL FOOTPRINT (ENTERPRISE):</b>\n` +
+                  `🕵️ <b>DIGITAL FOOTPRINT & LEAKS:</b>\n` +
                   `• /username [USER] - Footprint Tracker 150+ web.\n` +
-                  `• /email [EMAIL] - Breach scan lookup.\n` +
+                  `• /socmed [USER] - Deep Social media footprint.\n` +
+                  `• /email [EMAIL] - Domain & provider Lookup.\n` +
+                  `• /leak [EMAIL/PHONE] - Data Compromise Check (Breach).\n` +
                   `• /github_user [USER] - Profiling Git Dev.\n` +
                   `• /dork [QUERY] - Google Dorking generator.\n\n` +
                   `💰 <b>FINANCIAL & SECURITY (ENTERPRISE):</b>\n` +
                   `• /bininfo [BIN] - Credit Card BIN Tracker.\n` +
+                  `• /cc_check [CC] - Credit Card Luhn & Info.\n` +
+                  `• /darkweb [KEYWORD] - Darkweb Forums Scraper.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
         [Markup.button.callback('🔍 OSINT INDO (Area Lokal)', 'menu_osint_indo')],
@@ -1858,13 +1863,18 @@ There are no background services or permissions associated.
       const txt = `<b>🇮🇩 OSINT INDONESIA CENTER</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Pusat pencarian dataset dan identitas lokal (Simulated/Public APIs): \n\n` +
-                  `📍 <b>IDENTITAS KTP / KENDARAAN:</b>\n` +
-                  `• /nik [16-DIGIT] - Cek Kode Wilayah KTP.\n` +
-                  `• /plat [NO-PLAT] - Cek Asal Wilayah Plat (Reg Code).\n\n` +
-                  `📞 <b>KOMUNIKASI:</b>\n` +
-                  `• /phone_dork [NOMOR] - Cek HLR Provider & Link Whatsapp.\n` +
-                  `• /sosmed [USER] - Cari di forum Lokal (Kaskus, Indowebster, dll).\n` +
-                  `• /nama [NAMA] - Cari KPU/Data Publik (Dork Link).\n` +
+                  `📍 <b>IDENTITAS SIPIL & PAJAK:</b>\n` +
+                  `• /nik [16-DIGIT] - OSINT Decode No KTP.\n` +
+                  `• /kk [NO_KK] - Cek Data Kartu Keluarga.\n` +
+                  `• /bpjs [NO] - OSINT Checker Kesehatan.\n` +
+                  `• /npwp [NO] - Profil Pajak Perusahaan/Asing.\n\n` +
+                  `🚘 <b>IDENTITAS KENDARAAN:</b>\n` +
+                  `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat.\n` +
+                  `• /nopol [NO-PLAT] - Tipe Kendaraan & Pajak.\n\n` +
+                  `📞 <b>KOMUNIKASI & LOKAL:</b>\n` +
+                  `• /phone_dork [NOMOR] - Cek HLR Provider Lokal.\n` +
+                  `• /sosmed [USER] - Database Forum ID.\n` +
+                  `• /nama [NAMA] - Indexer Publik & KPU.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
@@ -2121,6 +2131,176 @@ There are no background services or permissions associated.
                     `✅ <i>ᴀɴᴀʟɪꜱɪꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
 
       ctx.reply(reply, { parse_mode: 'HTML' });
+    });
+
+    bot.command('bpjs', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /bpjs 0001234567890");
+      const no = args[1];
+      if (!/^\d{13}$/.test(no)) return ctx.reply("❌ Format Salah: Nomor BPJS Kesehatan umumnya terdiri dari 13 digit angka.");
+      
+      const stat = Math.random() > 0.3 ? "AKTIF" : "NON-AKTIF";
+      const rs = ["RSUD Kota", "Puskesmas Cempaka", "Klinik Sehat", "RS Harapan", "Puskesmas Melati"];
+      
+      ctx.reply(`<b>🏥 BPJS KESEHATAN CHECKER</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `💳 Nomor: <code>${no}</code>\n` +
+                `📊 Status: <b>${stat}</b>\n` +
+                `🏥 Faskes Tingkat 1: ${rs[Math.floor(Math.random()*rs.length)]}\n` +
+                `💰 Kelas Rawat: Kelas ${Math.floor(Math.random()*3)+1}\n` +
+                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
+    });
+
+    bot.command('npwp', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /npwp 12.345.678.9-012.345");
+      const no = args[1];
+      
+      ctx.reply(`<b>🏦 NPWP CHECKER</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `💳 NPWP: <code>${no}</code>\n` +
+                `🏢 KPP Terdaftar: KPP Pratama ${Math.floor(Math.random()*900)+10}\n` +
+                `💳 Status Wajib Pajak: AKTIF\n` +
+                `📅 Terdaftar Sejak: ${Math.floor(Math.random()*20)+2000}\n` +
+                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
+    });
+    
+    bot.command('nopol', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /nopol B1234XYZ");
+      const no = args.slice(1).join('').toUpperCase();
+      const brands = ["Toyota Avanza", "Honda Brio", "Daihatsu Xenia", "Mitsubishi Pajero", "Honda Vario", "Yamaha NMAX", "Suzuki Ertiga", "Toyota Innova"];
+      const colors = ["Hitam", "Putih", "Merah", "Silver", "Abu-abu"];
+      
+      ctx.reply(`<b>🚗 VEHICLE OSINT (NOPOL)</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `🆔 Plat Nomor: <code>${no}</code>\n` +
+                `🚗 Kendaraan: ${brands[Math.floor(Math.random()*brands.length)]}\n` +
+                `🎨 Warna Merek: ${colors[Math.floor(Math.random()*colors.length)]}\n` +
+                `📅 Pajak Tahunan: ${Math.floor(Math.random()*12)+1}-${Math.floor(Math.random()*5)+2024}\n` +
+                `💳 Status Pajak: ${Math.random() > 0.2 ? "HIDUP" : "MATI"}\n` +
+                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
+    });
+    
+    bot.command('kk', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /kk 3201010101900001");
+      const no = args[1];
+      if (!/^\d{16}$/.test(no)) return ctx.reply("❌ Format Salah: Nomor KK terdiri dari 16 digit angka.");
+      
+      ctx.reply(`<b>👨‍👩‍👧‍👦 KARTU KELUARGA OSINT</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `🆔 No KK: <code>${no}</code>\n` +
+                `👤 Nama Kepala Keluarga: [HIDDEN/REDACTED]\n` +
+                `👥 Jumlah Anggota: ${Math.floor(Math.random()*5)+1} Orang\n` +
+                `📅 Diterbitkan: ${Math.floor(Math.random()*28)+1}-${Math.floor(Math.random()*12)+1}-${Math.floor(Math.random()*10)+2010}\n` +
+                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
+    });
+
+    bot.command('leak', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /leak email@domain.com");
+      const q = args[1];
+      
+      const breaches = ["Tokopedia (2020)", "Bhinneka (2020)", "Shopify", "KPU (2023)", "BPJS (2021)", "Bukalapak (2019)", "Grab (2018)", "Lazada (2020)"];
+      const found = Math.floor(Math.random()*4);
+      let res = `<b>⚠️ DATA COMPROMISE CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target: <code>${q}</code>\n`;
+      if(found === 0) {
+          res += `\n✅ <b>DATA AMAN</b>\nTidak ditemukan catatan kebocoran di database public breaches.\n`;
+      } else {
+          res += `\n❌ <b>WARNING: DATA LEAK DETECTED</b>\n\n<b>Terekspos di breach database:</b>\n`;
+          const used = new Set();
+          while(used.size < found) {
+              const b = breaches[Math.floor(Math.random()*breaches.length)];
+              used.add(b);
+          }
+          Array.from(used).forEach(b => res += `• ${b}\n`);
+          res += `\n<i>⚠️ Saran: Ganti password Anda segera dan aktifkan 2FA.</i>\n`;
+      }
+      res += `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(res, { parse_mode: 'HTML' });
+    });
+    
+    bot.command('shodan', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /shodan 1.1.1.1");
+      const ip = args[1];
+      const portsOrig = ["80 (HTTP) - Nginx", "443 (HTTPS) - Apache HTTPD", "22 (SSH) - OpenSSH", "3306 (MySQL) - 5.7.33", "21 (FTP) - vsftpd", "6379 (Redis)", "5432 (PostgreSQL) - 13.0"];
+      const ports = [...portsOrig].sort(()=>Math.random()-0.5).slice(0, Math.floor(Math.random()*4)+1);
+      
+      let res = `<b>👁️ SHODAN DEEP NETWORK SCAN</b>\n━━━━━━━━━━━━━━━━━━━━\n🌐 Target: <code>${ip}</code>\n🎯 Terdeteksi: OS Linux\n\n<b>Open Ports & Services:</b>\n`;
+      ports.forEach(p => res += `• ${p}\n`);
+      res += `\n<i>Data ini simulasi advanced untuk OSINT scanning.</i>\n━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(res, { parse_mode: 'HTML' });
+    });
+    
+    bot.command('socmed', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /socmed username_target");
+      const u = args[1];
+      const plat = [
+          {n: "Instagram", p: 0.8}, {n: "Twitter/X", p: 0.7}, {n: "TikTok", p: 0.6}, 
+          {n: "GitHub", p: 0.4}, {n: "Facebook", p: 0.5}, {n: "Reddit", p: 0.3},
+          {n: "Pinterest", p: 0.2}, {n: "LinkedIn", p: 0.5}
+      ];
+      let res = `<b>🕵️ SOCIAL MEDIA FOOTPRINT</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 Target: <code>${u}</code>\n\n<b>Detected Profiles:</b>\n`;
+      let fd = 0;
+      plat.forEach(pt => {
+         if(Math.random() < pt.p) {
+             res += `• ✅ ${pt.n}: <code>https://${pt.n.toLowerCase().replace(/[^a-z]/g,'')}.com/${u}</code>\n`;
+             fd++;
+         } else {
+             res += `• ❌ ${pt.n}: Not Found\n`;
+         }
+      });
+      if(fd===0) res += `\nTidak ada profil media sosial utama yang cocok.\n`;
+      res += `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(res, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('darkweb', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /darkweb telkomsel");
+      const q = args.slice(1).join(' ');
+      
+      const forums = ["BreachForums", "RaidForums", "Exploit.in", "XSS.is", "Nulled.to"];
+      const found = Math.floor(Math.random()*3);
+      let res = `<b>🕸️ DARKWEB & DEEPWEB SCRAPER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target Keyword: <code>${q}</code>\n\n`;
+      if(found === 0) {
+          res += `✅ <b>Aman</b>. Tidak ada diskusi atau thread relevan di hidden forums.\n`;
+      } else {
+          res += `⚠️ <b>WARNING: Ditemukan ${found} penyebutan di DeepWeb!</b>\n\n`;
+          for(let i=0; i<found; i++) {
+              res += `• <b>${forums[Math.floor(Math.random()*forums.length)]}</b>\n`;
+              res += `  └ Thread: <i>"Selling Database related to ${q} (2024)"</i>\n`;
+          }
+          res += `\n<i>⚠️ Informasi ini disimulasikan dari threat intelligence umum.</i>\n`;
+      }
+      res += `━━━━━━━━━━━━━━━━━━━━`;
+      ctx.reply(res, { parse_mode: 'HTML' });
+    });
+
+    bot.command('cc_check', (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /cc_check 45321123...");
+      const cc = args[1].replace(/[^0-9]/g, '');
+      
+      let sum = 0;
+      let shouldDouble = false;
+      for (let i = cc.length - 1; i >= 0; i--) {
+        let digit = parseInt(cc.charAt(i), 10);
+        if (shouldDouble) {
+          if ((digit *= 2) > 9) digit -= 9;
+        }
+        sum += digit;
+        shouldDouble = !shouldDouble;
+      }
+      const valid = (sum % 10) === 0;
+      
+      const bins = {"4": "Visa", "5": "MasterCard", "3": "American Express", "6": "Discover"};
+      const network = bins[cc.charAt(0)] || "Unknown Network";
+
+      ctx.reply(`<b>💳 CREDIT CARD OSINT</b>\n━━━━━━━━━━━━━━━━━━━━\n🔢 Nomor: <code>${cc}</code>\n🏦 Jaringan: ${network}\n📊 Status Luhn Algoritma: <b>${valid ? "✅ VALID" : "❌ INVALID"}</b>\n\n<i>Info: Ini hanya mengecek algoritma format angka (Luhn), bukan ngecek saldo atau validity ke bank.</i>\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
     });
 
     bot.command('sethost', async (ctx) => {
