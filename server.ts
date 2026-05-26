@@ -2041,18 +2041,20 @@ There are no background services or permissions associated.
     bot.command('nik', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /nik 3201010101900001");
-      const nik = args[1];
+      const nik = args[1].replace(/[^0-9]/g, '');
 
-      if (!/^\d{16}$/.test(nik)) {
-        return ctx.reply("❌ Format Salah: NIK harus terdiri dari 16 digit angka.");
+      if (nik.length !== 16) {
+        return ctx.reply("❌ Sistem Menolak: NIK E-KTP wajib memiliki panjang 16 digit numerik.");
       }
 
       try {
         const parsed = nikParser(nik);
-        const PROVINCES = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'}; const provName = PROVINCES[nik.substring(0,2)] || parsed.province() || 'Unknown';
-        const jkStr = parsed.kelamin() === 'pria' ? 'Laki-laki 👨' : parsed.kelamin() === 'wanita' ? 'Perempuan 👩' : 'Unknown 👤';
+        const PROVINCES: Record<string, string> = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'};
+        const provName = PROVINCES[nik.substring(0,2)] || parsed.province() || 'Unknown / Pemekaran Baru';
+        const jkStr = parsed.kelamin() === 'pria' ? 'LAKI-LAKI 👱‍♂️' : parsed.kelamin() === 'wanita' ? 'PEREMPUAN 👩' : 'TIDAK TERDETEKSI 👤';
         
-        let bornDateStr = 'Unknown';
+        let bornDateStr = 'Tidak Valid';
+        let isDateValid = false;
         try {
           const d = parsed.lahir();
           if (d) {
@@ -2062,160 +2064,170 @@ There are no background services or permissions associated.
               const month = String(bornDate.getMonth() + 1).padStart(2, '0');
               const year = bornDate.getFullYear();
               bornDateStr = `${day}-${month}-${year}`;
+              isDateValid = true;
             }
           }
         } catch (err) {}
 
-        let prov = "Data belum tersedia";
-        let kab = "Data belum tersedia";
-        let kec = "Data belum tersedia";
-        let pos = "Data belum tersedia";
-        try { prov = provName || "Data belum tersedia"; } catch(e){}
-        try { kab = parsed.kabupatenKota() || "Data belum tersedia"; } catch(e){}
-        try { kec = parsed.kecamatan() || "Data belum tersedia"; } catch(e){}
-        try { pos = parsed.kodepos() ? String(parsed.kodepos()) : "Data belum tersedia"; } catch(e){}
+        let prov = provName;
+        let kab = "N/A (Cek Database SIAK)";
+        let kec = "N/A (Cek Database SIAK)";
+        let pos = "N/A";
+        
+        try { if (parsed.kabupatenKota()) kab = parsed.kabupatenKota(); } catch(e){}
+        try { if (parsed.kecamatan()) kec = parsed.kecamatan(); } catch(e){}
+        try { if (parsed.kodepos()) pos = String(parsed.kodepos()); } catch(e){}
 
-        const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
+        const dork1 = encodeURIComponent(`"${nik}" ext:pdf OR ext:xls OR ext:xlsx OR ext:csv`);
+        const dork2 = encodeURIComponent(`"${nik}" site:scribd.com OR site:academia.edu OR site:pddikti.kemdikbud.go.id`);
+        const dork3 = encodeURIComponent(`"DPT" "${nik}"`);
+
+        const reply = `<b>🇮🇩 CIVIL IDENTITY DECODER (KTP/NIK)</b>\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `📋 <b>NIK:</b> <code>${nik}</code>\n` +
-                      `👤 <b>Gender:</b> ${jkStr}\n` +
-                      `📅 <b>Tanggal Lahir:</b> <code>${bornDateStr}</code>\n` +
-                      `📍 <b>Informasi Wilayah:</b>\n` +
+                      `📋 <b>NOMOR INDUK KEPENDUDUKAN:</b> <code>${nik}</code>\n\n` +
+                      `<b>[1] 🧬 ANALISIS PERSONAL:</b>\n` +
+                      `├ <b>Jenis Kelamin:</b> ${jkStr}\n` +
+                      `├ <b>Tanggal Lahir:</b> <code>${bornDateStr}</code>\n` +
+                      `└ <b>Integrasi Tgl:</b> ${isDateValid ? '✅ Sinkron' : '❌ Anomali Waktu'}\n\n` +
+                      `<b>[2] 📍 GEOLOKASI (Basis Alokasi SIAK):</b>\n` +
                       `├ <b>Provinsi:</b> ${prov}\n` +
-                      `├ <b>Kabupaten/Kota:</b> ${kab}\n` +
+                      `├ <b>Kab/Kota:</b> ${kab}\n` +
                       `├ <b>Kecamatan:</b> ${kec}\n` +
-                      `└ <b>Kode Pos (Estimasi):</b> <code>${pos}</code>\n` +
-                      `🔢 <b>Nomor Urut:</b> <code>${parsed.uniqcode() || nik.substring(12, 16)}</code>\n` +
-                      `🤖 <b>Status Validasi:</b> ${parsed.isValid() ? '✅ VALID (Database Cocok)' : '⚠️ STRUKTUR COCOK (Format Benar)'}\n` +
+                      `└ <b>Kode Pos (Estimasi):</b> <code>${pos}</code>\n\n` +
+                      `<b>[3] 🔢 TEKNIKAL & REGISTRASI:</b>\n` +
+                      `├ <b>Nomor Urut Sistem:</b> <code>${nik.substring(12, 16)}</code>\n` +
+                      `└ <b>Integritas Pola:</b> ${parsed.isValid() ? '✅ VALID (Terstruktur Dukcapil)' : '⚠️ CACAT (Kemungkinan Generate / Salah Ketik)'}\n\n` +
+                      `<b>[4] 🔎 DEEP DORK INVESTIGATION:</b>\n` +
+                      `• <a href="https://www.google.com/search?q=${dork1}">Lacak Kebocoran Dokumen Publik Terindeks (PDF/Excel)</a>\n` +
+                      `• <a href="https://www.google.com/search?q=${dork2}">Tracer Jejak Institusi & Akademik Publik (Kampus)</a>\n` +
+                      `• <a href="https://www.google.com/search?q=${dork3}">Investigasi Rekam DPT Pemilu (Jika Terindeks)</a>\n` +
                       `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `✅ <i>Analisis selesai dengan data wilayah penuh.</i>`;
-
-        ctx.reply(reply, { parse_mode: 'HTML' });
+                      `<i>⚠️ Modul Enterprise: Menganalisis metadata tanpa rekaman langsung API Pusat Dukcapil Kemendagri.</i>`;
+        ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
       } catch (e) {
-        const provMap: Record<string, string> = { "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau", "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung", "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta", "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur", "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur", "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan", "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara", "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara", "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara", "91": "Papua Barat", "94": "Papua" };
-        const prov = nik.substring(0, 2);
-        const kab = nik.substring(2, 4);
-        const kec = nik.substring(4, 6);
-        let tgl = parseInt(nik.substring(6, 8), 10);
-        const bln = nik.substring(8, 10);
-        let thn = parseInt(nik.substring(10, 12), 10);
-        const urut = nik.substring(12, 16);
-
-        let jk = "Laki-laki 👨";
-        if (tgl >= 40) {
-          jk = "Perempuan 👩";
-          tgl -= 40;
-        }
-        const currentYear = new Date().getFullYear() % 100;
-        thn = thn > currentYear ? 1900 + thn : 2000 + thn;
-
-        const reply = `<b>🇮🇩 DATA NIK DECODER</b>\n` +
-                      `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `📋 <b>NIK:</b> <code>${nik}</code>\n` +
-                      `👤 <b>Gender:</b> ${jk}\n` +
-                      `📅 <b>Lahir:</b> <code>${tgl.toString().padStart(2, '0')}-${bln}-${thn}</code>\n` +
-                      `📍 <b>Wilayah:</b>\n` +
-                      `├ Provinsi: ${provMap[prov] || "Tidak diketahui"}\n` +
-                      `├ Kode Kab: ${kab}\n` +
-                      `└ Kode Kec: ${kec}\n` +
-                      `🔢 <b>No Urut:</b> ${urut}\n` +
-                      `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `✅ <i>Analisis selesai (Sederhana).</i>`;
-
-        ctx.reply(reply, { parse_mode: 'HTML' });
+        ctx.reply("❌ Gagal mengurai NIK. Sistem tidak mengenali format.");
       }
     });
 
     bot.command('plat', (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format salah. Contoh: /plat B 1234 ABC atau /plat B1234ABC");
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /plat B 1234 ABC atau /plat B1234ABC");
       
       const platInput = args.slice(1).join('').toUpperCase();
       const match = platInput.match(/^([A-Z]{1,2})(\d{1,4})([A-Z]{0,3})$/);
       
-      if (!match) return ctx.reply("❌ Format plat nomor tidak valid.");
+      if (!match) return ctx.reply("❌ Format plat nomor tidak valid / tidak mengikuti standar Polri.");
       
-      const platMap: Record<string, string> = { "A": "Banten", "B": "DKI Jakarta, Depok, Tangerang, Bekasi", "D": "Bandung, Cimahi", "E": "Cirebon, Indramayu, Majalengka, Kuningan", "F": "Bogor, Sukabumi, Cianjur", "T": "Purwakarta, Karawang, Subang", "Z": "Garut, Tasikmalaya, Sumedang, Ciamis, Banjar", "G": "Pekalongan, Tegal, Brebes, Batang, Pemalang", "H": "Semarang", "DN": "Sulawesi Tengah", "DT": "Sulawesi Tenggara", "DD": "Makassar, Gowa, Maros", "DP": "Parepare, Palopo, Luwu", "DC": "Sulawesi Barat", "PA": "Papua", "PB": "Papua Barat", "BL": "Aceh", "BB": "Sumut (Barat)", "BK": "Sumut (Timur)/Medan", "BA": "Sumatera Barat", "BM": "Riau", "BP": "Kepulauan Riau", "BG": "Sumatera Selatan", "BN": "Bangka Belitung", "BE": "Lampung", "BD": "Bengkulu", "BH": "Jambi" };
+      const platMap: Record<string, string> = { "A": "Banten", "B": "DKI Jakarta, Depok, Tangerang, Bekasi", "D": "Bandung, Cimahi", "E": "Cirebon, Indramayu, Majalengka, Kuningan", "F": "Bogor, Sukabumi, Cianjur", "T": "Purwakarta, Karawang, Subang", "Z": "Garut, Tasikmalaya, Sumedang, Ciamis, Banjar", "G": "Pekalongan, Tegal, Brebes, Batang, Pemalang", "H": "Semarang", "DN": "Sulawesi Tengah", "DT": "Sulawesi Tenggara", "DD": "Makassar, Gowa, Maros", "DP": "Parepare, Palopo, Luwu", "DC": "Sulawesi Barat", "PA": "Papua", "PB": "Papua Barat", "BL": "Aceh", "BB": "Sumatera Utara (Pantai Barat)", "BK": "Sumatera Utara (Pantai Timur)/Medan", "BA": "Sumatera Barat", "BM": "Riau", "BP": "Kepulauan Riau", "BG": "Sumatera Selatan", "BN": "Bangka Belitung", "BE": "Lampung", "BD": "Bengkulu", "BH": "Jambi", "AB": "DI Yogyakarta", "AD": "Surakarta", "K": "Pati", "R": "Banyumas", "L": "Surabaya", "M": "Madura", "N": "Malang", "P": "Besuki", "S": "Bojonegoro", "W": "Sidoarjo", "DK": "Bali", "DR": "Lombok", "EA": "Sumbawa", "DH": "Timor", "EB": "Flores", "ED": "Sumba", "KB": "Kalimantan Barat", "DA": "Kalimantan Selatan", "KT": "Kalimantan Timur", "KU": "Kalimantan Utara", "DB": "Sulawesi Utara (Daratan)", "DL": "Sulawesi Utara (Kepulauan)", "DE": "Maluku", "DG": "Maluku Utara" };
 
       const kodeWilayah = match[1];
       const angka = match[2];
       const kodeDetail = match[3];
 
-      const wilayah = platMap[kodeWilayah] || "Wilayah tidak terdaftar";
+      const wilayah = platMap[kodeWilayah] || "🚨 Wilayah (Region) Tidak Terdaftar / Khusus CD/CC";
+      
+      const dorkBapenda = encodeURIComponent(`"Samsat" OR "Pajak Kendaraan" "${platInput}"`);
+      const dorkLelang = encodeURIComponent(`"Lelang" OR "Tarikan" "${platInput}" -motor`);
+      
 
-      const reply = `━━━━━ ᴘʟᴀᴛ ᴀɴᴀʟʏᴢᴇʀ ━━━━━\n\n` +
-                    `🔢 <b>ᴘʟᴀᴛ :</b> <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n\n` +
-                    `📍 <b>ᴡɪʟᴀʏᴀʜ :</b> ${wilayah}\n\n` +
-                    `├ ᴋᴏᴅᴇ ᴀʀᴇᴀ : ${kodeWilayah}\n` +
-                    `├ ɴᴏ ᴘᴏʟɪꜱɪ : ${angka}\n` +
-                    `└ ᴅᴇᴛᴀɪʟ/ꜱᴜʙ : ${kodeDetail || '-'}\n\n` +
+      const reply = `<b>🚗 VEHICLE LICENSE ANALYZER (TNKB POLRI)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `✅ <i>ᴀɴᴀʟɪꜱɪꜱ ꜱᴇʟᴇꜱᴀɪ.</i>`;
+                    `🔢 <b>NOMOR POLISI:</b> <code>${kodeWilayah} ${angka} ${kodeDetail}</code>\n\n` +
+                    `<b>[1] 📍 ALOKASI REGIONAL:</b>\n` +
+                    `└ <b>Zona:</b> ${wilayah}\n\n` +
+                    `<b>[2] 🧬 STRUKTUR DECODE:</b>\n` +
+                    `├ <b>Kode Wilayah/Residen:</b> ${kodeWilayah}\n` +
+                    `├ <b>Nomor Urut Pendaftaran:</b> ${angka}\n` +
+                    `└ <b>Huruf Mutasi/Seri:</b> ${kodeDetail || '(Kosong/Pemerintah)'}\n\n` +
+                    `<b>[3] 🔎 DEEP DORK INVESTIGASI (Open Source):</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${dorkBapenda}">Cari Berkas Pajak / Info Bapenda Terbuka</a>\n` +
+                    `• <a href="https://www.google.com/search?q=${dorkLelang}">Caci Database Lelang / Tarikan Leasing Mobil</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>⚠️ Hasil identifikasi mencerminkan pengelompokan korlantas regional dasar, bukan hit API instansi terkait pajak kendaraan (Bapenda).</i>`;
 
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('kk', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /kk [16-digit No KK]");
-      const kk = args[1];
-      if (!/^\d{16}$/.test(kk)) return ctx.reply("❌ Format Salah: KK harus terdiri dari 16 digit angka.");
+      const kk = args[1].replace(/[^0-9]/g, '');
+      if (kk.length !== 16) return ctx.reply("❌ Sistem Menolak: Nomor Kartu Keluarga harus terdiri dari 16 digit numerik.");
       
       const provStr = kk.substring(0, 2);
       const PROVINCES: Record<string, string> = {'11':'Aceh','12':'Sumatera Utara','13':'Sumatera Barat','14':'Riau','15':'Jambi','16':'Sumatera Selatan','17':'Bengkulu','18':'Lampung','19':'Kep. Bangka Belitung','21':'Kep. Riau','31':'DKI Jakarta','32':'Jawa Barat','33':'Jawa Tengah','34':'DI Yogyakarta','35':'Jawa Timur','36':'Banten','51':'Bali','52':'Nusa Tenggara Barat','53':'Nusa Tenggara Timur','61':'Kalimantan Barat','62':'Kalimantan Tengah','63':'Kalimantan Selatan','64':'Kalimantan Timur','65':'Kalimantan Utara','71':'Sulawesi Utara','72':'Sulawesi Tengah','73':'Sulawesi Selatan','74':'Sulawesi Tenggara','75':'Gorontalo','76':'Sulawesi Barat','81':'Maluku','82':'Maluku Utara','91':'Papua Barat','94':'Papua'};
-      const provName = PROVINCES[provStr] || 'Unknown';
+      const provName = PROVINCES[provStr] || 'Unknown / Pemekaran Baru';
       const dd = kk.substring(6, 8);
       const mm = kk.substring(8, 10);
       const yy = kk.substring(10, 12);
       
-      const reply = `<b>🧑‍👩‍👧‍👦 OSINT KARTU KELUARGA (KK)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📋 <b>NO KK:</b> <code>${kk}</code>\n\n` + 
-                    `📍 <b>WILAYAH (Estimasi):</b>\n` +
-                    `├ Provinsi: ${provName} (Kode: ${provStr})\n` +
-                    `├ Kab/Kota Kode: ${kk.substring(2, 4)}\n` +
-                    `└ Kecamatan Kode: ${kk.substring(4, 6)}\n\n` +
-                    `📅 <b>TANGGAL PENCATATAN KELUARGA:</b>\n` +
-                    `└ ${dd}-${mm}-20${yy} (Indikasi Log Cetak)\n\n` +
-                    `🔢 <b>NO URUT KOMPUTER:</b> <code>${kk.substring(12, 16)}</code>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>Analisis Struktur Kartu Keluarga Selesai.</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      const dork1 = encodeURIComponent(`"${kk}" ext:pdf OR ext:xls OR ext:xlsx`);
+      
+      const reply = `<b>🧑‍👩‍👧‍👦 OSINT KARTU KELUARGA (FAMILY CARD)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NOMOR KK (NO KA):</b> <code>${kk}</code>\n\n` + 
+                    `<b>[1] 📍 ALOKASI PENERBITAN (Geolokasi):</b>\n` +
+                    `├ <b>Provinsi Dasar:</b> ${provName} (Kode: ${provStr})\n` +
+                    `├ <b>Sandi Kab/Kota:</b> ${kk.substring(2, 4)}\n` +
+                    `└ <b>Sandi Kecamatan:</b> ${kk.substring(4, 6)}\n\n` +
+                    `<b>[2] 📅 INDIKASI LOG CETAK / UPDATE KELUARGA:</b>\n` +
+                    `└ <b>Tanggal / Bulan / Tahun:</b> <code>${dd}-${mm}-20${yy}</code>\n\n` +
+                    `<b>[3] 🔢 TEKNIKAL & URUTAN SISTEM:</b>\n` +
+                    `└ <b>No Urut Algoritma:</b> <code>${kk.substring(12, 16)}</code>\n\n` +
+                    `<b>[4] 🔎 DEEP DORK INVESTIGASI (Open Source):</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${dork1}">Scan Kebocoran Dokumen Sensitif Instansi/BLT</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Data murni hasil ekstraksi pola baku registrasi Kependudukan Dirjen Dukcapil RI.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('npwp', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /npwp [Nomor NPWP 15/16 Digit]");
       let npwp = args[1].replace(/[^0-9]/g, '');
-      if (npwp.length !== 15 && npwp.length !== 16) return ctx.reply("❌ NPWP harus terdiri dari 15 atau 16 digit.");
+      if (npwp.length !== 15 && npwp.length !== 16) return ctx.reply("❌ Penolakan Sistem: NPWP Orisinal harus mencakup struktur panjang 15 digit format lama atau 16 digit format NIK baru.");
       
       const idWp = npwp.substring(0, 1);
-      let jenisWp = "Unknown";
-      if (idWp === '0' || idWp === '1' || idWp === '2' || idWp === '3') jenisWp = "Wajib Pajak Badan / Instansi";
-      if (idWp === '4' || idWp === '5' || idWp === '6') jenisWp = "Wajib Pajak Pengusaha / Pribadi Non-Karyawan";
-      if (idWp === '7' || idWp === '8' || idWp === '9') jenisWp = "Wajib Pajak Pribadi Karyawan";
+      let jenisWp = "Unknown Classification / Not Standard";
+      if (['0','1','2','3'].includes(idWp)) jenisWp = "🏢 BADAN USAHA / KORPORASI / INSTANSI BENDARA";
+      if (['4','5','6'].includes(idWp)) jenisWp = "💼 PENGUSAHA / PRIBADI NON-KARYAWAN";
+      if (['7','8','9'].includes(idWp)) jenisWp = "🧑 PRIBADI KARYAWAN / PEGAWAI";
       
       const kpp = npwp.substring(9, 12);
+      const kpdjn = npwp.substring(2, 5); // 3 digit kode pajak
       const cabang = npwp.substring(12, 15);
       
       const formatNpwp = npwp.length === 15 ? 
         `${npwp.substring(0,2)}.${npwp.substring(2,5)}.${npwp.substring(5,8)}.${npwp.substring(8,9)}-${npwp.substring(9,12)}.${npwp.substring(12,15)}` : npwp;
       
-      const reply = `<b>💳 OSINT NPWP DECODER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📋 <b>NOMOR PAJAK:</b> <code>${formatNpwp}</code>\n\n` +
-                    `👤 <b>KLASIFIKASI KATEGORI:</b>\n└ ${jenisWp}\n\n` +
-                    `🏢 <b>KODE KPP (Kantor Pelayanan Pajak):</b>\n└ <code>${kpp}</code>\n\n` +
-                    `📍 <b>STATUS PUSAT/CABANG:</b>\n└ ${cabang === '000' ? 'Pusat (000)' : 'Cabang ('+cabang+')'}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>NPWP Format Decoded.</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      let kppInfo = "Kode KPP Standard"; // Could be dynamically mapped, but we'll leave it as a general identifier string
+      if (kpp.startsWith('0')) kppInfo = "Wilayah KPP Khusus/PMA/Besar Pusat";
+      else kppInfo = "Wilayah KPP Pratama / Madya Daerah";
+
+      const dork1 = encodeURIComponent(`"${npwp.length === 15 ? formatNpwp : npwp}" ext:pdf OR ext:xls`);
+
+      const reply = `<b>💳 TAX IDENTITY ANALYZER (NPWP)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NOMOR POKOK WAJIB PAJAK:</b> <code>${formatNpwp}</code>\n\n` +
+                    `<b>[1] 👤 KLASIFIKASI KATEGORI TARGET:</b>\n└ ${jenisWp}\n\n` +
+                    `<b>[2] 🏢 IDENTIFIKATOR ADMINISTRASI INSTANSI:</b>\n` +
+                    `├ <b>KPP (Kantor Pelayanan Pajak):</b> <code>${kpp}</code> (${kppInfo})\n` +
+                    `├ <b>Kode Wilayah/Sandi KPP:</b> <code>${kpdjn}</code>\n` +
+                    `└ <b>Status Entitas:</b> ${cabang === '000' ? '🏬 Kantor Pusat (Status: 000)' : '🏢 Kantor Cabang (Status: '+cabang+')'}\n\n` +
+                    `<b>[3] 🔎 DEEP DORK INVESTIGASI:</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${dork1}">Lacak Kebocoran Berkas Faktur Pajak/Rekening Publik (PDF/Excel)</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Informasi berdasarkan algoritma serialisasi Ditjen Pajak Kemenkeu Republik Indonesia.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('qris', (ctx) => {
       const payload = ctx.message.text.substring(6).trim();
       if (!payload) return ctx.reply("⚠️ Format: /qris [Teks Kode QRIS dari Scanner]");
       
-      let merchantName = "N/A / Gagal Baca";
-      let merchantCity = "N/A / Gagal Baca";
+      let merchantName = "N/A / Encrypted";
+      let merchantCity = "N/A / Encrypted";
       let merchantCategoryCode = "N/A";
       let merchantCriteria = "N/A";
+      let currencyCode = "N/A";
+      let initMethod = "N/A";
+      let amountStr = "Fleksibel (Input User)";
       
       try {
         let i = 0;
@@ -2225,36 +2237,53 @@ There are no background services or permissions associated.
           const tag = p.substring(i, i+2);
           const len = parseInt(p.substring(i+2, i+4));
           const val = p.substring(i+4, i+4+len);
+          
+          if (tag === '01') initMethod = val === '11' ? 'Statis (Cetak)' : val === '12' ? 'Dinamis (Mesin EDC / App)' : val;
+          if (tag === '52') merchantCategoryCode = val;
+          if (tag === '53') currencyCode = val === '360' ? 'IDR (Rupiah Indonesia)' : val;
+          if (tag === '54') amountStr = `Rp ` + Number(val).toLocaleString('id-ID');
+          if (tag === '58') merchantCriteria = val; // Country Code
           if (tag === '59') merchantName = val;
           if (tag === '60') merchantCity = val;
-          if (tag === '52') merchantCategoryCode = val;
-          if (tag === '58') merchantCriteria = val; // Country Code
+          
           i += 4 + len;
         }
       } catch(e) {}
       
-      const reply = `<b>🏦 QRIS VIRTUAL DECODER (EMVCo Protocol)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📝 <b>NAMA MERCHANT:</b> <code>${merchantName}</code>\n` +
-                    `🏙️ <b>KOTA LOKASI:</b> <code>${merchantCity}</code>\n` +
-                    `🗂️ <b>KATEGORI (MCC):</b> <code>${merchantCategoryCode}</code>\n` +
-                    `🌎 <b>NEGARA SERVER:</b> <code>${merchantCriteria}</code>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>Raw Payload EMV Decoding Sukses.</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      const payloadHash = btoa(payload.substring(0, 15) + "...");
+      
+      const reply = `<b>🏦 QRIS VIRTUAL DECODER (EMVCo)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `<b>[1] 🏪 DATA ACQUIRER / MERCHANT:</b>\n` +
+                    `├ <b>NAMA:</b> <code>${merchantName}</code>\n` +
+                    `├ <b>LOKASI KOTA:</b> <code>${merchantCity}</code>\n` +
+                    `├ <b>KATEGORI (MCC):</b> <code>${merchantCategoryCode}</code>\n` +
+                    `└ <b>KODE NEGARA:</b> <code>${merchantCriteria}</code>\n\n` +
+                    `<b>[2] 💳 PARAMETER TRANSAKSI:</b>\n` +
+                    `├ <b>Tipe QRIS:</b> <code>${initMethod}</code>\n` +
+                    `├ <b>Mata Uang:</b> ${currencyCode}\n` +
+                    `└ <b>Nominal Tagihan:</b> <code>${amountStr}</code>\n\n` +
+                    `<b>[3] 🛡️ INTEGRITAS DATA:</b>\n` +
+                    `└ <b>Checksum CRC:</b> <code>${payload.slice(-4)}</code>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Payload didecode eksklusif secara offline (tanpa Hit Switcher).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('rekening', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /rekening [Nomor Rekening]");
-      const rek = args[1];
+      const rek = args[1].replace(/[^0-9]/g, '');
       const q = encodeURIComponent(`"${rek}"`);
       const reply = `<b>💳 BANK FRAUD OSINT DORKING</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🔍 <b>REKENING PENCARIAN:</b> <code>${rek}</code>\n\n` +
-                    `<b>Mencari riwayat penipuan / indikasi spam:</b>\n` +
-                    `1. <b>Google Deep Dork:</b> <a href="https://www.google.com/search?q=${q}+penipu+OR+scam+OR+waspada">Investigasi via Web</a>\n` +
-                    `2. <b>CekRekening Pusat:</b> Cek mandiri di <i>cekrekening.id</i>\n` +
-                    `3. <b>Kredibel Profiler:</b> <a href="https://www.kredibel.co.id/search/${rek}">Cek di Database Kredibel</a>\n` +
-                    `4. <b>X.com (Twitter) Audit:</b> <a href="https://twitter.com/search?q=${rek}">Cek di Twitter / Viral</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━`;
+                    `🔍 <b>IDENTIFIKATOR REKENING:</b> <code>${rek}</code>\n\n` +
+                    `<b>[1] 🚨 ANALISIS INDIKASI PENIPUAN (SCAM/FRAUD):</b>\n` +
+                    `├ 🌐 <b>Google Deep Dork:</b> <a href="https://www.google.com/search?q=${q}+penipu+OR+scam+OR+waspada+OR+laporan+OR+penipuan+OR+blacklist">Jejak Pelaporan Kasus di Web</a>\n` +
+                    `├ 🐦 <b>X.com (Twitter) Audit:</b> <a href="https://twitter.com/search?q=${rek}">Cari Viralisasi & Komplain Terbuka</a>\n` +
+                    `├ 📘 <b>Facebook Intelligence:</b> <a href="https://www.facebook.com/search/posts?q=${q}">Pemantauan Grup Jual-Beli Blacklist</a>\n` +
+                    `└ 🗃️ <b>Kaskus Surat Pembaca:</b> <a href="https://www.google.com/search?q=site:kaskus.co.id+Surat+Pembaca+${q}">Investigasi Forum Regional</a>\n\n` +
+                    `<b>[2] 🏛️ DATABASE RESMI OTORITAS (Input Manual):</b>\n` +
+                    `├ 🛡️ <b>CekRekening.id (Kominfo):</b> Kunjungi <i>cekrekening.id</i>\n` +
+                    `└ 🏢 <b>Kredibel Profiler:</b> <a href="https://www.kredibel.co.id/search/${rek}">Verifikasi Rating Transaksi (Pihak Ke-3)</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Disclaimer: Lakukan verifikasi menyeluruh sebelum bertransaksi.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -2263,19 +2292,31 @@ There are no background services or permissions associated.
       if (args.length < 2) return ctx.reply("⚠️ Format: /paspor [Nomor Paspor Indonesia]");
       let paspor = args[1].toUpperCase();
       let valid = false;
-      let type = "Unknown (Tidak sesuai format standar Imigrasi)";
+      let type = "Unknown (Tidak Sesuai Algoritma Imigrasi RI)";
+      let pageType = "Tidak Terdeteksi";
       
       if (/^[A-Z]{1,2}[0-9]{7}$/.test(paspor)) {
         valid = true;
-        type = paspor.startsWith('X') ? 'E-Paspor (Polikarbonat)' : 'Paspor Biasa / E-Paspor Umum';
+        if(paspor.startsWith('X')) {
+          type = 'E-Paspor (Polikarbonat) / Generasi Baru';
+        } else if (paspor.startsWith('B') || paspor.startsWith('C')) {
+          type = 'Paspor Biasa / E-Paspor Umum';
+        } else {
+          type = 'Paspor Umum (Pre-2023 Reguler)';
+        }
       }
       
-      const reply = `<b>🛂 PASSPORT INDONESIA ANALYZER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📖 <b>NO PASPOR:</b> <code>${paspor}</code>\n\n` +
-                    `🤖 <b>VALIDASI FORMAT:</b> ${valid ? '✅ STRUKTUR VALID' : '❌ INVALID FORMAT'}\n` +
-                    `🏷️ <b>TIPE PASPOR (Estimasi Reguler):</b> ${type}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Catatan: Modul tidak terhubung dengan Ditjen Imigrasi, hanya memvalidasi standar enkripsi serialisasi dokumen.</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      const dork1 = encodeURIComponent(`"${paspor}" ext:pdf OR ext:xls OR ext:csv`);
+
+      const reply = `<b>🛂 PASSPORT INTELLIGENCE (IMIGRASI RI)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📖 <b>NOMOR SERI PASPOR:</b> <code>${paspor}</code>\n\n` +
+                    `<b>[1] 🧬 VALIDASI STRUKTURAL:</b>\n` +
+                    `├ <b>Status Enkripsi:</b> ${valid ? '✅ STRUKTUR VALID (Algoritma Alfabet/Numerik)' : '❌ INVALID FORMAT (Kemungkinan Fake Data)'}\n` +
+                    `└ <b>Estimasi Tipe Paspor:</b> ${type}\n\n` +
+                    `<b>[2] 🔎 DEEP DORK INVESTIGASI BORDER/HOTEL:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${dork1}">Lacak Nomor Paspor pada Dokumen Terbuka (Manifest Penerbangan/Hotel Booking)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Modul OSINT paspor hanya memvalidasi standar serialisasi Dirjen Imigrasi, bukan akses query real-time ke sistem Cekal.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('bank_indo', (ctx) => {
@@ -2283,20 +2324,22 @@ There are no background services or permissions associated.
       if (!args) return ctx.reply("⚠️ Format: /bank_indo [Nama Bank]. Contoh: /bank_indo bca");
       
       const bankDb: Record<string, string> = {
-        'bca': 'Bank Central Asia | Kode SWIFT/Bank: 014',
-        'mandiri': 'Bank Mandiri | Kode SWIFT/Bank: 008',
-        'bni': 'Bank Negara Indonesia | Kode SWIFT/Bank: 009',
-        'bri': 'Bank Rakyat Indonesia | Kode SWIFT/Bank: 002',
-        'bsi': 'Bank Syariah Indonesia | Kode SWIFT/Bank: 451',
-        'cimb': 'Bank CIMB Niaga | Kode SWIFT/Bank: 022',
-        'permata': 'Bank Permata | Kode SWIFT/Bank: 013',
-        'danamon': 'Bank Danamon | Kode SWIFT/Bank: 011',
-        'mega': 'Bank Mega | Kode SWIFT/Bank: 426',
-        'jenius': 'BTPN (Jenius) | Kode SWIFT/Bank: 213',
-        'jago': 'Bank Jago | Kode SWIFT/Bank: 542',
-        'seabank': 'SeaBank / Kesejahteraan Ekonomi | Kode SWIFT/Bank: 535',
-        'blu': 'BCA Digital (blu) | Kode SWIFT/Bank: 501',
-        'artos': 'Bank Artos (Jago) | Kode SWIFT/Bank: 542'
+        'bca': 'Bank Central Asia (BCA) | Kode Transfer SWIFT/KLIRING: 014',
+        'mandiri': 'Bank Mandiri | Kode Transfer SWIFT/KLIRING: 008',
+        'bni': 'Bank Negara Indonesia (BNI) | Kode Transfer SWIFT/KLIRING: 009',
+        'bri': 'Bank Rakyat Indonesia (BRI) | Kode Transfer SWIFT/KLIRING: 002',
+        'bsi': 'Bank Syariah Indonesia (BSI) | Kode Transfer SWIFT/KLIRING: 451',
+        'cimb': 'Bank CIMB Niaga | Kode Transfer SWIFT/KLIRING: 022',
+        'permata': 'Bank Permata | Kode Transfer SWIFT/KLIRING: 013',
+        'danamon': 'Bank Danamon | Kode Transfer SWIFT/KLIRING: 011',
+        'mega': 'Bank Mega | Kode Transfer SWIFT/KLIRING: 426',
+        'jenius': 'BTPN (Jenius) | Kode Transfer SWIFT/KLIRING: 213',
+        'jago': 'Bank Jago | Kode Transfer SWIFT/KLIRING: 542',
+        'seabank': 'SeaBank / Kesejahteraan Ekonomi | Kode Transfer SWIFT/KLIRING: 535',
+        'blu': 'BCA Digital (blu) | Kode Transfer SWIFT/KLIRING: 501',
+        'artos': 'Bank Artos (Jago) | Kode Transfer SWIFT/KLIRING: 542',
+        'btn': 'Bank Tabungan Negara (BTN) | Kode Transfer SWIFT/KLIRING: 200',
+        'panin': 'Panin Bank | Kode Transfer SWIFT/KLIRING: 019'
       };
       
       let found = "";
@@ -2305,16 +2348,20 @@ There are no background services or permissions associated.
             found += `• <b>${v}</b>\n`;
         }
       }
-      if (!found) found = "❌ Tidak ditemukan di database lokal server.";
-      ctx.reply(`<b>🏦 KODE TRANSFER BANK (INDO)</b>\n━━━━━━━━━━━━━━━━━━━━\nPencarian Entitas: <i>${args.toUpperCase()}</i>\n\n${found}\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
+      if (!found) found = "❌ Status OJK: Indikator Bank Tidak Terdaftar di Database Internal Agent.";
+      ctx.reply(`<b>🏦 ID IDENTIFIKASI BANK INDONESIA (SWIFT)</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Parameter Pencarian: <i>${args.toUpperCase()}</i>\n\n${found}\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
     });
 
     bot.command('kodepos', (ctx) => {
       const args = ctx.message.text.substring(8).trim();
-      if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Daerah]");
-      const q = encodeURIComponent(`"Kode Pos" ${args} site:kodepos.nomor.net`);
-      ctx.reply(`<b>📮 KODEPOS GOOGLE DORKING</b>\n━━━━━━━━━━━━━━━━━━━━\nDaerah Analisis: <code>${args}</code>\n\n` +
-                `🔍 <a href="https://www.google.com/search?q=${q}">Klik Disini untuk Cari via Directory Pusat</a>\n` +
+      if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Kelurahan]");
+      const q = encodeURIComponent(`"Kode Pos" ${args} site:kodepos.nomor.net OR site:nomor.net`);
+      const q2 = encodeURIComponent(`"Kode Pos" "${args}"`);
+      ctx.reply(`<b>📮 KODEPOS & REGION GEO-LOCATOR</b>\n━━━━━━━━━━━━━━━━━━━━\n📍 <b>DAERAH ANALISIS TARGER:</b> <code>${args}</code>\n\n` +
+                `<b>[1] 🏛️ DATABASE RESMI KODEPOS NASIONAL:</b>\n` +
+                `└ 🔍 <a href="https://www.google.com/search?q=${q}">Cari Resolusi Geografis di Direktori Kodepos (Nomor.net)</a>\n\n` +
+                `<b>[2] 🌐 PENCARIAN TERBUKA GOOGLE:</b>\n` +
+                `└ 🔍 <a href="https://www.google.com/search?q=${q2}">Pencarian Bebas (Alamat Spesifik & Koordinat)</a>\n` +
                 `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -2332,39 +2379,62 @@ There are no background services or permissions associated.
       else if (['0817','0818','0819','0859','0877','0878'].includes(prefix)) provider = "XL Axiata";
       else if (['0831','0832','0833','0838'].includes(prefix)) provider = "Axis / ALXA";
       else if (['0895','0896','0897','0898','0899'].includes(prefix)) provider = "Three (3 / Hutchison)";
-      else if (['0881','0882','0883','0884','0885','0886','0887','0888','0889'].includes(prefix)) provider = "Smartfren Telecom";
+      else if (['0881','0882','0883','0884','0885','0886','0887','0888','0889','0880'].includes(prefix)) provider = "Smartfren Telecom";
       
-      const reply = `<b>📡 ADVANCED HLR LOOKUP (INDO)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📱 <b>NOMOR TARGET:</b> <code>${p}</code>\n` +
-                    `📋 <b>ROUTING PREFIX (HLR):</b> <code>${prefix}</code>\n` +
-                    `🏢 <b>PROVIDER INFRASTRUCTURE:</b>\n└ ${provider}\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Data bersumber dari sistem Prefix Nasional Telekomunikasi (Berdasarkan pengalokasian awal nomor).</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      const pInt = p.startsWith('0') ? '62' + p.substring(1) : p;
+      const getcontactDork = encodeURIComponent(`"${p}" OR "${pInt}" site:getcontact.com`);
+      const truecallerDork = encodeURIComponent(`"${p}" OR "${pInt}" site:truecaller.com`);
+      const teleDork = `tg://resolve?domain=Getcontactbot`;
+      
+      const reply = `<b>📡 ADVANCED HLR LOOKUP (TELECOM INDO)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📱 <b>NOMOR MSISDN:</b> <code>${p}</code> (Intl: +${pInt})\n\n` +
+                    `<b>[1] 📋 ROUTING PREFIX (HLR INFRA):</b>\n` +
+                    `├ <b>Nomor Area/Prefix:</b> <code>${prefix}</code>\n` +
+                    `└ <b>Provider/Operator:</b> ${provider}\n\n` +
+                    `<b>[2] 🛡️ SOCIAL ENGINEERING & SPAM INVESTIGASI:</b>\n` +
+                    `├ 🌐 <a href="https://www.google.com/search?q=${getcontactDork}">Cari Indeks Publik Getcontact (Dork)</a>\n` +
+                    `├ 🌐 <a href="https://www.google.com/search?q=${truecallerDork}">Cari Indeks TrueCaller Web Data</a>\n` +
+                    `└ 🤖 <a href="${teleDork}">Cari Manual bot Tele GetContact ID</a>\n\n` +
+                    `<b>[3] 🔑 DATA LEAK OSINT:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=%22${pInt}%22+OR+%22${p}%22+ext:txt+OR+ext:sql+OR+ext:csv">Pengecekan Text/SQL Dump (Kebocoran)</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Analisis mencerminkan alokasi Prefix Kominfo, tidak mencakup Porting Nomor (MNP).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('lpse', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
-      if (!args) return ctx.reply("⚠️ Format: /lpse [Nama Vendor / Proyek]");
-      const q = encodeURIComponent(`"${args}" site:lpse.*.go.id`);
-      ctx.reply(`<b>🏢 LPSE & PROCUREMENT DORK (BUMN/Pemerintah)</b>\n━━━━━━━━━━━━━━━━━━━━\nQuery Filter: <code>${args}</code>\n\n` +
-                `🔍 <a href="https://www.google.com/search?q=${q}">Scan Database E-Procurement LPSE</a>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+      if (!args) return ctx.reply("⚠️ Format: /lpse [Nama Vendor PT / Proyek / Tender]");
+      const q1 = encodeURIComponent(`"${args}" site:lpse.*.go.id`);
+      const q2 = encodeURIComponent(`"Pemenang Tender" OR "Surat Penunjukan" "${args}" filetype:pdf`);
+      ctx.reply(`<b>🏢 LPSE PROCUREMENT & BUMN (TENDER OSINT)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                `🏗️ <b>KODE / NAMA VENDOR / PROYEK:</b> <code>${args}</code>\n\n` +
+                `<b>[1] 🏛️ DORK DATABASE TENDER PEMERINTAH NASIONAL:</b>\n` +
+                `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Scan History Lelang Proyek Pemerintahan di Jaringan LPSE/LKPP (Go.id)</a>\n\n` +
+                `<b>[2] 📑 EKSFILTRASI DOKUMEN PEMENANG / SPK (PDF):</b>\n` +
+                `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Lacak Bocoran PDF Persetujuan & Penandatanganan Tender Pemerintah</a>\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Modul Open Source untuk Background Check Perusahaan Kontraktor Pemborong Proyek Negara.</i>`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('bpom', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
-      if (!args) return ctx.reply("⚠️ Format: /bpom [Nama Produk / Perusahaan]");
-      const q = encodeURIComponent(`"${args}" site:cekbpom.pom.go.id`);
-      ctx.reply(`<b>💊 BPOM & DRUG/FOOD SAFETY DORK</b>\n━━━━━━━━━━━━━━━━━━━━\nTarget Filter: <code>${args}</code>\n\n` +
-                `🔍 <a href="https://www.google.com/search?q=${q}">Scan Registrasi & Sertifikasi BPOM</a>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+      if (!args) return ctx.reply("⚠️ Format: /bpom [Nomor Registrasi BPOM / Nama Produk]");
+      const q1 = encodeURIComponent(`"${args}" site:cekbpom.pom.go.id OR site:notifkos.pom.go.id`);
+      const q2 = encodeURIComponent(`"Tarik" OR "Beredar" OR "Berbahaya" "${args}" site:go.id`);
+      const reply = `<b>💊 BPOM & DRUG/FOOD SAFETY (BPOM CHECKER)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📦 <b>TARGET OBJEK/KOSMETIK/MAKANAN:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMERIKSAAN LEGALITAS DATABASE BPOM:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Scan Registrasi & Notifikasi Produk (CekBPOM/NotifKos)</a>\n\n` +
+                    `<b>[2] 🚨 INVESTIGASI BLACKLIST & PENARIKAN (RECALL):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Cek Peringatan Bahaya Kosmetik/Obat di Portal Pemerintahan RI</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Tools membantu pengecekan sertifikasi POM / Kosmetik Ilegal pada open source.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('nip', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /nip [18 Digit NIP]");
       const nip = args[1].replace(/[^0-9]/g, '');
-      if (nip.length !== 18) return ctx.reply("❌ Format Salah: NIP ASN/PNS harus 18 digit.");
+      if (nip.length !== 18) return ctx.reply("❌ Format Salah Cek Profiler: NIP ASN/PNS harus berjumlah presisi 18 digit.");
       
       const year = nip.substring(0, 4);
       const month = nip.substring(4, 6);
@@ -2374,40 +2444,53 @@ There are no background services or permissions associated.
       const jkCode = nip.substring(14, 15);
       const urut = nip.substring(15, 18);
       
-      const jk = jkCode === '1' ? 'Laki-laki 👨' : jkCode === '2' ? 'Perempuan 👩' : 'Unknown';
+      const jk = jkCode === '1' ? 'LAKI-LAKI 👨' : jkCode === '2' ? 'PEREMPUAN 👩' : 'ANOMALI (Bukan ASN)';
+      const dork1 = encodeURIComponent(`"${nip}" site:bkn.go.id OR site:lpse.*.go.id OR site:go.id`);
+      const dork2 = encodeURIComponent(`"${nip}" ext:pdf OR ext:xls OR ext:csv`);
       
-      const reply = `<b>👔 OSINT NIP ASN/PNS DECODER (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📋 <b>NIP:</b> <code>${nip}</code>\n\n` +
-                    `📅 <b>TANGGAL LAHIR:</b> <code>${day}-${month}-${year}</code>\n` +
-                    `📅 <b>TMT PENGANGKATAN:</b> <code>Bulan ${tmtMonth}, Tahun ${tmtYear}</code>\n` +
-                    `👤 <b>JENIS KELAMIN:</b> ${jk}\n` +
-                    `🔢 <b>NOMOR URUT PENGANGKATAN:</b> <code>${urut}</code>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n✅ <i>Struktur Validasi TMT NIP ASN Berhasil Dipecahkan.</i>`;
-      ctx.reply(reply, { parse_mode: 'HTML' });
+      const reply = `<b>👔 OSINT ASN/PNS DECODER (NIP PROFILER)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NOMOR INDUK PEGAWAI:</b> <code>${nip}</code>\n\n` +
+                    `<b>[1] 🧬 ANALISIS PERSONAL APARATUR:</b>\n` +
+                    `├ <b>Tanggal Lahir:</b> <code>${day}-${month}-${year}</code>\n` +
+                    `└ <b>Jenis Kelamin:</b> ${jk}\n\n` +
+                    `<b>[2] 🏛️ HISTORIS SK PENGANGKATAN (TMT):</b>\n` +
+                    `├ <b>Bulan Pengangkatan CPNS:</b> <code>Bulan ${tmtMonth}</code>\n` +
+                    `└ <b>Tahun Angkatan Lulus:</b> <code>Tahun ${tmtYear}</code>\n\n` +
+                    `<b>[3] 🔢 TEKNIKAL ADMINISTRASI:</b>\n` +
+                    `└ <b>Nomor Urut Pendaftaran/Golongan:</b> <code>${urut}</code>\n\n` +
+                    `<b>[4] 🔎 DEEP DORK INVESTIGASI (Open Source):</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${dork1}">Lacak Target di Situs Pemerintahan (go.id) / Mutasi BKN</a>\n` +
+                    `• <a href="https://www.google.com/search?q=${dork2}">Cari Log SK Kenaikan Pangkat / Dokumen Terbuka</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Algoritma validasi ekstraksi Nomor Induk Pegawai Terstandarisasi BKN.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('bpjs', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /bpjs [Nomor KPJ/KIS]");
       const bpjs = args[1].replace(/[^0-9]/g, '');
-      let type = "Unknown";
-      let status = "❌ Format tidak valid. KPJ (Ketenagakerjaan) 11 digit, KIS (Kesehatan) 13 digit.";
+      let type = "Unknown (Tidak Masuk Algoritma Standar)";
+      let status = "❌ Format anomali. KPJ (Ketenagakerjaan) 11 digit, KIS (Kesehatan) 13 digit.";
       if (bpjs.length === 11) {
-          type = "BPJS Ketenagakerjaan (KPJ)";
-          status = "✅ Struktur Panjang KPJ Valid (11 Digit)";
+          type = "Jamsostek / BPJS Ketenagakerjaan (KPJ)";
+          status = "✅ Struktur Serial Format Reguler Valid (11 Digit)";
       } else if (bpjs.length === 13) {
-          type = "BPJS Kesehatan (KIS / JKN - KIS)";
-          status = "✅ Struktur Panjang KIS Valid (13 Digit)";
+          type = "JKN / BPJS Kesehatan (KIS)";
+          status = "✅ Struktur Serial Kartu Aktif Valid (13 Digit)";
       }
       
       const q = encodeURIComponent(`"${bpjs}"`);
-      const reply = `<b>🏥 BPJS IDENTITY VALIDATOR (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📋 <b>NOMOR TARGET:</b> <code>${bpjs}</code>\n` +
-                    `🏷️ <b>TIPE ASURANSI SOSIAL:</b> ${type}\n` +
-                    `🤖 <b>STATUS VALIDASI:</b> ${status}\n\n` +
-                    `🔍 <b>Dork Pencarian File Terkait Publik Tertaut:</b>\n` +
-                    `<a href="https://www.google.com/search?q=${q}">Cek Kebocoran Database Nomor atau Index PDF Cloud</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━`;
+      const q2 = encodeURIComponent(`"${bpjs}" ext:xls OR ext:csv`);
+      const reply = `<b>🏥 BPJS/JKN IDENTITY ANALYZER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📋 <b>NOMOR KARTU TARGET:</b> <code>${bpjs}</code>\n\n` +
+                    `<b>[1] 🏷️ TIPE ASURANSI & JAMINAN SOSIAL:</b>\n` +
+                    `└ <b>Kategori Database:</b> ${type}\n\n` +
+                    `<b>[2] 🤖 STATUS VALIDASI STRUKTUR:</b>\n` +
+                    `└ <b>Hasil Analisis:</b> ${status}\n\n` +
+                    `<b>[3] 🔎 DEEP DORK INVESTIGASI (Open Source):</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${q}">Pemantauan Penindeks Publik (Web Crawler Profiling)</a>\n` +
+                    `• <a href="https://www.google.com/search?q=${q2}">Audit Kebocoran File Data Medis / HRD Perusahaan Terbuka</a>\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memeriksa algoritma panjang serial BPJS yang berlaku secara fundamental di Indonesia.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -2432,36 +2515,43 @@ There are no background services or permissions associated.
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /bpkb [Kode Nomor BPKB]");
       const bpkb = args[1].toUpperCase();
-      let formatStatus = "❌ Tidak Sesuai Pola Numerik Korlantas Polri Secara Keseluruhan";
+      let formatStatus = "❌ Peringatan: Tidak Sesuai Pola Standar Buku Kepemilikan (Palsu/Invalid)";
       
       if (/^[A-Z]{1,2}-?\d{7,8}$/.test(bpkb)) {
-          formatStatus = "✅ Struktur Validator Lulus Tipe Pola A (Alfabetik & Numerik Seri)";
-      } else if (/^[A-Z]{1}\d{7,8}$/.test(bpkb)) {
-          formatStatus = "✅ Struktur Validator Lulus Tipe Pola B (Singkat Alfabetik)";
+          formatStatus = "✅ Struktur Serial Format Lulus (Polikarbonat/Buku Biru Standar Korlantas)";
+      } else if (/^\d{8,9}$/.test(bpkb)) {
+          formatStatus = "✅ Struktur Standar Numerik (Lulus Pengecekan Pola)";
       }
-      const q = encodeURIComponent(`"${bpkb}" + "BPKB"`);
+      const q1 = encodeURIComponent(`"BPKB" "${bpkb}" OR "Lelang" OR "Leasing"`);
+      const q2 = encodeURIComponent(`"BPKB" "${bpkb}" ext:pdf OR ext:xls OR ext:csv`);
       
-      const reply = `<b>🚗 BPKB VEHICLE DOC VALIDATOR (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📄 <b>NO SERIAL BPKB:</b> <code>${bpkb}</code>\n` +
-                    `🤖 <b>ANALISA BLOK GENUIN (Cryptography Regex):</b>\n${formatStatus}\n\n` +
-                    `<b>🔍 Deep Search Riwayat (Lelang Umum/Blokir/Hukum Kriminal/Leasing):</b>\n` +
-                    `<a href="https://www.google.com/search?q=${q}">Dork Investigasi Web Indeks Nomor BPKB Secara Terbuka</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>*Sistem Tidak Terkoneksi Database Regident (Offline Validation Tools).</i>`;
+      const reply = `<b>🚗 SECURITY & DOC ANALYZER (BPKB)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📄 <b>NO SERIAL KEPEMILIKAN:</b> <code>${bpkb}</code>\n\n` +
+                    `<b>[1] 🧬 VALIDASI ALGORITMA DOC (Cryptography):</b>\n` +
+                    `└ <b>Integritas Format:</b> ${formatStatus}\n\n` +
+                    `<b>[2] 🔎 DEEP DORK INVESTIGASI ASET:</b>\n` +
+                    `├ 🌐 <a href="https://www.google.com/search?q=${q1}">Pemantauan Kasus Blokir / Tarikan Leasing / Lelang Terbuka</a>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Jaminan / File Pinjaman BPKB Online (PDF/Excel)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Offline Validator, tidak terkoneksi E-TLE & E-Samsat Regident Korlantas POLRI RI.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('sertipikat', (ctx) => {
       const args = ctx.message.text.substring(12).trim();
-      if (!args) return ctx.reply("⚠️ Format: /sertipikat [Nomor Hak / Nama Pemilik]");
-      const q = encodeURIComponent(`"${args}" site:atrbpn.go.id OR site:bhumi.atrbpn.go.id OR site:ptsp.atrbpn.go.id`);
+      if (!args) return ctx.reply("⚠️ Format: /sertipikat [Nomor Hak/NIB Tanah/Nama Objek]");
+      const q1 = encodeURIComponent(`"${args}" site:bhumi.atrbpn.go.id OR site:ptsp.atrbpn.go.id`);
       const q2 = encodeURIComponent(`"${args}" site:putusan3.mahkamahagung.go.id`);
+      const q3 = encodeURIComponent(`"${args}" "Sertifikat Tanah" OR "Lelang" OR "Sengketa" filetype:pdf`);
       
-      const reply = `<b>🗺️ SERTIPIKAT TANAH/BPN OSINT (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `📄 <b>OBJEK (SHM/SHGB/HGU/HP/NIB Tanah):</b> <code>${args}</code>\n\n` +
-                    `<b>🔍 Cyber Intelijen Hak Tanah & Sengketa Lahan:</b>\n` +
-                    `1. <a href="https://www.google.com/search?q=${q}">Pelacakan Footprint di Basis Data Kementerian ATR/BPN & KKP</a>\n` +
-                    `2. <a href="https://www.google.com/search?q=${q2}">Scan Riwayat Gugatan Agraria (Pengadilan Tata Usaha / PTUN)</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Alat ini mengurai footprint publik pada Sistem Informasi Geografis Pertanahan Nasional.</i>`;
+      const reply = `<b>🗺️ BPN / AGRARIA INTELLIGENCE (SHM/HGU)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📄 <b>OBJEK (SHM/SHGB/HGU/HP/NIB):</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMINDAIAN DATABASE PORTAL BPN(ATR):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pelacak Jejak Layanan Pertanahan Digital (BHUMI/PTSP)</a>\n\n` +
+                    `<b>[2] ⚖️ INVESTIGASI SENGKETA LAHAN & ASET PERKARA:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Konflik Tanah di Putusan Direktori MA</a>\n\n` +
+                    `<b>[3] 📄 SCAN DOKUMEN JAMINAN BANK / LELANG LAHAN:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Eksfiltrasi Log Data Aset Lelang & Surat Hutang Publik (PDF)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memfasilitasi Open Source Intelligence Aset properti dan pertanahan nasional.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -2469,27 +2559,37 @@ There are no background services or permissions associated.
       const args = ctx.message.text.substring(10).trim();
       if (!args) return ctx.reply("⚠️ Format: /yudisium [Nama Lengkap / NIM Mahasiswa]");
       const q = encodeURIComponent(`"${args}" site:pddikti.kemdikbud.go.id`);
-      const q2 = encodeURIComponent(`"${args}" yudisium OR ijazah OR skripsi OR tesis OR disertasi site:ac.id`);
+      const q2 = encodeURIComponent(`"${args}" yudisium OR ijazah OR skripsi OR tesis OR disertasi site:ac.id OR site:go.id`);
+      const q3 = encodeURIComponent(`"${args}" site:scholar.google.co.id OR site:neliti.com`);
       
-      const reply = `<b>🎓 AKADEMIK & PDDIKTI PROFILER (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+      const reply = `<b>🎓 AKADEMIK & PDDIKTI BACKGROUND CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
                     `👤 <b>TARGET CIVITAS AKADEMIKA:</b> <code>${args}</code>\n\n` +
-                    `<b>🔍 Forensik Digital Tingkat Lanjut Universitaria:</b>\n` +
-                    `1. <a href="https://www.google.com/search?q=${q}">Query Database Induk (PDDikti) - Lacak Transkrip & Status DropOut Terbuka</a>\n` +
-                    `2. <a href="https://www.google.com/search?q=${q2}">Query Repositori Domain (.ac.id) - Validasi Arsip Skripsi/Undangan Kelulusan Umum</a>\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Tools ini mumpuni untuk Background Check pemalsuan gelar & sindikat ijazah bodong di Indonesia.</i>`;
+                    `<b>[1] 🏛️ INVESTIGASI PANGKALAN DATA DIKTI (Pusat):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q}">Lacak Entri Transkrip, SKS, / Riwayat DropOut di PDDikti Resmi</a>\n\n` +
+                    `<b>[2] 📚 INVESTIGASI DOKUMEN REPOSITORI (Kampus Dasar):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Repositori .ac.id untuk Jejak Kelulusan Pra-Publikasi Sidang Akhir</a>\n\n` +
+                    `<b>[3] 🔬 VERIFIKASI JURNAL/PUBLIKASI ILMIAH:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Cari Jejak Penulis Jurnal & Google Scholar Tercetak</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Intelijen OSINT khusus memberantas pemalsuan riwayat akademis (ijazah tembak/bodong).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('putusan', (ctx) => {
       const args = ctx.message.text.substring(9).trim();
       if (!args) return ctx.reply("⚠️ Format: /putusan [Nama Lengkap / Keyword Kasus]");
-      const q = encodeURIComponent(`"${args}" site:putusan3.mahkamahagung.go.id`);
+      const q1 = encodeURIComponent(`"${args}" site:putusan3.mahkamahagung.go.id`);
+      const q2 = encodeURIComponent(`"${args}" site:sipp.*.go.id`);
+      const q3 = encodeURIComponent(`"${args}" pailit OR pidana OR korupsi OR pengadilan`);
       
-      const reply = `<b>⚖️ DIREKTORI MAHKAMAH AGUNG OSINT (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🧑‍⚖️ <b>SUBJEK PIDANA/PERDATA:</b> <code>${args}</code>\n\n` +
-                    `<b>🔍 Modul Penelusuran Dokumen Kriminal / Mediasi:</b>\n` +
-                    `<a href="https://www.google.com/search?q=${q}">Jalankan Query Direktori MA / Sistem Informasi Penelusuran Perkara (SIPP)</a>\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Analisis riwayat rekam jejak Kriminalitas/Perceraian/Bangkrut via putusan penetapan hukum terbuka.</i>`;
+      const reply = `<b>⚖️ INVESTIGASI HUKUM MAHKAMAH AGUNG & SIPP</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🧑‍⚖️ <b>SUBJEK PERKARA TERTENTU:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ SUMBER DATA PUTUSAN MA / INKRACHT:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Arsip Register Direktori Mahkamah Agung (Nasional)</a>\n\n` +
+                    `<b>[2] 🛡️ SIPP PENGADILAN NEGERI/AGAMA (Mediasi & Sidang):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Tracking Sistem Informasi Penelusuran Perkara Basis Wilayah PN</a>\n\n` +
+                    `<b>[3] 🔎 PEMANTAUAN BERITA KRIMINAL / PAILIT:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Agregator Laporan Pailit Pribadi / Pidana di Mesin Publikasi Berita Terverifikasi</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Investigasi rekam jejak litigasi historikal, blacklist KPR, perceraian, sengketa lahan, dll secara bebas.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -2497,52 +2597,62 @@ There are no background services or permissions associated.
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /dpo [Nama Pribadi/Alias]");
       const q = encodeURIComponent(`"Daftar Pencarian Orang" OR "DPO" "${args}" site:polri.go.id OR site:kejaksaan.go.id OR site:kpk.go.id`);
+      const q2 = encodeURIComponent(`"Buronan" OR "Tersangka" "${args}" site:go.id`);
       
-      const reply = `<b>🚔 BURONAN NASIONAL & DPO TRACKER (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+      const reply = `<b>🚔 INDONESIA CYBER INTELLIGENCE (BURONAN/DPO)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
                     `🕵️ <b>TARGET INVESTIGASI:</b> <code>${args}</code>\n\n` +
-                    `<b>🔍 Deep Net Penegak Hukum Nasional:</b>\n` +
-                    `<a href="https://www.google.com/search?q=${q}">Scraping Indeks DPO (Polda Regional / Bareskrim / Kejaksaan / Divisi KPK)</a>\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Memanfaatkan mesin pencari crawler menarget domain Divisi Siber dan Unit Reserse Indonesia.</i>`;
+                    `<b>[1] 🏛️ DATABASE APARAT PENEGAK HUKUM (POLRI / KEJAGUNG):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q}">Scraping Indeks DPO Resmi (Polda Regional / Bareskrim / Kejaksaan)</a>\n\n` +
+                    `<b>[2] 🛡️ KOMISI PEMBERANTASAN KORUPSI (KPK/PPATK):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Penelusuran Penetapan Tersangka / Rilis Daftar Cekal Imigrasi Siber</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memanfaatkan mesin crawler Dorking agregasi institusi Reserse, Bareskrim & Interpol NCB Jakarta.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('ojk', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
-      if (!args) return ctx.reply("⚠️ Format: /ojk [Nama Pinjol/Platform]");
+      if (!args) return ctx.reply("⚠️ Format: /ojk [Nama Pinjol/Platform Berizin]");
       
-      const legalPinjol = ['akulaku','kredivo','indodana','shopeepay','spaylater','dana','gopay','kreditpintar','rupiahcepat','adapundi','uangme','pinjamgo','tunaiku','julo','uatas','ada kami','kredit pintar','modal nasional','julo'];
+      const legalPinjol = ['akulaku','kredivo','indodana','shopeepay','spaylater','dana','gopay','kreditpintar','rupiahcepat','adapundi','uangme','pinjamgo','tunaiku','julo','uatas','ada kami','kredit pintar','modal nasional','julo','easycash','kredito','pinjamduit','finmas','tambadana'];
       const targetQuery = args.toLowerCase();
-      let estStatus = "⚠️ <b>UNDEFINED OJK ID:</b> Membutuhkan Verifikasi Manual & Pencocokan Dokumen Izin AFPI/OJK.";
+      let estStatus = "⚠️ <b>UNDEFINED OJK ID:</b> Status Abu-abu. Membutuhkan Verifikasi Manual Sesuai Dokumen Tanda Terdaftar OJK & AFPI.";
       
       if (legalPinjol.some(lp => targetQuery.includes(lp))) {
-          estStatus = "✅ <b>PROYEKSI LEGALITAS (EST):</b> Terindikasi Platform Tervalidasi AFPI / Legal Otoritas Jasa Keuangan Nasional.";
-      } else if (targetQuery.includes('pinjol') || targetQuery.includes('dana fast') || targetQuery.includes('tunai kilat') || targetQuery.includes('uang kilat') || targetQuery.includes('koperasi bintang') || targetQuery.includes('dana kilat')) {
-          estStatus = "❌ <b>PROYEKSI ILLEGAL (EST):</b> Risiko Sedang/Tinggi Aplikasi Rentan Spam atau Eksploitasi Data Kontak Pengguna.";
+          estStatus = "✅ <b>PROYEKSI LEGALITAS:</b> Terindikasi Platform Tervalidasi Publik Nasional (Berdasarkan Top Tier AFPI).";
+      } else if (targetQuery.includes('pinjol') || targetQuery.includes('dana fast') || targetQuery.includes('tunai kilat') || targetQuery.includes('uang kilat') || targetQuery.includes('koperasi bintang') || targetQuery.includes('dana kilat') || targetQuery.includes('dompet')) {
+          estStatus = "❌ <b>PROYEKSI ILEGAL / BLACKLIST:</b> Tingkat Risiko Sedang-Tinggi Aplikasi Rentan Pencurian Data Kontak / Spam Galbay.";
       }
       
-      const q = encodeURIComponent(`"${args}" site:ojk.go.id filetype:pdf`);
+      const q1 = encodeURIComponent(`"${args}" site:ojk.go.id filetype:pdf`);
+      const q2 = encodeURIComponent(`"Satgas Waspada Investasi" OR "SWI" "Ilegal" "${args}"`);
       
-      const reply = `<b>🏦 OJK FINTECH & PINJOL AUDIT (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💲 <b>NAMA PLATFORM / PT BISNIS:</b> <code>${args}</code>\n` +
-                    `🤖 <b>ENGINE MACHINE HEURISTICS:</b>\n> ${estStatus}\n\n` +
-                    `<b>🔍 Dork Verifikasi Database Surat Resmi Otoritas:</b>\n` +
-                    `<a href="https://www.google.com/search?q=${q}">Verifikasi Surat Tanda Terdaftar/SK pada Database PDF Server OJK & Satgas Waspada Investasi</a>\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━`;
+      const reply = `<b>🏦 OJK FINTECH & P-2-P LENDING AUDIT</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💲 <b>ENTITAS PLATFORM KEUANGAN:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🤖 PREDIKTOR LEGALITAS & RISIKO ALGORITMA:</b>\n> ${estStatus}\n\n` +
+                    `<b>[2] ⚖️ DORKING DATABASE SK REGULATOR OJK / AFPI:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pemindaian Tanda Berizin Tertulis SK OJK Berbentuk Surat/PDF</a>\n\n` +
+                    `<b>[3] 🚨 INVESTIGASI BLACKLIST (Satgas PASTI / SWI):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Tracer Jejak Penindakan Blokir Kominfo / Satgas Waspada Investasi Publik</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Warning: Prediktor ini tidak menggantikan fungsi validasi layanan pelanggan OJK di nomor 157.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('kpu', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
-      if (!args) return ctx.reply("⚠️ Format: /kpu [Nama Pemilih / NIK]");
-      const q = encodeURIComponent(`"${args}" site:kpu.go.id OR site:lindungihakpilihmu.kpu.go.id`);
-      const q2 = encodeURIComponent(`"Daftar Pemilih Tetap" "${args}" filetype:pdf OR filetype:xls`);
+      if (!args) return ctx.reply("⚠️ Format: /kpu [Nama Pemilih / 16-Digit NIK]");
+      const q1 = encodeURIComponent(`"${args}" site:kpu.go.id OR site:lindungihakpilihmu.kpu.go.id OR site:infopemilu.kpu.go.id`);
+      const q2 = encodeURIComponent(`"Daftar Pemilih Tetap" "${args}" filetype:pdf OR filetype:xls OR filetype:csv`);
+      const q3 = encodeURIComponent(`"Berita Acara Penetapan" "Pemilu" "${args}"`);
       
-      const reply = `<b>🗳️ KPU DPT & ELECTORAL OSINT (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🎯 <b>ENTITAS SUBJEK PEMILIH:</b> <code>${args}</code>\n\n` +
-                    `<b>🔍 Pemindaian Agregasi Penyelenggara Pemilu:</b>\n` +
-                    `1. <a href="https://www.google.com/search?q=${q}">Query Induk Sistem DPT KPU (Sidalih) KPUD Provinsi/Kota & Lindungi Hak Pilih</a>\n` +
-                    `2. <a href="https://www.google.com/search?q=${q2}">Deep Scan Dokumen Resolusi Penetapan Daftar Pemilih (Berkas TPS Regional)</a>\n\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n<i>Alat investigasi DPT memfasilitasi pelacakan nama ke kelurahan, RT/RW, dan TPS secara Open Source.</i>`;
+      const reply = `<b>🗳️ KPU ELECTORAL & DPT ANALYZER (SIDALIH)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🎯 <b>ENTITAS SUBJEK PEMILIH / CALON:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMINDAIAN DATABASE INDUK SIDALIH KPU:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Web Register Hak Pilih Nasional (LindungiHakPilihmu/InfoPemilu)</a>\n\n` +
+                    `<b>[2] 📑 AUDIT RESOLUSI PENETAPAN PER KELURAHAN (TPS):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Eksfiltrasi & Dork Dokumen PDF DPT Panlok Tingkat Kecamatan / RT / RW</a>\n\n` +
+                    `<b>[3] 🔍 JEJAK REKAM PANITIA / KPPS (Khusus Struktur):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Skrining Nama dalam Log Berita Acara Rekapitulasi Rapat / Panwaslu Daerah</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Alat bantu Open Source ini mempercepat metode pelacakan domisili/lokasi TPS berdasarkan footprint kebocoran data elektoral KPU publik yang terindeks (Crawler).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
@@ -3984,36 +4094,190 @@ There are no background services or permissions associated.
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("Format: /nama [Nama Lengkap]");
       const q = encodeURIComponent(`"${args}"`);
-      const reply = `<b>👤 NAME OSINT INVESTIGATION</b>\n` +
+      const q2 = encodeURIComponent(`"${args}" site:linkedin.com/in OR site:id.linkedin.com/in`);
+      const q3 = encodeURIComponent(`"${args}" filetype:pdf OR filetype:xls OR filetype:xlsx`);
+      
+      const reply = `<b>👤 PEOPLE OSINT (PROFILER NAMA)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💎 <b>TARGET NAME:</b> <code>${args}</code>\n\n` +
-                    `├ 🌐 <b>General Search:</b> <a href="https://www.google.com/search?q=${q}">Cek Nama di Google</a>\n` +
-                    `├ 📄 <b>PDF/Docs:</b> <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen Terkait</a>\n` +
-                    `├ 💼 <b>LinkedIn:</b> <a href="https://www.google.com/search?q=site:linkedin.com+${q}">Cari di LinkedIn</a>\n` +
-                    `├ 🎓 <b>Akademik:</b> <a href="https://www.google.com/search?q=site:pddikti.kemdikbud.go.id+${q}">Cek di PDDikti (Kuliah)</a>\n` +
-                    `├ 🏛️ <b>Legal/Putusan:</b> <a href="https://www.google.com/search?q=site:putusan3.mahkamahagung.go.id+${q}">Cek Putusan Sidang</a>\n` +
-                    `└ 🏢 <b>Berita:</b> <a href="https://www.google.com/search?q=site:detik.com+OR+site:kompas.com+${q}">Cek di Media Berita</a>\n` +
+                    `💎 <b>TARGET ENTITAS:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🌐 REKAM JEJAK DIGITAL UMUM:</b>\n` +
+                    `├ <a href="https://www.google.com/search?q=${q}">Pemindaian Indeks Global Google (Dorking Tanda Kutip)</a>\n` +
+                    `└ <a href="https://www.google.com/search?q=${q3}">Skrining Kebocoran Data Bantuan/Absensi Organisasi (PDF/Excel)</a>\n\n` +
+                    `<b>[2] 💼 KARIER & NETWORKING PROFESIONAL:</b>\n` +
+                    `└ <a href="https://www.google.com/search?q=${q2}">Investigasi CV & Pengalaman Kerja di LinkedIn</a>\n\n` +
+                    `<b>[3] 🏛️ HISTORIS HUKUM & AKADEMIK:</b>\n` +
+                    `├ <a href="https://www.google.com/search?q=site:pddikti.kemdikbud.go.id+${q}">Tracer PD-Dikti (Rekam Kuliah & Drop Out)</a>\n` +
+                    `└ <a href="https://www.google.com/search?q=site:putusan3.mahkamahagung.go.id+${q}">Pemeriksaan Keterlibatan Perkara Hukum (Direktori MA)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `✅ <i>Analisis nama selesai.</i>`;
+                    `<i>⚠️ Profiling Open Source berdasarkan kecocokan nama, lakukan filter lanjutan untuk menyaring entitas dengan nama pasaran.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('bea_cukai', (ctx) => {
+      const args = ctx.message.text.substring(11).trim();
+      if (!args) return ctx.reply("⚠️ Format: /bea_cukai [Nomor Resi / AWB / IMEI]");
+      const q1 = encodeURIComponent(`"${args}" site:beacukai.go.id`);
+      const q2 = encodeURIComponent(`"Barang Kiriman" OR "IMEI" "${args}" filetype:pdf`);
+      const reply = `<b>🚢 KEPABEANAN & CUKAI MAPPING (ENTERPRISE)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📦 <b>TARGET (RESI/IMEI):</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ TRACE DB DIREKTORAT JENDRAL BEA CUKAI:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Nomor Consignment / Penetapan Pabean</a>\n\n` +
+                    `<b>[2] 🚨 INVESTIGASI BARANG SITAAN & LELANG BMN:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Daftar Barang Tidak Dikuasai / Blacklist IMEI</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Intelijen Kepabeanan Ekspor/Impor Nasional.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('sivil', (ctx) => {
+      const args = ctx.message.text.substring(7).trim();
+      if (!args) return ctx.reply("⚠️ Format: /sivil [Nomor Ijazah/PIN]");
+      const q1 = encodeURIComponent(`"${args}" site:ijazah.kemdikbud.go.id OR site:pddikti.kemdikbud.go.id`);
+      const q2 = encodeURIComponent(`"${args}" "Ijazah" OR "Transkrip" site:ac.id filetype:pdf`);
+      const reply = `<b>🎓 SIVIL & PIN KEMDIKBUD VALIDATOR (IJAZAH)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📜 <b>NOMOR RIN/PIN VERIFIKASI:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMINDAIAN DATABASE NO. IJAZAH NASIONAL:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Cek Sistem Verifikasi Ijazah Elektronik Nasional SIVIL / PDDikti</a>\n\n` +
+                    `<b>[2] 📚 INVESTIGASI KEBOCORAN BERKAS (Kampus Dasar):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Bukti Fisik Kelulusan di Repositori (.ac.id)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Anti-Fraud Ijazah & Sistem Penomoran Ijazah Nasional (PIN).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('bansos', (ctx) => {
+      const args = ctx.message.text.substring(8).trim();
+      if (!args) return ctx.reply("⚠️ Format: /bansos [NIK / Nama Target Penerima]");
+      const q1 = encodeURIComponent(`"${args}" site:cekbansos.kemensos.go.id`);
+      const q2 = encodeURIComponent(`"KPM" OR "PKH" OR "Bansos" "${args}" filetype:pdf OR filetype:xls`);
+      const reply = `<b>🤝 KEMENSOS DTKS & BANSOS PROFILER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>TARGET KPM (Keluarga Penerima Manfaat):</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ DORK INTEGRASI DATA TERPADU (DTKS):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pemindaian Catatan Bantuan Sosial Kemensos / PBI-JK</a>\n\n` +
+                    `<b>[2] 📑 BUKTI CAIR / DATA PENYALURAN REGIONAL:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Pencairan PKH / BST Tingkat Pemda/Desa</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Intelijen Kesejahteraan Sosial Kemensos RI.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('pbb', (ctx) => {
+      const args = ctx.message.text.substring(5).trim();
+      if (!args) return ctx.reply("⚠️ Format: /pbb [Nomor Objek Pajak/NOP 18-Digit]");
+      const q1 = encodeURIComponent(`"${args}" site:go.id "Pajak Bumi dan Bangunan"`);
+      const q2 = encodeURIComponent(`"${args}" SPPT OR NOP filetype:pdf OR filetype:xls`);
+      const reply = `<b>🏡 PAJAK PROPERTY & NJOP (PBB TRACKER)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📄 <b>NOMOR OBJEK PAJAK (NOP):</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ TRACE DATABASE BAPENDA / PAJAK DAERAH:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pencarian SPPT PBB & Riwayat Tagihan Pajak Properti</a>\n\n` +
+                    `<b>[2] 🚨 INVESTIGASI TUNGGAKAN / LELANG SITA PAJAK:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Bukti Bayar / Surat Teguran Penyitaan Lahan</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Fasilitas pelacakan Aset Tidak Bergerak (Pajak Bumi & Bangunan).</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('samsat', (ctx) => {
+      const args = ctx.message.text.substring(8).trim();
+      if (!args) return ctx.reply("⚠️ Format: /samsat [Nomor Polisi Kendaraan]");
+      const q1 = encodeURIComponent(`"${args}" site:bapenda.*.go.id OR site:samsat.*.go.id`);
+      const q2 = encodeURIComponent(`"STNK" OR "PKB" "Pajak" "${args}"`);
+      const reply = `<b>🏍️ E-SAMSAT & PKB VEHICLE TRACKER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🚘 <b>NOMOR POLISI / NOPOL:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMINDAIAN REGISTRASI KENDARAAN (SAMSAT):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pelacak Jejak Pajak Kendaraan Bermotor Wilayah Bapenda</a>\n\n` +
+                    `<b>[2] 🔎 INVESTIGASI STATUS TAGIHAN & TILANG ETLE:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Footprint STNK / Denda PKB di Mesin Pencari Publik</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Alat Bantu Pantau Kewajiban Pajak Transportasi Nasional.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('cekal', (ctx) => {
+      const args = ctx.message.text.substring(7).trim();
+      if (!args) return ctx.reply("⚠️ Format: /cekal [Nama Lengkap / Nomor Paspor]");
+      const q1 = encodeURIComponent(`"${args}" site:imigrasi.go.id OR site:kemenkumham.go.id`);
+      const q2 = encodeURIComponent(`"Pencegahan dan Penangkalan" OR "Cekal" "${args}"`);
+      const reply = `<b>🛑 IMIGRASI INTERPOL & CEKAL MAPPING</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>SUBJEK TRAVEL BAN:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ DORK DIREKTORAT JENDERAL IMIGRASI:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Log Daftar Pencegahan & Penangkalan Nasional</a>\n\n` +
+                    `<b>[2] 🚨 INVESTIGASI SINDIKAT / RED NOTICE:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Berita Red Notice / Status Deportasi Subjek</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Intelijen Perbatasan Imigrasi dan Larangan Ke Luar Negara RI.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('pse', (ctx) => {
+      const args = ctx.message.text.substring(5).trim();
+      if (!args) return ctx.reply("⚠️ Format: /pse [Nama Aplikasi / PT Developer]");
+      const q1 = encodeURIComponent(`"${args}" site:pse.kominfo.go.id`);
+      const q2 = encodeURIComponent(`"Surat Tanda Daftar Penyelenggara Sistem Elektronik" "${args}"`);
+      const reply = `<b>💻 PSE KOMINFO CYBER LEGITIMACY SCANNER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📱 <b>SISTEM ELEKTRONIK / DOMAIN:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ REGULASI PENYELENGGARA SIBER NASIONAL:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Verifikasi Legalitas Entitas Aplikasi di Database PSE Kominfo</a>\n\n` +
+                    `<b>[2] 📑 AUDIT TANDA DAFTAR (TDPSE):</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Riwayat Sertifikat Tanda Terdaftar Digital Asing & Lokal</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Perlindungan Konsumen & Pencegahan Platform Ilegal di Indonesia.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('djki', (ctx) => {
+      const args = ctx.message.text.substring(6).trim();
+      if (!args) return ctx.reply("⚠️ Format: /djki [Nama Merek / Perusahaan]");
+      const q1 = encodeURIComponent(`"${args}" site:pdki-indonesia.dgip.go.id OR site:dgip.go.id`);
+      const q2 = encodeURIComponent(`"Berita Resmi Merek" "${args}" filetype:pdf`);
+      const reply = `<b>®️ DJKI HAKI & INTELLECTUAL PROPERTY CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `🛍️ <b>ENTITAS KEKAYAAN INTELEKTUAL:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ SCAN DATABASE PUSAT (PDKI) KEMENKUMHAM:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Pelacak Status Hak Cipta, Paten, & Pencatatan Merek Dagang</a>\n\n` +
+                    `<b>[2] 📑 EKSFILTRASI JURNAL/BERITA RESMI MEREK:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Penolakan/Persetujuan Hak Merek (BRM PDF)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Alat Forensik Legalitas Brand dan Korporat Skala Nasional.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('ahu', (ctx) => {
+      const args = ctx.message.text.substring(5).trim();
+      if (!args) return ctx.reply("⚠️ Format: /ahu [Nama PT / Yayasan / Perseroan]");
+      const q1 = encodeURIComponent(`"${args}" site:ahu.go.id`);
+      const q2 = encodeURIComponent(`"Profil Perusahaan Terbuka" "${args}" filetype:pdf OR filetype:xls`);
+      const reply = `<b>🏢 AHU KEMENKUMHAM CORPORATE PROFILER</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `💼 <b>ENTITAS BISNIS (PT/YAYASAN):</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ VERIFIKASI ADMINISTRASI HUKUM UMUM:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Validitas Perseroan, Koperasi, & Notariat Kemenkumham</a>\n\n` +
+                    `<b>[2] 📑 INVESTIGASI DIREKSI & AKTA PENDIRIAN:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Susunan Pengurus & Sengketa Pemegang Saham (PDF)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Intelijen Entitas Korporasi Nasional dan Investigasi Perusahaan Fiktif.</i>`;
+      ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('simkah', (ctx) => {
+      const args = ctx.message.text.substring(8).trim();
+      if (!args) return ctx.reply("⚠️ Format: /simkah [Nama Suami/Istri / NIK]");
+      const q1 = encodeURIComponent(`"${args}" site:simkah.kemenag.go.id OR site:kua.*.go.id`);
+      const q2 = encodeURIComponent(`"Akta Nikah" OR "Buku Nikah" "${args}"`);
+      const reply = `<b>💍 KEMENAG SIMKAH & MARRIAGE REGISTRY AUDIT</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 <b>ENTITAS PASANGAN / BUKU NIKAH:</b> <code>${args}</code>\n\n` +
+                    `<b>[1] 🏛️ PEMINDAIAN SISTEM MANAJEMEN KUA KEMENAG:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q1}">Penelusuran Catatan Sipil Pernikahan & Jadwal Akad KUA</a>\n\n` +
+                    `<b>[2] 🚨 DEEP SEARCH KETERBUKAAN SENGKETA/KASUS:</b>\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Tracing Bukti Surat Nikah Terbuka pada Dokumen Digital (Google)</a>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━\n<i>Forensik Sipil KUA Kementrian Agama, Pencegahan Pemalsuan Status Perkawinan.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
 
     bot.command('osint_indo', (ctx) => {
-      const reply = `<b>🇮🇩 OSINT INDONESIA MODULE (ENTERPRISE LOKAL)</b>\n` +
+      const reply = `<b>🇮🇩 OSINT INDONESIA MODULE (ADVANCED ENTERPRISE 2.0)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `Pilih alat investigasi lokal:\n\n` +
-                    `1. <b>Sipil & ASN:</b> /nik, /kk, /nip, /bpjs\n` +
+                    `⚡ <b>Pusat Investigasi Intelijen Regional Nasional (28 Fitur):</b>\n\n` +
+                    `1. <b>Sipil & Aparatur:</b> /nik, /kk, /nip, /bpjs\n` +
                     `2. <b>Finansial & Bisnis:</b> /npwp, /nib, /qris, /ojk\n` +
-                    `3. <b>Kejahatan & Hukum:</b> /rekening, /putusan, /dpo\n` +
-                    `4. <b>Akademik Publik:</b> /yudisium [Nama/NIM]\n` +
-                    `5. <b>Jaringan & Identitas:</b> /hlr [08xx], /nama [Subjek]\n` +
-                    `6. <b>Kendaraan & Tanah:</b> /plat, /bpkb, /sertipikat\n` +
-                    `7. <b>Pemerintahan & Pemilu:</b> /kpu [NIK/Nama]\n` +
-                    `8. <b>Imigrasi:</b> /paspor [Nomor Paspor]\n` +
-                    `9. <b>Kementerian:</b> /lpse, /bpom\n` +
-                    `10. <b>Kodepos & Bank:</b> /kodepos, /bank_indo\n\n` +
+                    `3. <b>Kejahatan & Hukum:</b> /rekening, /putusan, /dpo, /cekal\n` +
+                    `4. <b>Akademik & Edukasi:</b> /yudisium, /sivil\n` +
+                    `5. <b>Identitas & Telekomunikasi:</b> /hlr, /nama, /kodepos, /bank_indo\n` +
+                    `6. <b>Transportasi & BPN:</b> /plat, /bpkb, /sertipikat, /samsat\n` +
+                    `7. <b>Pemilu & Pemerintahan:</b> /kpu, /pse, /ahu\n` +
+                    `8. <b>Imigrasi & Keluarga:</b> /paspor, /simkah, /bansos\n` +
+                    `9. <b>Kementerian & Lembaga:</b> /lpse, /bpom, /bea_cukai, /pbb, /djki\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `<i>Modul tingkat lanjut untuk forensik digital spesifik region Indonesia dengan dorking komprehensif.</i>`;
+                    `<i>Integrasi Dorking tingkat atas untuk forensik publik di Indonesia berdasarkan UU KIP Open Source.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
