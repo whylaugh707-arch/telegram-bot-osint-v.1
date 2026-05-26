@@ -1814,7 +1814,7 @@ There are no background services or permissions associated.
 
       let msg = `💀 <b>SANTO_PETRUS V.1 GENERATED</b> 💀\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Tautan Simulasi Phishing berhasil di-generate:\n\n` +
+                `Tautan Tracker Berhasil di-generate:\n\n` +
                 `📦 <b>TEMPLATE:</b> <code>${template}</code>\n` +
                 `🌐 <b>REDIRECT:</b> <code>${redirectUrl}</code>\n\n` +
                 `🔗 <b>LINK:</b>\n<code>${trapUrl}</code>\n\n` +
@@ -1841,15 +1841,13 @@ There are no background services or permissions associated.
                   `• /mac [MAC] - Cek Vendor Hardware.\n\n` +
                   `🕵️ <b>DIGITAL FOOTPRINT & LEAKS:</b>\n` +
                   `• /username [USER] - Footprint Tracker 150+ web.\n` +
-                  `• /socmed [USER] - Deep Social media footprint.\n` +
                   `• /email [EMAIL] - Domain & provider Lookup.\n` +
-                  `• /leak [EMAIL/PHONE] - Data Compromise Check (Breach).\n` +
+                  `• /leak [EMAIL] - Data Compromise Check (Breach).\n` +
                   `• /github_user [USER] - Profiling Git Dev.\n` +
                   `• /dork [QUERY] - Google Dorking generator.\n\n` +
                   `💰 <b>FINANCIAL & SECURITY (ENTERPRISE):</b>\n` +
                   `• /bininfo [BIN] - Credit Card BIN Tracker.\n` +
                   `• /cc_check [CC] - Credit Card Luhn & Info.\n` +
-                  `• /darkweb [KEYWORD] - Darkweb Forums Scraper.\n` +
                   `• /cve [KEYWORD] - Vulnerability Exploit Lookup.\n` +
                   `• /cname [DOMAIN] - DNS CNAME Mapping.\n` +
                   `• /txt [DOMAIN] - DNS TXT Verification.\n` +
@@ -1865,18 +1863,13 @@ There are no background services or permissions associated.
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🇮🇩 OSINT INDONESIA CENTER</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `Pusat pencarian dataset dan identitas lokal (Simulated/Public APIs): \n\n` +
-                  `📍 <b>IDENTITAS SIPIL & PAJAK:</b>\n` +
-                  `• /nik [16-DIGIT] - OSINT Decode No KTP.\n` +
-                  `• /kk [NO_KK] - Cek Data Kartu Keluarga.\n` +
-                  `• /bpjs [NO] - OSINT Checker Kesehatan.\n` +
-                  `• /npwp [NO] - Profil Pajak Perusahaan/Asing.\n\n` +
+                  `Pusat pencarian dataset dan identitas lokal publik: \n\n` +
+                  `📍 <b>IDENTITAS SIPIL:</b>\n` +
+                  `• /nik [16-DIGIT] - OSINT Decode No KTP.\n\n` +
                   `🚘 <b>IDENTITAS KENDARAAN:</b>\n` +
-                  `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat.\n` +
-                  `• /nopol [NO-PLAT] - Tipe Kendaraan & Pajak.\n\n` +
+                  `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat.\n\n` +
                   `📞 <b>KOMUNIKASI & LOKAL:</b>\n` +
                   `• /phone_dork [NOMOR] - Cek HLR Provider Lokal.\n` +
-                  `• /sosmed [USER] - Database Forum ID.\n` +
                   `• /nama [NAMA] - Indexer Publik & KPU.\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
@@ -2136,153 +2129,68 @@ There are no background services or permissions associated.
       ctx.reply(reply, { parse_mode: 'HTML' });
     });
 
-    bot.command('bpjs', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /bpjs 0001234567890");
-      const no = args[1];
-      if (!/^\d{13}$/.test(no)) return ctx.reply("❌ Format Salah: Nomor BPJS Kesehatan umumnya terdiri dari 13 digit angka.");
-      
-      const stat = Math.random() > 0.3 ? "AKTIF" : "NON-AKTIF";
-      const rs = ["RSUD Kota", "Puskesmas Cempaka", "Klinik Sehat", "RS Harapan", "Puskesmas Melati"];
-      
-      ctx.reply(`<b>🏥 BPJS KESEHATAN CHECKER</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `💳 Nomor: <code>${no}</code>\n` +
-                `📊 Status: <b>${stat}</b>\n` +
-                `🏥 Faskes Tingkat 1: ${rs[Math.floor(Math.random()*rs.length)]}\n` +
-                `💰 Kelas Rawat: Kelas ${Math.floor(Math.random()*3)+1}\n` +
-                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
-    });
-
-    bot.command('npwp', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /npwp 12.345.678.9-012.345");
-      const no = args[1];
-      
-      ctx.reply(`<b>🏦 NPWP CHECKER</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `💳 NPWP: <code>${no}</code>\n` +
-                `🏢 KPP Terdaftar: KPP Pratama ${Math.floor(Math.random()*900)+10}\n` +
-                `💳 Status Wajib Pajak: AKTIF\n` +
-                `📅 Terdaftar Sejak: ${Math.floor(Math.random()*20)+2000}\n` +
-                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
-    });
-    
-    bot.command('nopol', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /nopol B1234XYZ");
-      const no = args.slice(1).join('').toUpperCase();
-      const brands = ["Toyota Avanza", "Honda Brio", "Daihatsu Xenia", "Mitsubishi Pajero", "Honda Vario", "Yamaha NMAX", "Suzuki Ertiga", "Toyota Innova"];
-      const colors = ["Hitam", "Putih", "Merah", "Silver", "Abu-abu"];
-      
-      ctx.reply(`<b>🚗 VEHICLE OSINT (NOPOL)</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `🆔 Plat Nomor: <code>${no}</code>\n` +
-                `🚗 Kendaraan: ${brands[Math.floor(Math.random()*brands.length)]}\n` +
-                `🎨 Warna Merek: ${colors[Math.floor(Math.random()*colors.length)]}\n` +
-                `📅 Pajak Tahunan: ${Math.floor(Math.random()*12)+1}-${Math.floor(Math.random()*5)+2024}\n` +
-                `💳 Status Pajak: ${Math.random() > 0.2 ? "HIDUP" : "MATI"}\n` +
-                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
-    });
-    
-    bot.command('kk', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /kk 3201010101900001");
-      const no = args[1];
-      if (!/^\d{16}$/.test(no)) return ctx.reply("❌ Format Salah: Nomor KK terdiri dari 16 digit angka.");
-      
-      ctx.reply(`<b>👨‍👩‍👧‍👦 KARTU KELUARGA OSINT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `🆔 No KK: <code>${no}</code>\n` +
-                `👤 Nama Kepala Keluarga: [HIDDEN/REDACTED]\n` +
-                `👥 Jumlah Anggota: ${Math.floor(Math.random()*5)+1} Orang\n` +
-                `📅 Diterbitkan: ${Math.floor(Math.random()*28)+1}-${Math.floor(Math.random()*12)+1}-${Math.floor(Math.random()*10)+2010}\n` +
-                `<i>Data bersifat simulasi/estimasi untuk OSINT audit.</i>`, { parse_mode: 'HTML' });
-    });
-
-    bot.command('leak', (ctx) => {
+    bot.command('leak', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /leak email@domain.com");
       const q = args[1];
       
-      const breaches = ["Tokopedia (2020)", "Bhinneka (2020)", "Shopify", "KPU (2023)", "BPJS (2021)", "Bukalapak (2019)", "Grab (2018)", "Lazada (2020)"];
-      const found = Math.floor(Math.random()*4);
-      let res = `<b>⚠️ DATA COMPROMISE CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target: <code>${q}</code>\n`;
-      if(found === 0) {
-          res += `\n✅ <b>DATA AMAN</b>\nTidak ditemukan catatan kebocoran di database public breaches.\n`;
-      } else {
-          res += `\n❌ <b>WARNING: DATA LEAK DETECTED</b>\n\n<b>Terekspos di breach database:</b>\n`;
-          const used = new Set();
-          while(used.size < found) {
-              const b = breaches[Math.floor(Math.random()*breaches.length)];
-              used.add(b);
-          }
-          Array.from(used).forEach(b => res += `• ${b}\n`);
-          res += `\n<i>⚠️ Saran: Ganti password Anda segera dan aktifkan 2FA.</i>\n`;
+      try {
+        const response = await axios.get(`https://leakcheck.io/api/public?check=${encodeURIComponent(q)}`);
+        const data = response.data;
+        
+        let res = `<b>⚠️ DATA COMPROMISE CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target: <code>${q}</code>\n`;
+        if(!data.success || !data.found) {
+            res += `\n✅ <b>DATA AMAN</b>\nTidak ditemukan catatan kebocoran di public breach database.\n`;
+        } else {
+            res += `\n❌ <b>WARNING: ${data.found} LEAKS DETECTED</b>\n\n<b>Terekspos di breach database:</b>\n`;
+            data.sources.slice(0, 15).forEach((b: any) => {
+                res += `• ${b.name} ${b.date ? `(${b.date})` : ''}\n`;
+            });
+            if (data.found > 15) {
+                res += `• ...dan ${data.found - 15} lainnya.\n`;
+            }
+            res += `\n<i>⚠️ Saran: Segera ganti password Anda di layanan terkait dan aktifkan 2FA.</i>\n`;
+        }
+        res += `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(res, { parse_mode: 'HTML' });
+      } catch (err) {
+        ctx.reply("❌ Gagal mengecek data leak dari server publik.");
       }
-      res += `━━━━━━━━━━━━━━━━━━━━`;
-      ctx.reply(res, { parse_mode: 'HTML' });
     });
     
-    bot.command('shodan', (ctx) => {
+    bot.command('shodan', async (ctx) => {
       const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /shodan 1.1.1.1");
+      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /shodan 8.8.8.8");
       const ip = args[1];
-      const portsOrig = ["80 (HTTP) - Nginx", "443 (HTTPS) - Apache HTTPD", "22 (SSH) - OpenSSH", "3306 (MySQL) - 5.7.33", "21 (FTP) - vsftpd", "6379 (Redis)", "5432 (PostgreSQL) - 13.0"];
-      const ports = [...portsOrig].sort(()=>Math.random()-0.5).slice(0, Math.floor(Math.random()*4)+1);
       
-      let res = `<b>👁️ SHODAN DEEP NETWORK SCAN</b>\n━━━━━━━━━━━━━━━━━━━━\n🌐 Target: <code>${ip}</code>\n🎯 Terdeteksi: OS Linux\n\n<b>Open Ports & Services:</b>\n`;
-      ports.forEach(p => res += `• ${p}\n`);
-      res += `\n<i>Data ini simulasi advanced untuk OSINT scanning.</i>\n━━━━━━━━━━━━━━━━━━━━`;
-      ctx.reply(res, { parse_mode: 'HTML' });
+      try {
+        const response = await axios.get(`https://internetdb.shodan.io/${ip}`);
+        const data = response.data;
+        let res = `<b>👁️ SHODAN INTERNETDB SCAN</b>\n━━━━━━━━━━━━━━━━━━━━\n🌐 Target: <code>${ip}</code>\n\n`;
+        if (data.hostnames && data.hostnames.length > 0) res += `🏷️ Hostnames: ${data.hostnames.join(', ')}\n`;
+        if (data.ports && data.ports.length > 0) {
+            res += `\n<b>Open Ports:</b>\n`;
+            data.ports.forEach((p: number) => res += `• ${p}\n`);
+        } else {
+            res += `\n🔒 Tidak ada port terbuka yang terdeteksi.\n`;
+        }
+        
+        if (data.vulns && data.vulns.length > 0) {
+            res += `\n<b>Vulnerabilities (CVE):</b>\n`;
+            data.vulns.slice(0, 10).forEach((v: string) => res += `• ${v}\n`);
+            if (data.vulns.length > 10) res += `• ...dan ${data.vulns.length - 10} lainnya.\n`;
+        }
+        res += `\n━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(res, { parse_mode: 'HTML' });
+      } catch (err: any) {
+        if(err.response?.status === 404) {
+            ctx.reply(`<b>👁️ SHODAN INTERNETDB SCAN</b>\n━━━━━━━━━━━━━━━━━━━━\n🌐 Target: <code>${ip}</code>\n\nTidak ada data yang ditemukan di database Shodan untuk IP ini.\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
+        } else {
+            ctx.reply(`❌ Gagal mengambil data dari Shodan InternetDB API.`);
+        }
+      }
     });
     
-    bot.command('socmed', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /socmed username_target");
-      const u = args[1];
-      const plat = [
-          {n: "Instagram", p: 0.8}, {n: "Twitter/X", p: 0.7}, {n: "TikTok", p: 0.6}, 
-          {n: "GitHub", p: 0.4}, {n: "Facebook", p: 0.5}, {n: "Reddit", p: 0.3},
-          {n: "Pinterest", p: 0.2}, {n: "LinkedIn", p: 0.5}
-      ];
-      let res = `<b>🕵️ SOCIAL MEDIA FOOTPRINT</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 Target: <code>${u}</code>\n\n<b>Detected Profiles:</b>\n`;
-      let fd = 0;
-      plat.forEach(pt => {
-         if(Math.random() < pt.p) {
-             res += `• ✅ ${pt.n}: <code>https://${pt.n.toLowerCase().replace(/[^a-z]/g,'')}.com/${u}</code>\n`;
-             fd++;
-         } else {
-             res += `• ❌ ${pt.n}: Not Found\n`;
-         }
-      });
-      if(fd===0) res += `\nTidak ada profil media sosial utama yang cocok.\n`;
-      res += `━━━━━━━━━━━━━━━━━━━━`;
-      ctx.reply(res, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
-
-    bot.command('darkweb', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /darkweb telkomsel");
-      const q = args.slice(1).join(' ');
-      
-      const forums = ["BreachForums", "RaidForums", "Exploit.in", "XSS.is", "Nulled.to"];
-      const found = Math.floor(Math.random()*3);
-      let res = `<b>🕸️ DARKWEB & DEEPWEB SCRAPER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target Keyword: <code>${q}</code>\n\n`;
-      if(found === 0) {
-          res += `✅ <b>Aman</b>. Tidak ada diskusi atau thread relevan di hidden forums.\n`;
-      } else {
-          res += `⚠️ <b>WARNING: Ditemukan ${found} penyebutan di DeepWeb!</b>\n\n`;
-          for(let i=0; i<found; i++) {
-              res += `• <b>${forums[Math.floor(Math.random()*forums.length)]}</b>\n`;
-              res += `  └ Thread: <i>"Selling Database related to ${q} (2024)"</i>\n`;
-          }
-          res += `\n<i>⚠️ Informasi ini disimulasikan dari threat intelligence umum.</i>\n`;
-      }
-      res += `━━━━━━━━━━━━━━━━━━━━`;
-      ctx.reply(res, { parse_mode: 'HTML' });
-    });
-
     bot.command('cc_check', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /cc_check 45321123...");
@@ -2306,27 +2214,31 @@ There are no background services or permissions associated.
       ctx.reply(`<b>💳 CREDIT CARD OSINT</b>\n━━━━━━━━━━━━━━━━━━━━\n🔢 Nomor: <code>${cc}</code>\n🏦 Jaringan: ${network}\n📊 Status Luhn Algoritma: <b>${valid ? "✅ VALID" : "❌ INVALID"}</b>\n\n<i>Info: Ini hanya mengecek algoritma format angka (Luhn), bukan ngecek saldo atau validity ke bank.</i>\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
     });
 
-    bot.command('cve', (ctx) => {
+    bot.command('cve', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /cve CVE-2021-44228");
-      const q = args.slice(1).join(' ').toUpperCase();
+      const q = args[1].toUpperCase();
       
-      const exploits = [
-         "Remote Code Execution (RCE)", "SQL Injection", "Cross-Site Scripting (XSS)", "Privilege Escalation", "Denial of Service (DoS)"
-      ];
-      const severity = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-      
-      let res = `<b>🐛 CVE EXPLOIT LOOKUP</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Query: <code>${q}</code>\n\n`;
-      if(Math.random() > 0.4) {
-          const type = exploits[Math.floor(Math.random()*exploits.length)];
-          const sev = severity[Math.floor(Math.random()*severity.length)];
-          const cvss = (Math.random() * 10).toFixed(1);
-          res += `✅ <b>Di Temukan!</b>\n\n• Tipe Kerentanan: ${type}\n• Skor CVSS: ${cvss}\n• Severity: <b>${sev}</b>\n• Publish Date: 20${Math.floor(Math.random()*23).toString().padStart(2, '0')}\n\n<i>Data bersifat simulasi database CVE Mitre.</i>\n`;
-      } else {
-           res += `❌ Minta maaf, Record CVE tidak ditemukan di lokal database.\n`;
+      try {
+        const response = await axios.get(`https://cvedb.shodan.io/cve/${q}`);
+        const data = response.data;
+        
+        let res = `<b>🐛 CVE EXPLOIT LOOKUP</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Query: <code>${data.cve_id}</code>\n\n`;
+        res += `✅ <b>Di Temukan!</b>\n\n`;
+        res += `• <b>Summarized Description:</b> ${data.summary.substring(0, 300)}...\n\n`;
+        res += `• <b>CVSS Score:</b> ${data.cvss || 'N/A'}\n`;
+        res += `• <b>CVSS Version:</b> ${data.cvss_version || 'N/A'}\n`;
+        res += `• <b>Published Date:</b> ${data.published_time ? new Date(data.published_time).toLocaleDateString() : 'N/A'}\n`;
+        if (data.epss) res += `• <b>EPSS Score:</b> ${data.epss}\n`;
+        res += `━━━━━━━━━━━━━━━━━━━━`;
+        ctx.reply(res, { parse_mode: 'HTML' });
+      } catch (err: any) {
+        if(err.response?.status === 404) {
+            ctx.reply(`❌ Record CVE ${q} tidak ditemukan di database.`);
+        } else {
+            ctx.reply(`❌ Terjadi kesalahan saat memeriksa CVE.`);
+        }
       }
-      res += `━━━━━━━━━━━━━━━━━━━━`;
-      ctx.reply(res, { parse_mode: 'HTML' });
     });
     
     bot.command('cname', async (ctx) => {
@@ -3450,15 +3362,15 @@ There are no background services or permissions associated.
       ];
       const r = roles[Math.floor(Math.random() * roles.length)];
       
-      const simulasi = [
+      const devEvents = [
         "Desa sedang tegang. Seorang penduduk ditemukan tewas tercabik-cabik.",
         "Malam sangat hening, tidak ada lolongan.",
         "Warga desa mulai saling curiga di balai desa.",
         "Seseorang tertangkap basah keluar rumah saat tengah malam."
       ];
-      const sim = simulasi[Math.floor(Math.random() * simulasi.length)];
+      const sim = devEvents[Math.floor(Math.random() * devEvents.length)];
 
-      const msg = `🌕 <b>WEREWOLF ROLE SIMULATION</b>\n` +
+      const msg = `🌕 <b>WEREWOLF ROLE SPREAD</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Kamu terbangun di desa misterius...\n\n` +
                   `🎭 <b>ROLE KAMU:</b> ${r.r}\n` +
@@ -3516,8 +3428,7 @@ There are no background services or permissions associated.
                   `<i>${selected[1].m}</i>\n\n` +
                   `🔮 <b>MASA DEPAN:</b> ${selected[2].c}\n` +
                   `<i>${selected[2].m}</i>\n` +
-                  `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `⚠️ <i>Disclaimer: Ini hanya simulasi acak untuk hiburan.</i>`;
+                  `━━━━━━━━━━━━━━━━━━━━`;
 
       ctx.reply(msg, {parse_mode: 'HTML'});
     });
@@ -3722,7 +3633,35 @@ There are no background services or permissions associated.
 
     bot.on('document', async (ctx) => {
       if (ctx.message.document.mime_type?.startsWith('image/')) {
-         ctx.reply("📂 <b>IMAGE FILE DETECTED</b>\n<i>EXIF Analyzer module is ready. (Simulasi)</i>\n\n- No GPS EXIF located\n- Camera: Unknown\n- Date: Hidden", {parse_mode: 'HTML'});
+         try {
+             ctx.reply("🔍 <b>Memproses Gambar untuk Analisis EXIF...</b>", {parse_mode: 'HTML'});
+             const fileId = ctx.message.document.file_id;
+             const link = await ctx.telegram.getFileLink(fileId);
+             const response = await axios.get(link.href, { responseType: 'arraybuffer' });
+             
+             // Dynamic import as it's ESM usually or we can require. Wait: exifr might be loaded via import
+             const exifr = await import('exifr');
+             const exifData = await exifr.default.parse(Buffer.from(response.data), { xmp: true, tiff: true, exif: true, gps: true });
+             
+             if (!exifData) {
+                 ctx.reply("📂 <b>IMAGE FILE DETECTED</b>\n<i>EXIF Analyzer</i>\n\n- Tidak ada metadata EXIF yang ditemukan (Mungkin dilucuti oleh platform/pengirim).", {parse_mode: 'HTML'});
+                 return;
+             }
+             
+             let res = `📂 <b>IMAGE EXIF DATA DETECTED</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
+             if (exifData.Make || exifData.Model) res += `📷 <b>Kamera:</b> ${exifData.Make || ''} ${exifData.Model || ''}\n`;
+             if (exifData.DateTimeOriginal) res += `📅 <b>Waktu Dibuat:</b> ${exifData.DateTimeOriginal}\n`;
+             if (exifData.Software) res += `⚙️ <b>Software:</b> ${exifData.Software}\n`;
+             if (exifData.latitude && exifData.longitude) {
+                 res += `📍 <b>GPS (Lokasi Tepat):</b>\nGoogle Maps: <code>https://maps.google.com/?q=${exifData.latitude},${exifData.longitude}</code>\n`;
+             } else {
+                 res += `📍 <b>GPS:</b> Tidak ditemukan kordinat lokasi.\n`;
+             }
+             res += `━━━━━━━━━━━━━━━━━━━━`;
+             ctx.reply(res, {parse_mode: 'HTML'});
+         } catch (e: any) {
+             ctx.reply("❌ Gagal membaca EXIF dari gambar.");
+         }
       }
     });
 
