@@ -107,8 +107,10 @@ async function startServer() {
     }
   };
 
-  // Default to the Railway App URL as requested.
-  let appHost = process.env.PUBLIC_URL || process.env.APP_URL || "https://telegram-bot-osint-v1-production-cae7.up.railway.app";
+  // Default to the Railway App URL as requested, but avoid literal placeholder from env.
+  let appHost = (process.env.PUBLIC_URL && process.env.PUBLIC_URL !== 'MY_APP_URL' ? process.env.PUBLIC_URL : null) || 
+                (process.env.APP_URL && process.env.APP_URL !== 'MY_APP_URL' ? process.env.APP_URL : null) || 
+                "https://telegram-bot-osint-v1-production-cae7.up.railway.app";
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
