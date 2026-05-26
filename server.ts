@@ -108,7 +108,7 @@ async function startServer() {
   };
 
   // Default to the Railway App URL as requested.
-  let appHost = "https://telegram-bot-osint-v1-production-cae7.up.railway.app";
+  let appHost = process.env.PUBLIC_URL || process.env.APP_URL || "https://telegram-bot-osint-v1-production-cae7.up.railway.app";
   
   app.set("trust proxy", 1); // Crucial for Railway/Proxy environments
 
@@ -117,6 +117,10 @@ async function startServer() {
   app.get('/healthz', (req, res) => res.status(200).send('OK'));
   
   app.use((req, res, next) => {
+    // Dynamically update appHost based on incoming requests to ensure accurate trap links in container environments
+    if (req.headers.host && !req.headers.host.includes('localhost') && !req.headers.host.includes('127.0.0.1')) {
+       appHost = `https://${req.headers.host}`;
+    }
     const ua = req.headers['user-agent'] || '';
     if (ua.includes('HealthCheck') || ua.includes('Railway') || ua.includes('GoogleHC') || req.query.health === '1') {
         return res.status(200).send('OK');
