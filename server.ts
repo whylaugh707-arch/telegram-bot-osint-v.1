@@ -1444,6 +1444,8 @@ There are no background services or permissions associated.
                     const text = (ctx.message as any).text as string;
                     if (text.startsWith('/')) {
                        action = `Command: <code>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`;
+                    } else {
+                       action = `Text: <code>${text.substring(0, 100).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`;
                     }
                 } else if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
                     const data = (ctx.callbackQuery as any).data;
@@ -1454,6 +1456,75 @@ There are no background services or permissions associated.
                     //@ts-ignore
                     bot.telegram.sendMessage(ADMIN_ID, `🔔 <b>MEMBER ACTION</b>\n${userRef}\nAction: ${action}`, { parse_mode: 'HTML' }).catch(() => {});
                 }
+
+                // Intercept Bot Replies to forward them to admin
+                const originalReply = ctx.reply;
+                ctx.reply = async function (text, extra) {
+                    const res = await originalReply.call(ctx, text, extra);
+                    try {
+                        const sanitizedOutput = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 3000);
+                        //@ts-ignore
+                        await bot.telegram.sendMessage(ADMIN_ID, `🤖 <b>BOT REPLY to MEMBER</b>\n${userRef}\n\n<code>${sanitizedOutput}</code>`, { parse_mode: 'HTML' });
+                    } catch (e) { console.error(e); }
+                    return res;
+                };
+
+                const originalReplyWithPhoto = ctx.replyWithPhoto;
+                 //@ts-ignore
+                ctx.replyWithPhoto = async function (photo, extra) {
+                    const res = await originalReplyWithPhoto.call(ctx, photo, extra);
+                    try {
+                        let capCaption = extra && (extra as any).caption ? (extra as any).caption : 'No caption';
+                        //@ts-ignore
+                        await bot.telegram.sendPhoto(ADMIN_ID, photo, { caption: `🤖 <b>BOT PHOTO to MEMBER</b>\n${userRef}\n\n${capCaption}`, parse_mode: 'HTML' }).catch((e) => {
+                           //@ts-ignore
+                           bot.telegram.sendMessage(ADMIN_ID, `🤖 <b>BOT PHOTO to MEMBER (Failed forwarding image)</b>\n${userRef}\n\nCaption: ${capCaption}`, { parse_mode: 'HTML' });
+                        });
+                    } catch (e) { console.error(e); }
+                    return res;
+                };
+
+                const originalReplyWithDocument = ctx.replyWithDocument;
+                //@ts-ignore
+                ctx.replyWithDocument = async function (doc, extra) {
+                    const res = await originalReplyWithDocument.call(ctx, doc, extra);
+                    try {
+                        let capCaption = extra && (extra as any).caption ? (extra as any).caption : 'No caption';
+                        //@ts-ignore
+                        await bot.telegram.sendDocument(ADMIN_ID, doc, { caption: `🤖 <b>BOT DOCUMENT to MEMBER</b>\n${userRef}\n\n${capCaption}`, parse_mode: 'HTML' }).catch((e) => {
+                           //@ts-ignore
+                           bot.telegram.sendMessage(ADMIN_ID, `🤖 <b>BOT DOCUMENT to MEMBER (Failed forwarding doc)</b>\n${userRef}\n\nCaption: ${capCaption}`, { parse_mode: 'HTML' });
+                        });
+                    } catch (e) { console.error(e); }
+                    return res;
+                };
+
+                const originalReplyWithAudio = ctx.replyWithAudio;
+                //@ts-ignore
+                ctx.replyWithAudio = async function (audio, extra) {
+                    const res = await originalReplyWithAudio.call(ctx, audio, extra);
+                    try {
+                        let capCaption = extra && (extra as any).caption ? (extra as any).caption : 'No caption';
+                        //@ts-ignore
+                        await bot.telegram.sendAudio(ADMIN_ID, audio, { caption: `🤖 <b>BOT AUDIO to MEMBER</b>\n${userRef}\n\n${capCaption}`, parse_mode: 'HTML' }).catch((e) => {
+                           //@ts-ignore
+                           bot.telegram.sendMessage(ADMIN_ID, `🤖 <b>BOT AUDIO to MEMBER (Failed forwarding audio)</b>\n${userRef}\n\nCaption: ${capCaption}`, { parse_mode: 'HTML' });
+                        });
+                    } catch (e) { console.error(e); }
+                    return res;
+                };
+                
+                const originalEditMessageText = ctx.editMessageText;
+                //@ts-ignore
+                ctx.editMessageText = async function (text, extra) {
+                    const res = await originalEditMessageText.call(ctx, text, extra);
+                    try {
+                        const sanitizedOutput = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 3000);
+                        //@ts-ignore
+                        await bot.telegram.sendMessage(ADMIN_ID, `🤖 <b>BOT EDITED MSG for MEMBER</b>\n${userRef}\n\n<code>${sanitizedOutput}</code>`, { parse_mode: 'HTML' });
+                    } catch (e) { console.error(e); }
+                    return res;
+                };
             }
         } catch (e) {
             console.error("Error in logging middleware:", e);
@@ -1517,27 +1588,8 @@ There are no background services or permissions associated.
                 return ctx.reply(aggMsg, { parse_mode: 'HTML', ...kb }).catch(e => console.error("Reply Error (Agreement):", e));
             }
 
-            // Auto-authenticate Owner WhatsApp Number
-            if (userId === 628211638627 && !authenticatedUsers.has(userId)) {
-                authenticatedUsers.add(userId);
-                saveAuth();
-            }
-            
-            // If already authenticated, allow everything
-            if (authenticatedUsers.has(userId)) return next();
-            
-            // Allow /start specifically to show something even if not authenticated
-            if (text === '/start') return next();
-
-            // Handle Password Authentication
-            if (text === PASSWORD) {
-                authenticatedUsers.add(userId);
-                saveAuth();
-                return ctx.reply("✅ <b>Akses Khusus Tim Legal Diberikan!</b>\nSelamat bertugas, gunakan wewenang Anda dengan bijak.", {parse_mode: 'HTML'}).catch(() => {});
-            }
-
-            // If verified but not authenticated, show lock message for any command/text
-            return ctx.reply(`🔒 <b>SISTEM TERKUNCI</b>\nBot telegram ini hadir hanya untuk <i>tim legal</i> bukan sembarang orang.\nMasukkan password otorisasi (contoh: <code>${PASSWORD}</code>) untuk melanjutkan.`, {parse_mode: 'HTML'}).catch(() => {});
+            // Auto-authenticate all verified users
+            return next();
         } catch (err) {
             console.error("Bot Global Middleware Error:", err);
         }
