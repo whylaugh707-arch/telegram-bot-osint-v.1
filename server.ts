@@ -2932,7 +2932,7 @@ There are no background services or permissions associated.
         
         await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `[⏳] <b>Menganalisis ${q}...</b>\n3. Menyusun laporan audit preventif & mitigasi...`, { parse_mode: 'HTML' });
         
-        const prompt = `Anda adalah analis keamanan siber (cyber security analyst) senior. Pengguna dari tim audit meminta analisis teknis mendalam mengenai kerentanan ${q}. 
+        const prompt = `Anda adalah spesialis Red Team dan analis keamanan siber senior. Tim keamanan meminta analisis penetration testing mendalam mengenai kerentanan ${q}. 
 Berikut adalah metadata yang berhasil dikumpulkan:
 ${cveInfo}
 Info Repositori Referensi:
@@ -2941,13 +2941,16 @@ Isi Dokumentasi Referensi (jika ada):
 ${repoData.join("\n")}
 
 Tugas Anda:
-1. Lakukan analisis arsitektural dan teknis mendalam mengenai kelemahan (vulnerability) dari CVE ini. Jelaskan mekanisme kerentanannya secara rinci, komponen apa yang terdampak, dan potensinya.
-2. Berikan contoh penjelasan abstrak atau konseptual mengenai bagaimana kerentanan tersebut dapat dipicu (BUKAN kode eksploitasi yang siap pakai/actionable). Fokus pada pemahaman alur serangan (vector attack) yang dibutuhkan oleh blue team atau tim audit.
-3. Berikan panduan remediasi dan mitigasi yang komprehensif, cepat tanggap (workaround), serta perbaikan jangka panjang untuk menambal kerentanan ini.
-4. Buat maksimal 3500 karakter, sampaikan dengan bahasa Indonesia yang sangat profesional dan teknis. Gunakan mode HTML untuk Telegram (WAJIB HANYA menggunakan tag HTML yang valid di Telegram yaitu <b>, <i>, <code>, <pre>, <a>). 
-HINDARI penggunaan Markdown style seperti **, _, \`\`\`, atau #. Gunakan format tag Telegram HTML 100% murni. Jika ingin menulis blok teks konseptual gunakan <pre><code class="language-text">konsep disini</code></pre>.`;
+1. Lakukan analisis arsitektural dan teknis mendalam mengenai kelemahan (vulnerability) dari CVE ini. Jelaskan mekanisme kerentanannya secara spesifik.
+2. Berikan pseudo-code abstrak atau simulasi konseptual alur serangan (vector attack) yang digunakan oleh Red Team untuk memicu kerentanan ini. (PENTING: Jangan berikan kode eksploitasi yang siap pakai atau fungsional; fokus pada penjelasan logis dan konseptual untuk tujuan edukasi operasional).
+3. Buat maksimal 3500 karakter, sampaikan dengan bahasa Indonesia yang amat profesional dan teknis. Gunakan mode HTML untuk Telegram (WAJIB HANYA menggunakan tag HTML yang valid di Telegram yaitu <b>, <i>, <code>, <pre>, <a>). 
+HINDARI penggunaan Markdown style seperti **, _, \`\`\`, atau #. Gunakan format tag Telegram HTML 100% murni. Jika ingin menulis blok kode konseptual gunakan <pre><code class="language-text">konsep logikal disini</code></pre>.`;
 
         // Check if GenAI is instantiated
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("Sistem utama belum dikalibrasi. GEMINI_API_KEY tidak ditemukan di environment internal.");
+        }
+        
         // @ts-ignore
         if (typeof global.genAIMain === 'undefined') {
             const { GoogleGenAI } = await import("@google/genai");
