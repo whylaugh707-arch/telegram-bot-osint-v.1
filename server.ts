@@ -1651,19 +1651,44 @@ There are no background services or permissions associated.
         ctx.answerCbQuery("System verified!").catch(() => {});
         ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
         const startMsgText = getStartMsg();
-        ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainKeyboard });
+        ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainReplyKeyboard });
     });
 
     const getStartMsg = () => `<b>${botDescription}</b>\n\n` +
                          `<i>Silakan pilih menu di bawah ini:</i>`;
     
-    const mainKeyboard = Markup.inlineKeyboard([
+    const mainInlineKeyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Advanced Stealth Logger', 'menu_logger')],
       [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
       [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
       [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
       [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
     ]);
+
+    const mainReplyKeyboard = Markup.keyboard([
+      ['🔒 AKSES STANDAR 🔒'],
+      ['── 🔍 LAYANAN PENCARIAN DATA ──'],
+      ['🖨️ Cek Kartu Keluarga [TRIAL]'],
+      ['🆔 Cek NIK [TRIAL]'],
+      ['🔍 Cek Data Bocor'],
+      ['🔎 Cari Berdasarkan Nama'],
+      ['💬 Cek WhatsApp'],
+      ['📧 Cek Email Stalker'],
+      ['🏦 Cek Bank Rekening', '💳 Cek E-Wallet'],
+      ['📱 Cari Info Nomor HP', '🆔 Cari Info NIK'],
+      ['🖨️ NIK ➡️ PHONE', '📞 PHONE ➡️ NIK'],
+      ['📦 Cek Resi Ekspedisi', '👁️ Cek Telegram Lookup'],
+      ['📸 NIK TO FOTO (KTP)'],
+      ['🤖 FACE DETECTION & VERIFICATION'],
+      ['🏥 Cek Data BPJS', '🏢 Cek Data BPJSTK'],
+      ['🚗 Cek Plat Nomor Kendaraan', '📱 Cek IMEI'],
+      ['🎓 Cek Siswa (Riwayat)', '👨‍🏫 Cari Data Guru'],
+      ['👣 Lacak Jejak Digital', '🎓 Cek Mahasiswa (Riwayat)'],
+      ['📍 Lacak Lokasi Nomor HP'],
+      ['🕒 Riwayat Pencarian', '🌍 Cek Limit'],
+      ['💎 Beli Limit / Premium', '🆘 Bantuan'],
+      ['👤 Profil Saya']
+    ]).resize();
 
     // Global Error Handler for "Anti Bug"
     bot.catch((err, ctx) => {
@@ -1759,14 +1784,14 @@ There are no background services or permissions associated.
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
-    bot.start((ctx) => ctx.reply(getStartMsg(), { parse_mode: 'HTML', ...mainKeyboard }));
+    bot.start((ctx) => ctx.reply(getStartMsg(), { parse_mode: 'HTML', ...mainReplyKeyboard }));
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
       const txt = `${getStartMsg()}\n` +
         `<i>Session Active for: ${safeName}</i>`;
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...mainKeyboard }).catch(() => {});
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...mainInlineKeyboard }).catch(() => {});
     });
 
     bot.action('menu_osint_basic', (ctx) => {
@@ -4501,6 +4526,49 @@ There are no background services or permissions associated.
     });
 
     // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
+    const activeButtons = [
+      '🔒 AKSES STANDAR 🔒',
+      '── 🔍 LAYANAN PENCARIAN DATA ──',
+      '🖨️ Cek Kartu Keluarga [TRIAL]',
+      '🆔 Cek NIK [TRIAL]',
+      '🔍 Cek Data Bocor',
+      '🔎 Cari Berdasarkan Nama',
+      '💬 Cek WhatsApp',
+      '📧 Cek Email Stalker',
+      '🏦 Cek Bank Rekening', '💳 Cek E-Wallet',
+      '📱 Cari Info Nomor HP', '🆔 Cari Info NIK',
+      '🖨️ NIK ➡️ PHONE', '📞 PHONE ➡️ NIK',
+      '📦 Cek Resi Ekspedisi', '👁️ Cek Telegram Lookup',
+      '📸 NIK TO FOTO (KTP)',
+      '🤖 FACE DETECTION & VERIFICATION',
+      '🏥 Cek Data BPJS', '🏢 Cek Data BPJSTK',
+      '🚗 Cek Plat Nomor Kendaraan', '📱 Cek IMEI',
+      '🎓 Cek Siswa (Riwayat)', '👨‍🏫 Cari Data Guru',
+      '👣 Lacak Jejak Digital', '🎓 Cek Mahasiswa (Riwayat)',
+      '📍 Lacak Lokasi Nomor HP',
+      '🕒 Riwayat Pencarian', '🌍 Cek Limit',
+      '💎 Beli Limit / Premium', '🆘 Bantuan',
+      '👤 Profil Saya'
+    ];
+
+    bot.on('text', async (ctx, next) => {
+      // @ts-ignore
+      const text = ctx.message.text;
+      if (activeButtons.includes(text)) {
+         if (text === '👤 Profil Saya') {
+             return ctx.reply(`👤 <b>PROFIL ANDA</b>\nID: <code>${ctx.from.id}</code>\nNama: ${ctx.from.first_name}\nStatus Akses: Standar`, { parse_mode: 'HTML' });
+         } else if (text === '🆘 Bantuan') {
+             return ctx.reply(`🆘 <b>Pusat Bantuan</b>\nSilahkan gunakan menu inline atau hubungi Admin.`, { parse_mode: 'HTML' });
+         } else if (text === '💎 Beli Limit / Premium') {
+             return ctx.reply(`💎 <b>Upgrade Akses</b>\nHubungi Admin (Owner) untuk melakukan upgrade ke langganan Premium dan membuka fitur secara tak terbatas.`, { parse_mode: 'HTML' });
+         } else if (text === '🔒 AKSES STANDAR 🔒' || text === '── 🔍 LAYANAN PENCARIAN DATA ──') {
+             return; // header only
+         }
+         return ctx.reply(`🚧 <b>Fitur ${text.replace(/[^\w\s\(\)\[\]-]/g, '').trim()} Aktif</b>\n\nUntuk menggunakan fitur ini secara langsung silakan tunggu integrasi final di database atau gunakan command terminal OSINT secara manual menggunakan ( / ).`, { parse_mode: 'HTML' });
+      }
+      return next();
+    });
+
     bot.on('photo', async (ctx) => {
       ctx.reply("📸 <b>IMAGE OSINT MODULE ACTIVATED</b>\nSedang menganalisa foto...", {parse_mode: 'HTML'}).then((msg) => {
          setTimeout(() => {
