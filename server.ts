@@ -2901,7 +2901,8 @@ There are no background services or permissions associated.
       const statusMsg = await ctx.reply(`[⏳] <b>Menganalisis ${q}...</b>\n1. Mengirim satelit pencarian...`, { parse_mode: 'HTML' });
       
       try {
-        let repoData: string[] = [];
+        let repoUrl = "";
+        let repoDataStr = "";
         let githubSummary = "";
         
         try {
@@ -2910,11 +2911,12 @@ There are no background services or permissions associated.
             });
             if (ghRes.data && ghRes.data.items && ghRes.data.items.length > 0) {
                const topRepo = ghRes.data.items[0];
-               githubSummary = `Top PoC Repo: ${topRepo.html_url}\nDescription: ${topRepo.description}`;
+               repoUrl = topRepo.html_url;
+               githubSummary = topRepo.description || 'Tidak ada deskripsi';
                
                const readmeRes = await axios.get(`https://raw.githubusercontent.com/${topRepo.full_name}/${topRepo.default_branch}/README.md`).catch(()=>null);
                if (readmeRes && readmeRes.data) {
-                   repoData.push(String(readmeRes.data).substring(0, 2000));
+                   repoDataStr = String(readmeRes.data).substring(0, 1500); // 1.5k max chars
                }
             }
         } catch(e) {}
@@ -2925,58 +2927,39 @@ There are no background services or permissions associated.
         try {
             const response = await axios.get(`https://cvedb.shodan.io/cve/${q}`);
             const data = response.data;
-            cveInfo = `Deskripsi CVE: ${data.summary}\nCVSS: ${data.cvss}\nDate: ${data.published_time}`;
+            let pubTime = 'N/A';
+            if (data.published_time) {
+                pubTime = new Date(data.published_time).toLocaleDateString();
+            }
+            cveInfo = `• <b>Deskripsi:</b> ${data.summary || 'N/A'}\n• <b>CVSS Score:</b> ${data.cvss || 'N/A'}\n• <b>CVSS Version:</b> ${data.cvss_version || 'N/A'}\n• <b>Published Date:</b> ${pubTime}`;
         } catch(e) {
-            cveInfo = "\nDeskripsi CVE: Ambil insight dari pattern kerentanan ini secara independen.";
+            cveInfo = "• <b>Deskripsi:</b> Data tidak ditemukan di Shodan CVE database.";
         }
         
-        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `[⏳] <b>Menganalisis ${q}...</b>\n3. Menyusun laporan audit preventif & mitigasi...`, { parse_mode: 'HTML' });
-        
-        const prompt = `Anda adalah spesialis Red Team dan analis keamanan siber senior. Tim keamanan meminta analisis penetration testing mendalam mengenai kerentanan ${q}. 
-Berikut adalah metadata yang berhasil dikumpulkan:
-${cveInfo}
-Info Repositori Referensi:
-${githubSummary}
-Isi Dokumentasi Referensi (jika ada):
-${repoData.join("\n")}
-
-Tugas Anda:
-1. Lakukan analisis arsitektural dan teknis mendalam mengenai kelemahan (vulnerability) dari CVE ini. Jelaskan mekanisme kerentanannya secara spesifik.
-2. Berikan pseudo-code abstrak atau simulasi konseptual alur serangan (vector attack) yang digunakan oleh Red Team untuk memicu kerentanan ini. (PENTING: Jangan berikan kode eksploitasi yang siap pakai atau fungsional; fokus pada penjelasan logis dan konseptual untuk tujuan edukasi operasional).
-3. Buat maksimal 3500 karakter, sampaikan dengan bahasa Indonesia yang amat profesional dan teknis. Gunakan mode HTML untuk Telegram (WAJIB HANYA menggunakan tag HTML yang valid di Telegram yaitu <b>, <i>, <code>, <pre>, <a>). 
-HINDARI penggunaan Markdown style seperti **, _, \`\`\`, atau #. Gunakan format tag Telegram HTML 100% murni. Jika ingin menulis blok kode konseptual gunakan <pre><code class="language-text">konsep logikal disini</code></pre>.`;
-
-        // Check if GenAI is instantiated
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error("Sistem utama belum dikalibrasi. GEMINI_API_KEY tidak ditemukan di environment internal.");
-        }
-        
-        // @ts-ignore
-        if (typeof global.genAIMain === 'undefined') {
-            const { GoogleGenAI } = await import("@google/genai");
-            // @ts-ignore
-            global.genAIMain = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        }
-        
-        // @ts-ignore
-        const ai = global.genAIMain;
-
-        const modelRes = await ai.models.generateContent({
-            model: "gemini-3.1-pro-preview",
-            contents: prompt
-        });
+        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `[⏳] <b>Menganalisis ${q}...</b>\n3. Menyusun laporan red team...`, { parse_mode: 'HTML' });
         
         let finalReply = `<b>⚠️ ADVANCED CVE EXPLOIT ANALYSIS</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 <b>Target:</b> <code>${q}</code>\n\n`;
-        // clean any residual markdown if model hallucinates it
-        let cleanedText = modelRes.text.replace(/\*\*/g, '<b>').replace(/`/g, '</b>').substring(0, 4000); 
-        finalReply += modelRes.text;
+        finalReply += `<b>[1] INFORMASI KERENTANAN:</b>\n${cveInfo}\n\n`;
         
-        if (finalReply.length > 4000) finalReply = finalReply.substring(0, 3990) + "...";
+        if (repoUrl) {
+           finalReply += `<b>[2] REPOSITORI EKSPLOITASI (PoC):</b>\n`;
+           finalReply += `• <b>URL:</b> <a href="${repoUrl}">${repoUrl}</a>\n`;
+           finalReply += `• <b>Summary:</b> ${githubSummary}\n\n`;
+           if (repoDataStr) {
+               const safeReadme = repoDataStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+               finalReply += `<b>[3] SOURCE CODE / DOKUMENTASI (EXCERPT):</b>\n<pre><code>${safeReadme}</code></pre>`;
+           } else {
+               finalReply += `<b>[3] SOURCE CODE / DOKUMENTASI:</b>\n<i>Tidak ada file README.md yang terpublikasi atau tidak dapat diakses.</i>`;
+           }
+        } else {
+           finalReply += `<b>[2] EKSPLOITASI & PoC:</b>\n❌ <i>Tidak ditemukan repositori PoC/Exploit publik yang valid di GitHub.</i>`;
+        }
+
+        if (finalReply.length > 4050) finalReply = finalReply.substring(0, 4000) + "\n\n... (terpotong)";
         
-        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, finalReply, { parse_mode: 'HTML' }).catch(async (e) => {
-              // fallback if HTML parsing fails due to bad model output
-              const safeText = `<b>⚠️ ADVANCED CVE EXPLOIT ANALYSIS</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 <b>Target:</b> <code>${q}</code>\n\n` + 
-                 modelRes.text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;').substring(0, 3900);
+        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, finalReply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }).catch(async (e) => {
+              // fallback if HTML parsing fails due to payload data
+              const safeText = `<b>⚠️ ADVANCED CVE EXPLOIT ANALYSIS</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 <b>Target:</b> <code>${q}</code>\n\n❌ Gagal memformat data HTML. Output terlalu besar/mengandung karakter dilarang.`;
               await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, safeText, { parse_mode: 'HTML' });
         });
         
