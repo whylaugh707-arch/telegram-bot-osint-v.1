@@ -2365,21 +2365,25 @@ There are no background services or permissions associated.
 
     bot.command('kodepos', async (ctx) => {
       const args = ctx.message.text.substring(8).trim();
-      if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Kelurahan]");
+      if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Kelurahan / Kode Pos]");
       
       let apiResult = "";
       try {
-        const response = await axios.get(`https://kodepos.vercel.app/search?q=${encodeURIComponent(args)}`);
+        const response = await axios.get(`https://kodepos.vercel.app/search?q=${encodeURIComponent(args)}`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          }
+        });
         const data = response.data;
         if (data && data.data && data.data.length > 0) {
             const hasil = data.data.slice(0, 5);
             apiResult = `<b>[LIVE API] DAFTAR KODEPOS DITEMUKAN:</b>\n`;
-            hasil.forEach((h: any, i: number) => {
-                apiResult += `├ <b>${h.postalcode}</b> (${h.subdistrict}, ${h.city})\n`;
+            hasil.forEach((h: any) => {
+                apiResult += `├ <b>${h.postalcode}</b> (${h.subdistrict}, ${h.city}, ${h.province})\n`;
             });
             apiResult += `\n`;
         } else {
-            apiResult = `<b>[LIVE API] KODEPOS:</b> ❌ Tidak ditemukan di pangkalan data API.\n\n`;
+            apiResult = `<b>[LIVE API] KODEPOS:</b> ❌ Tidak ditemukan di pangkalan data API (Coba masukkan nama kelurahan/kecamatan yang lebih spesifik).\n\n`;
         }
       } catch (e) {
         apiResult = `<b>[LIVE API] KODEPOS:</b> ❌ Gagal tersambung ke Endpoint OpenAPI.\n\n`;
@@ -2387,7 +2391,7 @@ There are no background services or permissions associated.
       
       const q = encodeURIComponent(`"Kode Pos" ${args} site:kodepos.nomor.net OR site:nomor.net`);
       const q2 = encodeURIComponent(`"Kode Pos" "${args}"`);
-      const reply = `<b>📮 KODEPOS & REGION GEO-LOCATOR (API)</b>\n━━━━━━━━━━━━━━━━━━━━\n📍 <b>DAERAH ANALISIS TARGTER:</b> <code>${args}</code>\n\n` +
+      const reply = `<b>📮 KODEPOS & REGION GEO-LOCATOR (API)</b>\n━━━━━━━━━━━━━━━━━━━━\n📍 <b>DAERAH / KODE TARGET:</b> <code>${args}</code>\n\n` +
                 `${apiResult}` +
                 `<b>[1] 🏛️ DATABASE RESMI KODEPOS DORKING:</b>\n` +
                 `└ 🔍 <a href="https://www.google.com/search?q=${q}">Cari Resolusi Geografis di Direktori Kodepos</a>\n\n` +
@@ -2623,7 +2627,13 @@ There are no background services or permissions associated.
       
       let apiResult = "";
       try {
-          const response = await axios.get(`https://api-frontend.kemdikbud.go.id/hit/${encodeURIComponent(args)}`);
+          const response = await axios.get(`https://api-frontend.kemdikbud.go.id/hit/${encodeURIComponent(args)}`, {
+              headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                  "Accept": "application/json"
+              },
+              timeout: 8000
+          });
           const data = response.data;
           
           if (data && data.mahasiswa && data.mahasiswa.length > 0) {
@@ -2638,7 +2648,7 @@ There are no background services or permissions associated.
               apiResult = `<b>[LIVE API] PDDIKTI:</b> ❌ Tidak ada data mahasiswa yang cocok.\n\n`;
           }
       } catch (err) {
-          apiResult = `<b>[LIVE API] PDDIKTI:</b> ❌ Gagal melakukan fetch koneksi Kemdikbud API.\n\n`;
+          apiResult = `<b>[LIVE API] PDDIKTI:</b> ❌ Akses ke server Kemdikbud diblokir / Timeout (WAF Protection). Gunakan Dorking di bawah.\n\n`;
       }
       
       const q = encodeURIComponent(`"${args}" site:pddikti.kemdikbud.go.id`);
@@ -2651,9 +2661,9 @@ There are no background services or permissions associated.
                     `<b>[1] 🏛️ INVESTIGASI PANGKALAN DATA DIKTI DORKING:</b>\n` +
                     `└ 🌐 <a href="https://www.google.com/search?q=${q}">Lacak Entri Transkrip, SKS, / Riwayat DropOut</a>\n\n` +
                     `<b>[2] 📚 INVESTIGASI DOKUMEN REPOSITORI (Kampus Dasar):</b>\n` +
-                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Repositori .ac.id untuk Jejak Kelulusan Pra-Publikasi Sidang Akhir</a>\n\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Repositori .ac.id untuk Jejak Kelulusan Sidang</a>\n\n` +
                     `<b>[3] 🔬 VERIFIKASI JURNAL/PUBLIKASI ILMIAH:</b>\n` +
-                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Cari Jejak Penulis Jurnal & Google Scholar Tercetak</a>\n\n` +
+                    `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Cari Jejak Penulis Jurnal & Google Scholar</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Integrasi Hybrid: Live API Kemdikbud + Pemindaian OSINT Google Dorking.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
     });
