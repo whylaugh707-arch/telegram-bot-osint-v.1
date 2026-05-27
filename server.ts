@@ -1867,35 +1867,45 @@ There are no background services or permissions associated.
 
     bot.action('menu_osint_indo', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 OSINT INDONESIA CENTER (ENTERPRISE LOKAL)</b>\n` +
+      const txt = `<b>🇮🇩 OSINT INDONESIA CENTER (ADVANCED ENTERPRISE 2.0)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `Pusat pencarian dataset dan intelijen lokal tingkat lanjut:\n\n` +
-                  `📍 <b>CIVIL IDENTITY (Identitas Sipil)</b>\n` +
+                  `Pusat pencarian dataset dan intelijen lokal tingkat lanjut (28 Fitur):\n\n` +
+                  `📍 <b>CIVIL & APARATUR</b>\n` +
                   `• /nik [16-DIGIT] - OSINT Decode KTP\n` +
                   `• /kk [16-DIGIT] - Parse Kartu Keluarga\n` +
                   `• /paspor [NO-PASPOR] - Validasi Tipe & Format\n` +
-                  `• /nip [18-DIGIT] - ASN/PNS Profiler & Decoder (NEW)\n` +
-                  `• /bpjs [NO] - BPJS Ketenagakerjaan/Kesehatan (NEW)\n\n` +
-                  `💰 <b>FINANCIAL & LEGAL (Keuangan & Bisnis)</b>\n` +
+                  `• /nip [18-DIGIT] - ASN/PNS Profiler & Decoder\n` +
+                  `• /bpjs [NO] - BPJS Ketenagakerjaan/Kesehatan\n` +
+                  `• /simkah [NAMA/NIK] - Kemenag Marriage Registry (NEW)\n` +
+                  `• /bansos [NAMA/NIK] - Kemensos DTKS & Bansos Profiler (NEW)\n` +
+                  `• /cekal [NAMA/PASPOR] - Imigrasi Interpol & Cekal Mapping (NEW)\n\n` +
+                  `💰 <b>FINANCIAL & LEGAL</b>\n` +
                   `• /npwp [15/16 DIGIT] - OSINT KPP & Kode NPWP\n` +
-                  `• /nib [13-DIGIT] - Business Registry Validator (NEW)\n` +
-                  `• /ojk [NAMA] - Audit Pinjol & Fintech Legal (NEW)\n` +
+                  `• /nib [13-DIGIT] - Business Registry Validator\n` +
+                  `• /ojk [NAMA] - Audit Pinjol & Fintech Legal\n` +
                   `• /rekening [NO-REK] - Investigasi Dork Fraud\n` +
                   `• /qris [PAYLOAD] - EMVCo Decoder Data QRIS\n` +
-                  `• /bank_indo [NAMA] - Database Kode Bank & BI-FAST\n\n` +
+                  `• /bank_indo [NAMA] - Database Kode Bank & BI-FAST\n` +
+                  `• /pbb [NOP] - Pajak Property & NJOP Tracker (NEW)\n` +
+                  `• /djki [MEREK] - DJKI HAKI & IP Checker (NEW)\n` +
+                  `• /ahu [NAMA PT] - AHU Kemenkumham Corporate Profiler (NEW)\n\n` +
                   `📞 <b>VEHICLE, COMM & GOV INFRA</b>\n` +
                   `• /hlr [NOMOR] - Advanced Prefix Provider Lookup\n` +
                   `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat Kendaraan\n` +
-                  `• /bpkb [N0-BPKB] - Validasi Algoritma BPKB (NEW)\n` +
-                  `• /sertipikat [NOMOR] - Pertanahan ATR/BPN Dork (NEW)\n` +
+                  `• /bpkb [N0-BPKB] - Validasi Algoritma BPKB\n` +
+                  `• /samsat [NOPOL] - E-Samsat & PKB Vehicle Tracker (NEW)\n` +
+                  `• /sertipikat [NOMOR] - Pertanahan ATR/BPN Dork\n` +
                   `• /kodepos [KECAMATAN] - Dorking Pencarian Kodepos\n` +
                   `• /lpse [NAMA VENDOR] - OSINT E-Procurement Tender\n` +
-                  `• /bpom [NAMA PRODUK] - Dorking BPOM Legal Validation\n\n` +
+                  `• /bpom [NAMA PRODUK] - Dorking BPOM Legal Validation\n` +
+                  `• /bea_cukai [RESI/IMEI] - Kepabeanan & Cukai Mapping (NEW)\n` +
+                  `• /pse [NAMA APP] - PSE Kominfo Cyber Legitimacy Scanner (NEW)\n\n` +
                   `🔎 <b>DEEP DORKING (Akademik, Hukum & Publik)</b>\n` +
-                  `• /yudisium [NAMA/NIM] - Intelijen PDDikti / Ijazah (NEW)\n` +
-                  `• /putusan [NAMA/KASUS] - Direktori MA / Hukum (NEW)\n` +
-                  `• /dpo [NAMA] - Database Buronan KPK/Polri (NEW)\n` +
-                  `• /kpu [NAMA/NIK] - DPT Pemerintahan Electoral (NEW)\n` +
+                  `• /yudisium [NAMA/NIM] - Intelijen PDDikti / Ijazah\n` +
+                  `• /sivil [PIN/IJAZAH] - SIVIL & PIN Kemdikbud Validator (NEW)\n` +
+                  `• /putusan [NAMA/KASUS] - Direktori MA / Hukum\n` +
+                  `• /dpo [NAMA] - Database Buronan KPK/Polri\n` +
+                  `• /kpu [NAMA/NIK] - DPT Pemerintahan Electoral\n` +
                   `• /nama [NAMA] - Indexer Publik\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
