@@ -1668,22 +1668,20 @@ There are no background services or permissions associated.
     const mainReplyKeyboard = Markup.keyboard([
       ['🔒 TRIHEXA OSINT TERMINAL 🔒'],
       ['── 🕵️ PELACAKAN IDENTITAS ──'],
-      ['🆔 Cek Data NIK', '🖨️ Cek Data KK'],
-      ['🚗 Cek Plat Nomor', '🏥 Cek BPJS & NIP'],
-      ['📞 Tracker Nomor HP', '📧 Tracker Email & Sosmed'],
+      ['🪪 Identitas & Kependudukan', '🏢 Perusahaan & Instansi'],
+      ['⚖️ Hukum & Finansial', '🏛️ Layanan Publik & Pajak'],
       ['── 🌐 JEJARING & DOMAIN ──'],
-      ['🌐 IP & Geolocation', '🔎 DNS & WHOIS Lookup'],
-      ['📡 Subdomain & Port Scan', '🕷️ Shodan & Data Leak'],
+      ['📡 Geolocation & IP', '🔎 DNS & Domain OSINT'],
+      ['🕷️ Web, Data Leak & Exploit', '🌐 Mac & Headers Info'],
       ['── 🛑 STEALTH TRAP LOGGER ──'],
-      ['📸 Kamera Pengintai', '📍 GPS Tracker Presisi'],
-      ['🎣 Social Media Phishing', '💳 Financial Phishing TRAP'],
+      ['🎯 Target Social Tracker', '📸 Stealth Camera & GPS'],
+      ['🎣 Phishing & Trap Logger'],
       ['── 🛠️ CYBER & ANALITIK ──'],
-      ['🐛 CVE Exploit Lookup', '🔐 Hash & Enkripsi'],
-      ['💳 Cek BIN & CC', '🔎 Tracker Mac Address'],
+      ['🔐 Hash & Enkripsi', '💳 CC & Credit Info'],
       ['── 🧩 UTILITAS & MEDIA ──'],
-      ['🎵 Downloader (IG/TikTok)', '🎮 Mini Game Center'],
-      ['⏰ Alarm & Pengingat', '🌤️ Cuaca & Harga Crypto'],
-      ['📲 WhatsApp Bot Injeksi', 'ℹ️ Bantuan & Sistem']
+      ['🌤️ Utilitas (Cuaca, Alarm)', '🎵 Downloader & Sosmed'],
+      ['🎲 Mini Games & Tebakan', '🔮 Ramalan & Khodam'],
+      ['📲 WhatsApp Bot Device', 'ℹ️ Status & Bantuan']
     ]).resize();
 
     // Global Error Handler for "Anti Bug"
