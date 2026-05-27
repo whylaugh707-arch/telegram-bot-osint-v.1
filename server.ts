@@ -1869,16 +1869,16 @@ There are no background services or permissions associated.
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🇮🇩 OSINT INDONESIA CENTER (ADVANCED ENTERPRISE 2.0)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `Pusat pencarian dataset dan intelijen lokal tingkat lanjut (28 Fitur):\n\n` +
+                  `Pusat pencarian dataset dan intelijen lokal tingkat lanjut (29 Fitur):\n\n` +
                   `📍 <b>CIVIL & APARATUR</b>\n` +
                   `• /nik [16-DIGIT] - OSINT Decode KTP\n` +
                   `• /kk [16-DIGIT] - Parse Kartu Keluarga\n` +
                   `• /paspor [NO-PASPOR] - Validasi Tipe & Format\n` +
                   `• /nip [18-DIGIT] - ASN/PNS Profiler & Decoder\n` +
                   `• /bpjs [NO] - BPJS Ketenagakerjaan/Kesehatan\n` +
-                  `• /simkah [NAMA/NIK] - Kemenag Marriage Registry (NEW)\n` +
-                  `• /bansos [NAMA/NIK] - Kemensos DTKS & Bansos Profiler (NEW)\n` +
-                  `• /cekal [NAMA/PASPOR] - Imigrasi Interpol & Cekal Mapping (NEW)\n\n` +
+                  `• /simkah [NAMA/NIK] - Kemenag Marriage Registry\n` +
+                  `• /bansos [NAMA/NIK] - Kemensos DTKS & Bansos Profiler\n` +
+                  `• /cekal [NAMA/PASPOR] - Imigrasi Interpol & Cekal Mapping\n\n` +
                   `💰 <b>FINANCIAL & LEGAL</b>\n` +
                   `• /npwp [15/16 DIGIT] - OSINT KPP & Kode NPWP\n` +
                   `• /nib [13-DIGIT] - Business Registry Validator\n` +
@@ -1886,23 +1886,24 @@ There are no background services or permissions associated.
                   `• /rekening [NO-REK] - Investigasi Dork Fraud\n` +
                   `• /qris [PAYLOAD] - EMVCo Decoder Data QRIS\n` +
                   `• /bank_indo [NAMA] - Database Kode Bank & BI-FAST\n` +
-                  `• /pbb [NOP] - Pajak Property & NJOP Tracker (NEW)\n` +
-                  `• /djki [MEREK] - DJKI HAKI & IP Checker (NEW)\n` +
-                  `• /ahu [NAMA PT] - AHU Kemenkumham Corporate Profiler (NEW)\n\n` +
+                  `• /pbb [NOP] - Pajak Property & NJOP Tracker\n` +
+                  `• /djki [MEREK] - DJKI HAKI & IP Checker\n` +
+                  `• /ahu [NAMA PT] - AHU Kemenkumham Corporate Profiler\n\n` +
                   `📞 <b>VEHICLE, COMM & GOV INFRA</b>\n` +
                   `• /hlr [NOMOR] - Advanced Prefix Provider Lookup\n` +
                   `• /plat [NO-PLAT] - Cek Asal Wilayah Samsat Kendaraan\n` +
                   `• /bpkb [N0-BPKB] - Validasi Algoritma BPKB\n` +
-                  `• /samsat [NOPOL] - E-Samsat & PKB Vehicle Tracker (NEW)\n` +
+                  `• /samsat [NOPOL] - E-Samsat & PKB Vehicle Tracker\n` +
                   `• /sertipikat [NOMOR] - Pertanahan ATR/BPN Dork\n` +
-                  `• /kodepos [KECAMATAN] - Dorking Pencarian Kodepos\n` +
+                  `• /kodepos [KECAMATAN] - API Region Directory & Dork Locator\n` +
                   `• /lpse [NAMA VENDOR] - OSINT E-Procurement Tender\n` +
                   `• /bpom [NAMA PRODUK] - Dorking BPOM Legal Validation\n` +
-                  `• /bea_cukai [RESI/IMEI] - Kepabeanan & Cukai Mapping (NEW)\n` +
-                  `• /pse [NAMA APP] - PSE Kominfo Cyber Legitimacy Scanner (NEW)\n\n` +
+                  `• /bea_cukai [RESI/IMEI] - Kepabeanan & Cukai Mapping\n` +
+                  `• /pse [NAMA APP] - PSE Kominfo Cyber Legitimacy Scanner\n` +
+                  `• /gempa - Pemantauan Info Gempa BMKG API (NEW)\n\n` +
                   `🔎 <b>DEEP DORKING (Akademik, Hukum & Publik)</b>\n` +
-                  `• /yudisium [NAMA/NIM] - Intelijen PDDikti / Ijazah\n` +
-                  `• /sivil [PIN/IJAZAH] - SIVIL & PIN Kemdikbud Validator (NEW)\n` +
+                  `• /yudisium [NAMA/NIM] - API PDDikti & Publikasi Akademik\n` +
+                  `• /sivil [PIN/IJAZAH] - SIVIL & PIN Kemdikbud Validator\n` +
                   `• /putusan [NAMA/KASUS] - Direktori MA / Hukum\n` +
                   `• /dpo [NAMA] - Database Buronan KPK/Polri\n` +
                   `• /kpu [NAMA/NIK] - DPT Pemerintahan Electoral\n` +
@@ -2459,6 +2460,36 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Cek Peringatan Bahaya Kosmetik/Obat di Portal Pemerintahan RI</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Tools membantu pengecekan sertifikasi POM / Kosmetik Ilegal pada open source.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+    });
+
+    bot.command('gempa', async (ctx) => {
+      try {
+        const response = await axios.get("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json");
+        const gempa = response.data?.Infogempa?.gempa;
+        
+        if (gempa) {
+          const reply = `<b>⚠️ PUSAT INFO GEMPA BUMI BMKG (LIVE API)</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
+                        `🔴 <b>WAKTU:</b> <code>${gempa.Tanggal} | ${gempa.Jam}</code>\n` +
+                        `📍 <b>LOKASI:</b> <code>${gempa.Wilayah}</code>\n` +
+                        `📊 <b>MAGNITUDO:</b> <code>${gempa.Magnitude} SR</code>\n` +
+                        `🌐 <b>KOORDINAT:</b> <code>${gempa.Coordinates}</code>\n` +
+                        `🌊 <b>POTENSI HASIL DEEP SCAN BMKG:</b>\n` +
+                        `└ <i>${gempa.Potensi}</i>\n\n` +
+                        `<b>[Dampak Dirasakan]:</b>\n> ${gempa.Dirasakan || 'Belum ada data skala MMI'}\n\n` +
+                        `━━━━━━━━━━━━━━━━━━━━\n<i>Terhubung ke jaringan Telemetri Gempa Otomatis BMKG Nasional.</i>`;
+          
+          if (gempa.Shakemap) {
+            const imageUrl = `https://data.bmkg.go.id/DataMKG/TEWS/${gempa.Shakemap}`;
+            await ctx.replyWithPhoto({ url: imageUrl }, { caption: reply, parse_mode: 'HTML' });
+          } else {
+            ctx.reply(reply, { parse_mode: 'HTML' });
+          }
+        } else {
+          ctx.reply("❌ Sistem BMKG tidak mengembalikan data struktur gempa yang valid.");
+        }
+      } catch (err) {
+        ctx.reply("❌ Gagal terhubung ke Pangkalan Data Geofisika Nasional (API BMKG Down).");
+      }
     });
 
     bot.command('nip', (ctx) => {
@@ -4319,7 +4350,7 @@ There are no background services or permissions associated.
     bot.command('osint_indo', (ctx) => {
       const reply = `<b>🇮🇩 OSINT INDONESIA MODULE (ADVANCED ENTERPRISE 2.0)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `⚡ <b>Pusat Investigasi Intelijen Regional Nasional (28 Fitur):</b>\n\n` +
+                    `⚡ <b>Pusat Investigasi Intelijen Regional Nasional (29 Fitur):</b>\n\n` +
                     `1. <b>Sipil & Aparatur:</b> /nik, /kk, /nip, /bpjs\n` +
                     `2. <b>Finansial & Bisnis:</b> /npwp, /nib, /qris, /ojk\n` +
                     `3. <b>Kejahatan & Hukum:</b> /rekening, /putusan, /dpo, /cekal\n` +
@@ -4328,7 +4359,8 @@ There are no background services or permissions associated.
                     `6. <b>Transportasi & BPN:</b> /plat, /bpkb, /sertipikat, /samsat\n` +
                     `7. <b>Pemilu & Pemerintahan:</b> /kpu, /pse, /ahu\n` +
                     `8. <b>Imigrasi & Keluarga:</b> /paspor, /simkah, /bansos\n` +
-                    `9. <b>Kementerian & Lembaga:</b> /lpse, /bpom, /bea_cukai, /pbb, /djki\n\n` +
+                    `9. <b>Kementerian & Lembaga:</b> /lpse, /bpom, /bea_cukai, /pbb, /djki\n` +
+                    `10. <b>Geo Publik (Live API):</b> /gempa\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>Integrasi Dorking tingkat atas untuk forensik publik di Indonesia berdasarkan UU KIP Open Source.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML' });
