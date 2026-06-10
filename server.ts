@@ -4968,6 +4968,14 @@ There are no background services or permissions associated.
                if (ctx) ctx.reply("⏳ Waktu scan QR telah habis. Silakan gunakan /wa_connect kembali.").catch(() => {});
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
+            } else if (!state.creds?.me) {
+               // Drop / network error when not logged in
+               console.log("WA connection dropped during auth:", lastDisconnect?.error);
+               waConnecting = false;
+               if (ctx) {
+                   const errorMsg = lastDisconnect?.error ? String((lastDisconnect.error as any)?.message || lastDisconnect.error) : "Unknown Error";
+                   ctx.reply(`❌ Koneksi WA terputus saat Auth (Code: ${statusCode}). Pesan: ${errorMsg}\nSilakan gunakan perintah /wa_connect kembali.`).catch(() => {});
+               }
             } else {
                // Drop / network error / restart. Auto reconnect:
                console.log("Auto-reconnecting WA...");
