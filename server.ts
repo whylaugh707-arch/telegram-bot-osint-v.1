@@ -4956,22 +4956,22 @@ There are no background services or permissions associated.
             globalWaSock = null;
             const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
             const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-            const hasCreds = !!state.creds?.me;
-            
-            console.log('WA connection closed. Code:', statusCode, 'hasCreds:', hasCreds);
+            const isTimeout = statusCode === 408;
 
-            if (isLoggedOut || !hasCreds) {
-               if (ctx && statusCode === 408) {
-                   ctx.reply("⏳ Waktu scan QR telah habis. Silakan gunakan /wa_connect kembali.").catch(() => {});
-               } else if (ctx) {
-                   ctx.reply("❌ Koneksi WA Terputus. Silakan ketik /wa_connect kembali. (Bisa jadi karena timeout atau network drop)").catch(() => {});
-               }
+            console.log('WA connection closed. Code:', statusCode, 'hasCreds:', !!state.creds?.me);
+
+            if (isLoggedOut) {
+               if (ctx) ctx.reply("❌ Sesi WA Logged Out. Silakan ketik /wa_connect ulang.").catch(() => {});
+               waConnecting = false;
+               try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
+            } else if (!state.creds?.me && isTimeout) {
+               if (ctx) ctx.reply("⏳ Waktu scan QR telah habis. Silakan gunakan /wa_connect kembali.").catch(() => {});
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
             } else {
-               // Logged in, auto reconnect in background
-               console.log("Auto-reconnecting WA in background...");
-               setTimeout(() => startWAConnection(), 5000);
+               // Drop / network error / restart. Auto reconnect:
+               console.log("Auto-reconnecting WA...");
+               setTimeout(() => startWAConnection(ctx), 5000);
             }
           } else if (connection === 'open') {
              globalWaSock = sock;
@@ -4996,7 +4996,10 @@ There are no background services or permissions associated.
            let text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
            
            if (text) {
-             await sock.readMessages([m.key]).catch(()=>{});
+             // Simulate read delay
+             setTimeout(() => {
+                sock.readMessages([m.key]).catch(()=>{});
+             }, 1000 + Math.random() * 1500);
              
              // Convert direct text input for Callbacks to CallbackQuery Fake Event
              let isCallback = false;
@@ -5114,7 +5117,9 @@ There are no background services or permissions associated.
                  };
                  
                  for (const [key, cmd] of Object.entries(kbMappings)) {
-                     if (text.includes(key) || text === key) {
+                     const cleanKey = key.replace(/[^a-zA-Z0-9 ]/g, '').trim().toLowerCase();
+                     const cleanText = text.replace(/[^a-zA-Z0-9 ]/g, '').trim().toLowerCase();
+                     if (cleanText === cleanKey || (cleanKey.length > 3 && cleanText.includes(cleanKey))) {
                           text = cmd; // Change text to command
                           entities.push({ type: 'bot_command', offset: 0, length: cmd.length });
                           break;
