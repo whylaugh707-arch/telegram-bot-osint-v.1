@@ -21,6 +21,7 @@ const saveTargets = () => fs.writeFileSync(TARGETS_FILE, JSON.stringify(targetsD
 import AdmZip from "adm-zip";
 import yts from "yt-search";
 import play from "play-dl";
+import scdl from "soundcloud-downloader";
 import ytdl from "@distube/ytdl-core";
 import pkg from "@whiskeysockets/baileys";
 const makeWASocket = (pkg as any).default || (pkg as any).makeWASocket || pkg;
@@ -3985,26 +3986,25 @@ There are no background services or permissions associated.
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
-      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database (YouTube)...</i>", { parse_mode: 'HTML' });
+      const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database Music...</i>", { parse_mode: 'HTML' });
       try {
-        const results = await yts(args);
+        const client = scdl.default || scdl;
+        const results = await client.search({ query: args, resourceType: "tracks", limit: 1 });
         
-        if (!results || results.videos.length === 0) {
+        if (!results || !results.collection || results.collection.length === 0) {
            return ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, "❌ ʟᴀɢᴜ ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ.");
         }
         
-        const video = results.videos[0];
-        const audioUrl = video.url;
+        const trackInfo = results.collection[0];
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh audio: ${video.title}...\n(Proses stream sedang berjalan...)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh audio: ${trackInfo.title}...\n(Proses stream berkecepatan tinggi...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          // Play-dl stream method for better bypass
-          const streamResult = await play.stream(audioUrl, { discordPlayerCompatibility : true });
+          const stream = await client.download(trackInfo.permalink_url);
           
           await ctx.replyWithAudio(
-            { source: streamResult.stream, filename: video.title + '.mp3' },
-            { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n☁️ <b>Source:</b> YouTube`, parse_mode: 'HTML' }
+            { source: stream, filename: trackInfo.title + '.mp3' },
+            { caption: `🎵 <b>${trackInfo.title}</b>\n👤 <b>Author:</b> ${trackInfo.user?.username || 'Unknown'}\n☁️ <b>Source:</b> SoundCloud`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
