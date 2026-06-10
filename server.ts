@@ -4955,15 +4955,23 @@ There are no background services or permissions associated.
           if (connection === 'close') {
             globalWaSock = null;
             const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-            console.log('WA connection closed, reconnecting:', shouldReconnect);
-            if (shouldReconnect) {
-               if (ctx) ctx.reply("⚠️ Koneksi WA terputus, mencoba relogin otomatis (pastikan tidak log out dari aplikasi).").catch(() => {});
-               setTimeout(() => startWAConnection(ctx), 5000);
-            } else {
-               if (ctx) ctx.reply("❌ Sesi WA Logged Out. Silakan hapus folder auth WA dan /wa_connect ulang.").catch(() => {});
+            const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+            const hasCreds = !!state.creds?.me;
+            
+            console.log('WA connection closed. Code:', statusCode, 'hasCreds:', hasCreds);
+
+            if (isLoggedOut || !hasCreds) {
+               if (ctx && statusCode === 408) {
+                   ctx.reply("⏳ Waktu scan QR telah habis. Silakan gunakan /wa_connect kembali.").catch(() => {});
+               } else if (ctx) {
+                   ctx.reply("❌ Koneksi WA Terputus. Silakan ketik /wa_connect kembali. (Bisa jadi karena timeout atau network drop)").catch(() => {});
+               }
                waConnecting = false;
                try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch(err){}
+            } else {
+               // Logged in, auto reconnect in background
+               console.log("Auto-reconnecting WA in background...");
+               setTimeout(() => startWAConnection(), 5000);
             }
           } else if (connection === 'open') {
              globalWaSock = sock;
