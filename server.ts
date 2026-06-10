@@ -4770,16 +4770,17 @@ There are no background services or permissions associated.
                       try {
                           const keyboard = typeof markup === 'string' ? JSON.parse(markup).inline_keyboard : markup.inline_keyboard;
                           if (keyboard && keyboard.length > 0) {
-                              txt += '\n\n🤖 *PILIHAN MENU:*\n';
+                              txt += '\n\n╭━━━ 🤖 *MENU PILIHAN* ━━━╮\n';
                               keyboard.forEach((row: any[]) => {
                                   row.forEach((btn: any) => {
                                       if (btn.callback_data) {
-                                          txt += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                          txt += `├ 🔹 *${btn.text.replace(/<[^>]*>?/gm, '')}*\n│   └ Ketik: _${btn.callback_data}_\n`;
                                       } else if (btn.url) {
-                                          txt += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                          txt += `├ 🌐 *${btn.text.replace(/<[^>]*>?/gm, '')}*\n│   └ Buka: _${btn.url}_\n`;
                                       }
                                   });
                               });
+                              txt += '╰━━━━━━━━━━━━━━━━━━━━━━╯';
                           }
                       } catch(e) {}
                   }
@@ -4788,12 +4789,14 @@ There are no background services or permissions associated.
                       try {
                           const keyboard = typeof markup === 'string' ? JSON.parse(markup).keyboard : markup.keyboard;
                           if (keyboard && keyboard.length > 0) {
-                              txt += '\n\n🤖 *PILIHAN PADA KEYBOARD BAWAH:*\n';
+                              txt += '\n\n╭━━━ 🤖 *PILIHAN CEPAT* ━━━╮\n';
                               keyboard.forEach((row: any[]) => {
                                   row.forEach((btn: any) => {
-                                      txt += `👉 Ketik: *${typeof btn === 'string' ? btn : btn.text}*\n`;
+                                      const btnText = typeof btn === 'string' ? btn : btn.text;
+                                      txt += `├ 🔹 Ketik: *${btnText}*\n`;
                                   });
                               });
+                              txt += '╰━━━━━━━━━━━━━━━━━━━━━━╯';
                           }
                       } catch(e) {}
                   }
