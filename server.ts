@@ -4807,11 +4807,12 @@ There are no background services or permissions associated.
 
                   // Add simulate typing before sending
                   const typingTime = Math.min(Math.max(text.length * 30, 1500), 8000) + Math.random() * 500;
-                  await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, typingTime));
-                  await globalWaSock.sendPresenceUpdate('paused', jid);
-
-                  await globalWaSock.sendMessage(jid, { text });
+                  try {
+                      await globalWaSock.sendPresenceUpdate('composing', jid);
+                      await new Promise(r => setTimeout(r, typingTime));
+                      await globalWaSock.sendPresenceUpdate('paused', jid);
+                      await globalWaSock.sendMessage(jid, { text });
+                  } catch(e) { console.error('WA Send Error:', e); }
                   return { message_id: Date.now() }; 
               } else if (method === 'sendPhoto') {
                   let caption = payload.caption || '';
@@ -4819,22 +4820,24 @@ There are no background services or permissions associated.
                   caption = addKeyboardText(caption, payload.reply_markup);
 
                   const typingTimePhoto = caption ? Math.min(Math.max(caption.length * 30, 2000), 6000) + Math.random() * 500 : 1500 + Math.random() * 1000;
-                  await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, typingTimePhoto));
-                  await globalWaSock.sendPresenceUpdate('paused', jid);
+                  try {
+                      await globalWaSock.sendPresenceUpdate('composing', jid);
+                      await new Promise(r => setTimeout(r, typingTimePhoto));
+                      await globalWaSock.sendPresenceUpdate('paused', jid);
 
-                  let source = payload.photo;
-                  if (typeof source === 'object' && source.source) {
-                      source = source.source;
-                  }
-                  
-                  if (typeof source === 'string' && source.startsWith('http')) {
-                       await globalWaSock.sendMessage(jid, { image: { url: source }, caption });
-                  } else if (Buffer.isBuffer(source)) {
-                       await globalWaSock.sendMessage(jid, { image: source, caption });
-                  } else {
-                       await globalWaSock.sendMessage(jid, { text: `[GAMBAR GAGAL DIKIRIM]\n${caption}` });
-                  }
+                      let source = payload.photo;
+                      if (typeof source === 'object' && source.source) {
+                          source = source.source;
+                      }
+                      
+                      if (typeof source === 'string' && source.startsWith('http')) {
+                           await globalWaSock.sendMessage(jid, { image: { url: source }, caption });
+                      } else if (Buffer.isBuffer(source)) {
+                           await globalWaSock.sendMessage(jid, { image: source, caption });
+                      } else {
+                           await globalWaSock.sendMessage(jid, { text: `[GAMBAR GAGAL DIKIRIM]\n${caption}` });
+                      }
+                  } catch(e) { console.error('WA Send Error:', e); }
                   return { message_id: Date.now() };
               } else if (method === 'sendAudio' || method === 'sendVoice') {
                   let source = payload.audio || payload.voice;
@@ -4843,22 +4846,24 @@ There are no background services or permissions associated.
                   caption = addKeyboardText(caption, payload.reply_markup);
                   
                   const recordingTime = caption ? Math.min(Math.max(caption.length * 20, 2000), 5000) + Math.random() * 500 : 2000 + Math.random() * 1500;
-                  await globalWaSock.sendPresenceUpdate('recording', jid);
-                  await new Promise(r => setTimeout(r, recordingTime));
-                  await globalWaSock.sendPresenceUpdate('paused', jid);
+                  try {
+                      await globalWaSock.sendPresenceUpdate('recording', jid);
+                      await new Promise(r => setTimeout(r, recordingTime));
+                      await globalWaSock.sendPresenceUpdate('paused', jid);
 
-                  if (typeof source === 'object' && source.source) source = source.source;
-                  
-                  if (typeof source === 'string' && source.startsWith('http')) {
-                       await globalWaSock.sendMessage(jid, { audio: { url: source }, mimetype: 'audio/mp4' });
-                  } else if (Buffer.isBuffer(source)) {
-                       await globalWaSock.sendMessage(jid, { audio: source, mimetype: 'audio/mp4' });
-                  } else {
-                       await globalWaSock.sendMessage(jid, { text: `[AUDIO GAGAL DIKIRIM]\n${caption}` });
-                  }
-                  if(caption){
-                      await globalWaSock.sendMessage(jid, { text: caption });
-                  }
+                      if (typeof source === 'object' && source.source) source = source.source;
+                      
+                      if (typeof source === 'string' && source.startsWith('http')) {
+                           await globalWaSock.sendMessage(jid, { audio: { url: source }, mimetype: 'audio/mp4' });
+                      } else if (Buffer.isBuffer(source)) {
+                           await globalWaSock.sendMessage(jid, { audio: source, mimetype: 'audio/mp4' });
+                      } else {
+                           await globalWaSock.sendMessage(jid, { text: `[AUDIO GAGAL DIKIRIM]\n${caption}` });
+                      }
+                      if(caption){
+                          await globalWaSock.sendMessage(jid, { text: caption });
+                      }
+                  } catch(e) { console.error('WA Send Error:', e); }
                   return { message_id: Date.now() };
               } else if (method === 'sendDocument') {
                   let source = payload.document;
@@ -4867,24 +4872,26 @@ There are no background services or permissions associated.
                   caption = addKeyboardText(caption, payload.reply_markup);
 
                   const typingTimeDoc = caption ? Math.min(Math.max(caption.length * 30, 2000), 5000) + Math.random() * 500 : 1500 + Math.random() * 1000;
-                  await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, typingTimeDoc));
-                  await globalWaSock.sendPresenceUpdate('paused', jid);
-                  
-                  if (typeof source === 'object' && source.source) source = source.source;
+                  try {
+                      await globalWaSock.sendPresenceUpdate('composing', jid);
+                      await new Promise(r => setTimeout(r, typingTimeDoc));
+                      await globalWaSock.sendPresenceUpdate('paused', jid);
+                      
+                      if (typeof source === 'object' && source.source) source = source.source;
 
-                  const fileName = payload.filename || 'document';
-                  let mimetype = 'application/octet-stream';
-                  if (fileName.endsWith('.json')) mimetype = 'application/json';
-                  else if (fileName.endsWith('.txt')) mimetype = 'text/plain';
+                      const fileName = payload.filename || 'document';
+                      let mimetype = 'application/octet-stream';
+                      if (fileName.endsWith('.json')) mimetype = 'application/json';
+                      else if (fileName.endsWith('.txt')) mimetype = 'text/plain';
 
-                  if (typeof source === 'string' && source.startsWith('http')) {
-                       await globalWaSock.sendMessage(jid, { document: { url: source }, mimetype, fileName, caption });
-                  } else if (Buffer.isBuffer(source)) {
-                       await globalWaSock.sendMessage(jid, { document: source, mimetype, fileName, caption });
-                  } else {
-                       await globalWaSock.sendMessage(jid, { text: `[FILE GAGAL DIKIRIM]\n${caption}` });
-                  }
+                      if (typeof source === 'string' && source.startsWith('http')) {
+                           await globalWaSock.sendMessage(jid, { document: { url: source }, mimetype, fileName, caption });
+                      } else if (Buffer.isBuffer(source)) {
+                           await globalWaSock.sendMessage(jid, { document: source, mimetype, fileName, caption });
+                      } else {
+                           await globalWaSock.sendMessage(jid, { text: `[FILE GAGAL DIKIRIM]\n${caption}` });
+                      }
+                  } catch(e) { console.error('WA Send Error:', e); }
                   return { message_id: Date.now() };
               }
               // Prevent throwing error to Telegraf
@@ -4998,7 +5005,7 @@ There are no background services or permissions associated.
            if (m.key.fromMe) return;
            
            const jid = m.key.remoteJid;
-           if (!jid || jid.includes('@g.us')) return; // Ignore groups to avoid ban/spam
+           if (!jid || jid.includes('@g.us') || jid.includes('status@broadcast')) return; // Ignore groups and status to avoid ban/spam
            
            const senderNumber = jid.split('@')[0];
            let text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
