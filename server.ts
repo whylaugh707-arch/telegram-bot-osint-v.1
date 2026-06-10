@@ -4806,8 +4806,9 @@ There are no background services or permissions associated.
                   text = addKeyboardText(text, payload.reply_markup);
 
                   // Add simulate typing before sending
+                  const typingTime = Math.min(Math.max(text.length * 30, 1500), 8000) + Math.random() * 500;
                   await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, 1000 + Math.random()*1500));
+                  await new Promise(r => setTimeout(r, typingTime));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
 
                   await globalWaSock.sendMessage(jid, { text });
@@ -4817,8 +4818,9 @@ There are no background services or permissions associated.
                   caption = formatText(caption);
                   caption = addKeyboardText(caption, payload.reply_markup);
 
+                  const typingTimePhoto = caption ? Math.min(Math.max(caption.length * 30, 2000), 6000) + Math.random() * 500 : 1500 + Math.random() * 1000;
                   await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, 1500));
+                  await new Promise(r => setTimeout(r, typingTimePhoto));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
 
                   let source = payload.photo;
@@ -4840,8 +4842,9 @@ There are no background services or permissions associated.
                   caption = formatText(caption);
                   caption = addKeyboardText(caption, payload.reply_markup);
                   
+                  const recordingTime = caption ? Math.min(Math.max(caption.length * 20, 2000), 5000) + Math.random() * 500 : 2000 + Math.random() * 1500;
                   await globalWaSock.sendPresenceUpdate('recording', jid);
-                  await new Promise(r => setTimeout(r, 1500));
+                  await new Promise(r => setTimeout(r, recordingTime));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
 
                   if (typeof source === 'object' && source.source) source = source.source;
@@ -4863,8 +4866,9 @@ There are no background services or permissions associated.
                   caption = formatText(caption);
                   caption = addKeyboardText(caption, payload.reply_markup);
 
+                  const typingTimeDoc = caption ? Math.min(Math.max(caption.length * 30, 2000), 5000) + Math.random() * 500 : 1500 + Math.random() * 1000;
                   await globalWaSock.sendPresenceUpdate('composing', jid);
-                  await new Promise(r => setTimeout(r, 1500));
+                  await new Promise(r => setTimeout(r, typingTimeDoc));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
                   
                   if (typeof source === 'object' && source.source) source = source.source;
