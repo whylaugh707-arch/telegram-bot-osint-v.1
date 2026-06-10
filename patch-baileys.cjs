@@ -72,7 +72,8 @@ export function hkdf(ikm, length, options = {}) {
   const infoBuf = typeof info === 'string' ? Buffer.from(info) : Buffer.from(info);
   const ikmBuf = Buffer.from(ikm);
 
-  return crypto.hkdfSync(digest, ikmBuf, saltBuf, infoBuf, length);
+  const result = crypto.hkdfSync(digest, ikmBuf, saltBuf, infoBuf, length);
+  return Buffer.from(result);
 }
 
 export function expandAppStateKeys(keyData) {
