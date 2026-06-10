@@ -1667,41 +1667,32 @@ There are no background services or permissions associated.
 
     const mainReplyKeyboard = Markup.keyboard([
       ['🔒 TRIHEXA OSINT TERMINAL 🔒'],
-      ['── 🇮🇩 OSINT INDONESIA ──'],
-      ['🆔 Cek NIK', '🖨️ Cek KK'],
-      ['🚗 Cek Plat Nopol', '🏥 Cek BPJS'],
-      ['👨‍💼 Cek NIP/ASN', '🏢 Cek NIB Bisnis'],
-      ['🎓 Cek SIVIL Ijazah', '⚖️ Putusan Mahkamah'],
-      ['🏛️ Cek Pajak PBB', '🚔 Cek DPO Polri'],
-      ['🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
-      ['🗳️ Cek DPT KPU', '📜 Cek Sertipikat BPN'],
-      ['📦 Cek Bea Cukai', '🏦 Cek OJK Hukum'],
-      ['💼 Cek Perusahaan AHU', '💍 Cek Buku Nikah'],
-      ['── 🕵️ GLOBAL OSINT & TRACKING ──'],
-      ['🌐 IP Geolocation Tracker', '📡 Reverse IP Lookup'],
-      ['🔎 WHOIS Domain', '🌍 DNS Records Lookup'],
-      ['🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
-      ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker'],
-      ['📞 Phone Tracker (HLR)', '💻 MAC Address OSINT'],
-      ['🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
-      ['── 🛑 STEALTH TRAP LOGGER ──'],
-      ['📸 Hack Kamera Target', '📍 Hack GPS Presisi Target'],
-      ['🎣 Phishing IG/Meta', '💰 Phishing Crypto/Wallet'],
-      ['💳 Phishing PayPal', '🎮 Phishing Steam', '🛡️ Trap Bypass Cloudflare'],
-      ['💬 Phishing FB/Messenger', '💼 Phishing LinkedIn', '🛒 Phishing Amazon/Toko'],
-      ['🎵 Phishing Spotify/Netflix', '🍎 Phishing AppleID', '📁 Phishing GDrive/Dropbox'],
-      ['🐧 Phishing Linux/SSH', '📊 Lihat Log Korban (Logger)'],
-      ['⚙️ Set Custom Domain Tracker'],
-      ['── 🛠️ ADVANCED CYBER TOOLS ──'],
-      ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode'],
-      ['💳 Cek Info BIN Card', '💳 Validasi CC (Carding)'],
-      ['🧪 XSS Scanner', '🦠 VirusTotal Web/File Scan'],
-      ['── 🧩 UTILITAS & MEDIA ──'],
-      ['🎵 Download Lagu/Audio', '🎥 Download Video (IG/TikTok)'],
-      ['⏰ Sistem Alarm Pengingat', '🌤️ Info Cuaca Area'],
-      ['📈 Info Harga Crypto (Live)', '📲 Koneksi Bot WhatsApp'],
-      ['── 💀 PRO FITUR ──'],
-      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Informasi Bot & Bantuan']
+      ['── 🇮🇩 OSINT LOKAL INDO ──'],
+      ['🆔 Cek NIK', '🖨️ Cek KK', '🏥 Cek BPJS'],
+      ['🚗 Plat Nopol', '👨‍💼 NIP/ASN', '🏢 NIB Bisnis'],
+      ['🎓 SIVIL Ijazah', '⚖️ Putusan MK', '🏛️ Pajak PBB'],
+      ['🚔 DPO Polri', '🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
+      ['🗳️ DPT KPU', '📜 Cek BPN', '📦 Bea Cukai'],
+      ['🏦 OJK Hukum', '💼 AHU PT/CV', '💍 Buku Nikah'],
+      ['── 🕵️ GLOBAL OSINT ──'],
+      ['🌐 IP Tracker', '📡 Reverse IP', '🔎 WHOIS'],
+      ['🌍 DNS Lookup', '🕸️ Subdomain', '🕷️ Shodan'],
+      ['📧 Email Leak', '👤 Sosmed Info', '📞 HLR Phone'],
+      ['💻 Cek MAC', '🚀 Port Scan', '🚨 CVE Exploit'],
+      ['── 🛑 STEALTH LOGGER ──'],
+      ['📸 Hack Kamera', '📍 Hack GPS'],
+      ['🎣 IG/Meta', '💬 FB/Messenger', '💼 LinkedIn'],
+      ['💰 Web3/Binance', '💳 PayPal', '🛒 Amazon/Toko'],
+      ['🎮 Steam Panel', '🍎 Apple ID', '🐧 Linux/SSH'],
+      ['🎵 Spotify/Netflix', '📁 GDrive/DropBox', '🛡️ Bypass CF'],
+      ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
+      ['── 🛠️ CYBER TOOLS ──'],
+      ['🔐 Hash Gen', '🔓 Base64', '💳 Cek Info BIN Card'],
+      ['💳 Validasi CC (Card)', '🧪 XSS Scan', '🦠 VirusTotal'],
+      ['── 🧩 UTILITAS & PRO ──'],
+      ['🎵 Audio DL', '🎥 Video DL', '🌤️ Cuaca Area'],
+      ['⏰ Sistem Alarm', '📈 Harga Crypto', '📲 Koneksi Bot WhatsApp'],
+      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Info & Bantuan']
     ]).resize();
 
     // Global Error Handler for "Anti Bug"
@@ -4859,7 +4850,8 @@ There are no background services or permissions associated.
           syncFullHistory: false,
           markOnlineOnConnect: true,
           generateHighQualityLinkPreview: true,
-          defaultQueryTimeoutMs: undefined
+          defaultQueryTimeoutMs: undefined,
+          qrTimeout: 60000
         });
         
         sock.ev.on('creds.update', saveCreds);
@@ -4890,7 +4882,7 @@ There are no background services or permissions associated.
               if (lastQrMessageId) {
                  await ctx.telegram.deleteMessage(ctx.chat.id, lastQrMessageId).catch(() => {});
               }
-              const qrMsg = await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: `📱 <b>SCAN QR INI [Percobaan ${qrCount}/5]</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 20 detik.`, parse_mode: 'HTML' }).catch(() => null);
+              const qrMsg = await ctx.telegram.sendPhoto(ctx.chat.id, { source: qrBuffer }, { caption: `📱 <b>SCAN QR INI [Percobaan ${qrCount}/5]</b>\nBuka WhatsApp > Perangkat Tertaut > Tautkan Perangkat. QR ini berlaku 1 Menit.`, parse_mode: 'HTML' }).catch(() => null);
               if (qrMsg) {
                  lastQrMessageId = qrMsg.message_id;
               }
