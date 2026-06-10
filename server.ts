@@ -3982,7 +3982,6 @@ There are no background services or permissions associated.
     });
 
     const downloadSong = async (ctx: any) => {
-      return ctx.reply("🚧 <b>Fitur musik (/play & /lagu) sedang dalam pemeliharaan (maintenance). Mohon tunggu kabar selanjutnya.</b>", { parse_mode: 'HTML' });
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("🎵 Gunakan format: /lagu [judul] atau /play [judul]");
       
@@ -3995,28 +3994,22 @@ There are no background services or permissions associated.
         }
         
         const video = results.videos[0];
+        const audioUrl = video.url;
         
-        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>ᴍᴇɴɢᴜɴᴅᴜʜ ᴀᴜᴅɪᴏ: ${video.title}...\n(ᴘʀᴏꜱᴇꜱ ʙʏᴘᴀꜱꜱ ᴋᴇᴄᴇᴘᴀᴛᴀɴ ᴛɪɴɢɢɪ ꜱᴇᴅᴀɴɢ ʙᴇʀᴊᴀʟᴀɴ...)</i>`, { parse_mode: 'HTML' });
+        await ctx.telegram.editMessageText(ctx.chat.id, waitMsg.message_id, undefined, `⏳ <i>Mengunduh audio: ${video.title}...\n(Proses stream sedang berjalan...)</i>`, { parse_mode: 'HTML' });
         
         try {
-          play.setToken({ useragent: ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"] });
-          const info = await ytdl.getInfo(video.url, {
-            requestOptions: {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-              }
-            }
-          });
-          const stream = ytdl.downloadFromInfo(info, { filter: 'audioonly', quality: 'highestaudio' });
+          // Play-dl stream method for better bypass
+          const streamResult = await play.stream(audioUrl, { discordPlayerCompatibility : true });
           
           await ctx.replyWithAudio(
-            { source: stream, filename: video.title + '.mp3' },
+            { source: streamResult.stream, filename: video.title + '.mp3' },
             { caption: `🎵 <b>${video.title}</b>\n👤 <b>Author:</b> ${video.author.name}\n☁️ <b>Source:</b> YouTube`, parse_mode: 'HTML' }
           );
           
           ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
         } catch (downloadErr: any) {
-          throw new Error("Gagal mengambil stream audio via play-dl: " + downloadErr?.message);
+             throw new Error("Gagal mengambil stream audio: " + downloadErr?.message);
         }
       } catch (err: any) {
         console.error("Lagu err:", err);
