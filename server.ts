@@ -4755,30 +4755,55 @@ There are no background services or permissions associated.
     bot.telegram.callApi = async (method: string, payload: any, options?: any) => {
       if (payload && typeof payload.chat_id === 'string' && payload.chat_id.startsWith('@wa_')) {
           const jid = payload.chat_id.replace('@wa_', '') + '@s.whatsapp.net';
+          
+          if (method === 'deleteMessage') {
+             return { ok: true, result: true };
+          }
+          
           if (globalWaSock) {
-              if (method === 'sendMessage' || method === 'editMessageText') {
-                  let text = payload.text || '';
-                  text = text.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
-                  
-                  // Convert Inline Keyboards to Text Options for WA Users
-                  if (payload.reply_markup && payload.reply_markup.inline_keyboard) {
+              const formatText = (txt: string) => {
+                  return txt.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
+              };
+
+              const addKeyboardText = (txt: string, markup: any) => {
+                  if (markup && markup.inline_keyboard) {
                       try {
-                          // Note: Some payloads might be serialized strings, but Telegraf usually sends objects to callApi
-                          const keyboard = typeof payload.reply_markup === 'string' ? JSON.parse(payload.reply_markup).inline_keyboard : payload.reply_markup.inline_keyboard;
+                          const keyboard = typeof markup === 'string' ? JSON.parse(markup).inline_keyboard : markup.inline_keyboard;
                           if (keyboard && keyboard.length > 0) {
-                              text += '\n\n🤖 *PILIHAN MENU:*\n';
+                              txt += '\n\n🤖 *PILIHAN MENU:*\n';
                               keyboard.forEach((row: any[]) => {
                                   row.forEach((btn: any) => {
                                       if (btn.callback_data) {
-                                          text += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                          txt += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
                                       } else if (btn.url) {
-                                          text += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
+                                          txt += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
                                       }
                                   });
                               });
                           }
                       } catch(e) {}
                   }
+                  
+                  if (markup && markup.keyboard) {
+                      try {
+                          const keyboard = typeof markup === 'string' ? JSON.parse(markup).keyboard : markup.keyboard;
+                          if (keyboard && keyboard.length > 0) {
+                              txt += '\n\n🤖 *PILIHAN PADA KEYBOARD BAWAH:*\n';
+                              keyboard.forEach((row: any[]) => {
+                                  row.forEach((btn: any) => {
+                                      txt += `👉 Ketik: *${typeof btn === 'string' ? btn : btn.text}*\n`;
+                                  });
+                              });
+                          }
+                      } catch(e) {}
+                  }
+                  return txt;
+              };
+
+              if (method === 'sendMessage' || method === 'editMessageText') {
+                  let text = payload.text || '';
+                  text = formatText(text);
+                  text = addKeyboardText(text, payload.reply_markup);
 
                   // Add simulate typing before sending
                   await globalWaSock.sendPresenceUpdate('composing', jid);
@@ -4789,45 +4814,77 @@ There are no background services or permissions associated.
                   return { message_id: Date.now() }; 
               } else if (method === 'sendPhoto') {
                   let caption = payload.caption || '';
-                  caption = caption.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
-                  
-                  if (payload.reply_markup && payload.reply_markup.inline_keyboard) {
-                      try {
-                          const keyboard = typeof payload.reply_markup === 'string' ? JSON.parse(payload.reply_markup).inline_keyboard : payload.reply_markup.inline_keyboard;
-                          if (keyboard && keyboard.length > 0) {
-                              caption += '\n\n🤖 *PILIHAN MENU:*\n';
-                              keyboard.forEach((row: any[]) => {
-                                  row.forEach((btn: any) => {
-                                      if (btn.callback_data) {
-                                          caption += `👉 Ketik: *${btn.callback_data}* _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
-                                      } else if (btn.url) {
-                                          caption += `👉 Buka Web: ${btn.url} _(${btn.text.replace(/<[^>]*>?/gm, '')})_\n`;
-                                      }
-                                  });
-                              });
-                          }
-                      } catch(e) {}
-                  }
+                  caption = formatText(caption);
+                  caption = addKeyboardText(caption, payload.reply_markup);
 
                   await globalWaSock.sendPresenceUpdate('composing', jid);
                   await new Promise(r => setTimeout(r, 1500));
                   await globalWaSock.sendPresenceUpdate('paused', jid);
 
                   let source = payload.photo;
-                  if (typeof source === 'object' && source.source) source = source.source;
-                  await globalWaSock.sendMessage(jid, { image: source, caption });
-                  return { message_id: Date.now() }; 
+                  if (typeof source === 'object' && source.source) {
+                      source = source.source;
+                  }
+                  
+                  if (typeof source === 'string' && source.startsWith('http')) {
+                       await globalWaSock.sendMessage(jid, { image: { url: source }, caption });
+                  } else if (Buffer.isBuffer(source)) {
+                       await globalWaSock.sendMessage(jid, { image: source, caption });
+                  } else {
+                       await globalWaSock.sendMessage(jid, { text: `[GAMBAR GAGAL DIKIRIM]\n${caption}` });
+                  }
+                  return { message_id: Date.now() };
               } else if (method === 'sendAudio' || method === 'sendVoice') {
                   let source = payload.audio || payload.voice;
+                  let caption = payload.caption || '';
+                  caption = formatText(caption);
+                  caption = addKeyboardText(caption, payload.reply_markup);
+                  
+                  await globalWaSock.sendPresenceUpdate('recording', jid);
+                  await new Promise(r => setTimeout(r, 1500));
+                  await globalWaSock.sendPresenceUpdate('paused', jid);
+
                   if (typeof source === 'object' && source.source) source = source.source;
-                  await globalWaSock.sendMessage(jid, { audio: source, mimetype: 'audio/mp4' });
+                  
+                  if (typeof source === 'string' && source.startsWith('http')) {
+                       await globalWaSock.sendMessage(jid, { audio: { url: source }, mimetype: 'audio/mp4' });
+                  } else if (Buffer.isBuffer(source)) {
+                       await globalWaSock.sendMessage(jid, { audio: source, mimetype: 'audio/mp4' });
+                  } else {
+                       await globalWaSock.sendMessage(jid, { text: `[AUDIO GAGAL DIKIRIM]\n${caption}` });
+                  }
+                  if(caption){
+                      await globalWaSock.sendMessage(jid, { text: caption });
+                  }
                   return { message_id: Date.now() };
               } else if (method === 'sendDocument') {
                   let source = payload.document;
+                  let caption = payload.caption || '';
+                  caption = formatText(caption);
+                  caption = addKeyboardText(caption, payload.reply_markup);
+
+                  await globalWaSock.sendPresenceUpdate('composing', jid);
+                  await new Promise(r => setTimeout(r, 1500));
+                  await globalWaSock.sendPresenceUpdate('paused', jid);
+                  
                   if (typeof source === 'object' && source.source) source = source.source;
-                  await globalWaSock.sendMessage(jid, { document: source, mimetype: 'application/octet-stream', fileName: 'file' });
+
+                  const fileName = payload.filename || 'document';
+                  let mimetype = 'application/octet-stream';
+                  if (fileName.endsWith('.json')) mimetype = 'application/json';
+                  else if (fileName.endsWith('.txt')) mimetype = 'text/plain';
+
+                  if (typeof source === 'string' && source.startsWith('http')) {
+                       await globalWaSock.sendMessage(jid, { document: { url: source }, mimetype, fileName, caption });
+                  } else if (Buffer.isBuffer(source)) {
+                       await globalWaSock.sendMessage(jid, { document: source, mimetype, fileName, caption });
+                  } else {
+                       await globalWaSock.sendMessage(jid, { text: `[FILE GAGAL DIKIRIM]\n${caption}` });
+                  }
                   return { message_id: Date.now() };
               }
+              // Prevent throwing error to Telegraf
+              return { message_id: Date.now() };
           }
           return { message_id: Date.now() }; // Return fake success if WA disconnected but targeted at WA
       }
@@ -4924,20 +4981,38 @@ There are no background services or permissions associated.
            if (!jid || jid.includes('@g.us')) return; // Ignore groups to avoid ban/spam
            
            const senderNumber = jid.split('@')[0];
-           const text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
+           let text = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
            
            if (text) {
              await sock.readMessages([m.key]).catch(()=>{});
              
              // Convert direct text input for Callbacks to CallbackQuery Fake Event
              let isCallback = false;
-             const knownCallbacks = ['menu_main', 'menu_tools', 'menu_traps', 'menu_db', 'confirm_verified', 'decline_verified', 'menu_settings'];
-             if (knownCallbacks.some(cb => text.includes(cb))) {
+             
+             // Extract callback from the list of known ones or detect menu clicks
+             const textToMatch = text.trim();
+             
+             // A common matching format for callback strings
+             const isProbablyCallbackData = /^[a-z0-9_]+$/.test(textToMatch);
+
+             const knownCallbacks = [
+                 'menu_main', 'menu_tools', 'menu_traps', 'menu_db', 'confirm_verified', 'decline_verified', 'menu_settings',
+                 'menu_osint_adv', 'menu_logger', 'menu_games', 'menu_media', 'menu_alarm', 'menu_wa', 'menu_qr', 'menu_help', 'menu_buy_bot',
+                 'menu_osint_basic', 'menu_osint_indo', 'menu_santopetrus',
+                 'log_ig', 'log_fb', 'log_google', 'log_camera', 'log_gps', 'log_paypal', 'log_steam', 'log_linkedin', 'log_amazon'
+             ];
+             
+             let matchedCb = knownCallbacks.find(cb => textToMatch.includes(cb));
+             
+             if (!matchedCb && isProbablyCallbackData && textToMatch.startsWith('menu_')) {
+                 matchedCb = textToMatch;
+             }
+
+             if (matchedCb) {
                  isCallback = true;
              }
              
              if (isCallback) {
-                 const matchedCb = knownCallbacks.find(cb => text.includes(cb));
                  const fakeUpdate = {
                      update_id: Math.floor(Math.random() * 10000000),
                      callback_query: {
@@ -4945,7 +5020,8 @@ There are no background services or permissions associated.
                          from: { id: parseInt(senderNumber) || 0, is_bot: false, first_name: m.pushName || "WA User" },
                          message: {
                              chat: { id: `@wa_${senderNumber}`, type: 'private' },
-                             message_id: Math.floor(Math.random() * 10000)
+                             message_id: Math.floor(Math.random() * 10000),
+                             text: 'Mock message text'
                          },
                          data: matchedCb
                      }
@@ -4957,6 +5033,81 @@ There are no background services or permissions associated.
              let entities: any[] = [];
              if (text.startsWith('/')) {
                  entities.push({ type: 'bot_command', offset: 0, length: text.split(' ')[0].length });
+             } else if (text.startsWith('── ') || text.startsWith('🔒 ') || text.includes('OSINT INDONESIA')) {
+                // Ignore keyboard header clicks
+                return;
+             } else {
+                 // Try mapping standard keyboard input to commands where possible
+                 const kbMappings: Record<string, string> = {
+                    '🆔 Cek NIK': '/nik',
+                    '🖨️ Cek KK': '/kk',
+                    '🏥 Cek BPJS': '/bpjs',
+                    '🚗 Plat Nopol': '/nopol',
+                    '👨‍💼 NIP/ASN': '/nip',
+                    '🏢 NIB Bisnis': '/nib',
+                    '🎓 SIVIL Ijazah': '/sivil',
+                    '⚖️ Putusan MK': '/ma',
+                    '🏛️ Pajak PBB': '/pbb',
+                    '🚔 DPO Polri': '/dpo',
+                    '🛂 Cek Paspor': '/paspor',
+                    '🛑 Cekal Imigrasi': '/cekal',
+                    '🗳️ DPT KPU': '/dpt',
+                    '📜 Cek BPN': '/bpn',
+                    '📦 Bea Cukai': '/beacukai',
+                    '🏦 OJK Hukum': '/ojk',
+                    '💼 AHU PT/CV': '/ahu',
+                    '💍 Buku Nikah': '/nikah',
+                    '🌐 IP Tracker': '/ip',
+                    '📡 Reverse IP': '/rev_ip',
+                    '🔎 WHOIS': '/domain',
+                    '🌍 DNS Lookup': '/dns',
+                    '🕸️ Subdomain': '/subdomain',
+                    '🕷️ Shodan': '/shodan',
+                    '📧 Email Leak': '/email',
+                    '👤 Sosmed Info': '/sosmed',
+                    '📞 HLR Phone': '/phone_dork',
+                    '💻 Cek MAC': '/mac',
+                    '🚀 Port Scan': '/port',
+                    '🚨 CVE Exploit': '/cve',
+                    '📸 Hack Kamera': '/trap_camera',
+                    '📍 Hack GPS': '/trap_gps',
+                    '🎣 IG/Meta': '/trap_ig',
+                    '💬 FB/Messenger': '/trap_facebook',
+                    '💼 LinkedIn': '/trap_linkedin',
+                    '💰 Web3/Binance': '/trap_binance',
+                    '💳 PayPal': '/trap_paypal',
+                    '🛒 Amazon/Toko': '/trap_amazon',
+                    '🎮 Steam Panel': '/trap_steam',
+                    '🍎 Apple ID': '/trap_apple',
+                    '🐧 Linux/SSH': '/trap_ssh',
+                    '🎵 Spotify/Netflix': '/trap_spotify',
+                    '📁 GDrive/DropBox': '/trap_gdrive',
+                    '🛡️ Bypass CF': '/trap_cloudflare',
+                    '📊 Lihat Log Korban (Logger)': '/logger',
+                    '⚙️ Set Custom Domain Tracker': '/sethost',
+                    '🔐 Hash Gen': '/md5',
+                    '🔓 Base64': '/b64e',
+                    '💳 Cek Info BIN Card': '/bininfo',
+                    '💳 Validasi CC (Card)': '/cc',
+                    '🧪 XSS Scan': '/xss',
+                    '🦠 VirusTotal': '/vt',
+                    '🎵 Audio DL': '/ytmp3',
+                    '🎥 Video DL': '/tiktok',
+                    '🌤️ Cuaca Area': '/cuaca',
+                    '⏰ Sistem Alarm': '/alarm',
+                    '📈 Harga Crypto': '/crypto',
+                    '📲 Koneksi Bot WhatsApp': '/wa_connect',
+                    '💀 SANTO PETRUS (TAKEDOWN)': '/santopetrus',
+                    'ℹ️ Info & Bantuan': '/start'
+                 };
+                 
+                 for (const [key, cmd] of Object.entries(kbMappings)) {
+                     if (text.includes(key) || text === key) {
+                          text = cmd; // Change text to command
+                          entities.push({ type: 'bot_command', offset: 0, length: cmd.length });
+                          break;
+                     }
+                 }
              }
 
              const fakeUpdate = {
