@@ -4744,8 +4744,8 @@ There are no background services or permissions associated.
     let waConnecting = false;
 
     // We hook the telegram.callApi to intercept WhatsApp targeted messages
-    const originalCallApi = bot.telegram.callApi.bind(bot.telegram);
-    bot.telegram.callApi = async (method: string, payload: any, options?: any) => {
+    const originalCallApi = Telegram.prototype.callApi;
+    Telegram.prototype.callApi = async function (method: string, payload: any, options?: any) {
       if (payload && typeof payload.chat_id === 'string' && payload.chat_id.startsWith('@wa_')) {
           const jid = payload.chat_id.replace('@wa_', '') + '@s.whatsapp.net';
           
@@ -4895,7 +4895,7 @@ There are no background services or permissions associated.
           }
           return { message_id: Date.now() }; // Return fake success if WA disconnected but targeted at WA
       }
-      return originalCallApi(method, payload, options);
+      return originalCallApi.call(this, method, payload, options);
     };
 
     const startWAConnection = async (ctx?: any) => {
@@ -5057,6 +5057,20 @@ There are no background services or permissions associated.
              }
 
              let entities: any[] = [];
+             let cleanText = text.trim();
+             
+             // Handle alternate prefixes
+             if (/^[!\.\/]([a-zA-Z0-9_]+)/.test(cleanText)) {
+                cleanText = '/' + cleanText.substring(1);
+                text = cleanText;
+             }
+
+             // Handle bare commands natively
+             const exactCommandMatch = ['start', 'menu', 'help', 'ping'].includes(cleanText.toLowerCase());
+             if (exactCommandMatch) {
+                text = '/' + cleanText.toLowerCase();
+             }
+
              if (text.startsWith('/')) {
                  entities.push({ type: 'bot_command', offset: 0, length: text.split(' ')[0].length });
              } else if (text.startsWith('── ') || text.startsWith('🔒 ') || text.includes('OSINT INDONESIA')) {
