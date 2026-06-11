@@ -4758,10 +4758,14 @@ There are no background services or permissions associated.
                   return txt.replace(/<b>(.*?)<\/b>/g, '*$1*').replace(/<i>(.*?)<\/i>/g, '_$1_').replace(/<code>(.*?)<\/code>/g, '```$1```').replace(/<pre>(.*?)<\/pre>/s, '```$1```');
               };
 
-              const addKeyboardText = (txt: string, markup: any) => {
+              const addKeyboardText = (txt: string, rawMarkup: any) => {
+                  let markup = rawMarkup;
+                  if (typeof rawMarkup === 'string') {
+                      try { markup = JSON.parse(rawMarkup); } catch(e) {}
+                  }
                   if (markup && markup.inline_keyboard) {
                       try {
-                          const keyboard = typeof markup === 'string' ? JSON.parse(markup).inline_keyboard : markup.inline_keyboard;
+                          const keyboard = markup.inline_keyboard;
                           if (keyboard && keyboard.length > 0) {
                               txt += '\n\n╭━━━ 🤖 *MENU PILIHAN* ━━━╮\n';
                               keyboard.forEach((row: any[]) => {
@@ -4780,7 +4784,7 @@ There are no background services or permissions associated.
                   
                   if (markup && markup.keyboard) {
                       try {
-                          const keyboard = typeof markup === 'string' ? JSON.parse(markup).keyboard : markup.keyboard;
+                          const keyboard = markup.keyboard;
                           if (keyboard && keyboard.length > 0) {
                               txt += '\n\n╭━━━ 🤖 *PILIHAN CEPAT* ━━━╮\n';
                               keyboard.forEach((row: any[]) => {
@@ -4802,13 +4806,15 @@ There are no background services or permissions associated.
                   text = addKeyboardText(text, payload.reply_markup);
 
                   // Add simulate typing before sending
-                  const typingTime = Math.min(Math.max(text.length * 30, 1500), 8000) + Math.random() * 500;
+                  const typingTime = Math.min(Math.max(text.length * 30, 500), 2500) + Math.random() * 500;
                   try {
+                      console.log(`[WA-CALLAPI] Sending text to WA: ${jid}`);
                       await globalWaSock.sendPresenceUpdate('composing', jid);
                       await new Promise(r => setTimeout(r, typingTime));
                       await globalWaSock.sendPresenceUpdate('paused', jid);
-                      await globalWaSock.sendMessage(jid, { text });
-                  } catch(e) { console.error('WA Send Error:', e); }
+                      const res = await globalWaSock.sendMessage(jid, { text });
+                      console.log(`[WA-CALLAPI] Success send message`);
+                  } catch(e) { console.error('[WA-CALLAPI] WA Send Error:', e); }
                   return { message_id: Date.now() }; 
               } else if (method === 'sendPhoto') {
                   let caption = payload.caption || '';
