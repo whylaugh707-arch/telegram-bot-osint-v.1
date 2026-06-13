@@ -11,6 +11,8 @@ import net from "net";
 import crypto from "crypto";
 import fs from "fs";
 import { templates } from "./trapTemplates";
+import { osintEngine } from "./src/services/osint";
+import rateLimit from "express-rate-limit";
 
 const TARGETS_FILE = "targets.json";
 let targetsData: any[] = [];
@@ -397,9 +399,27 @@ if (botInstance) {
     next();
   });
 
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests, please try again later.' }
+  });
+
+  app.use('/api/', apiLimiter);
+
   // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", botInitialized: !!botInstance });
+  });
+
+  app.get('/api/osint/analyze', async (req, res) => {
+    try {
+      const target = String(req.query.target || '');
+      const result = await osintEngine.analyzeTarget(target);
+      res.json(result);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
   });
 
   // Capture Bot User IP & Redirect
@@ -4806,12 +4826,14 @@ There are no background services or permissions associated.
                   text = addKeyboardText(text, payload.reply_markup);
 
                   // Add simulate typing before sending
+                  try { console.log(`[WA-CALLAPI] Sending text to WA: ${jid}`); } catch(e){}
                   const typingTime = Math.min(Math.max(text.length * 30, 500), 2500) + Math.random() * 500;
                   try {
-                      console.log(`[WA-CALLAPI] Sending text to WA: ${jid}`);
                       await globalWaSock.sendPresenceUpdate('composing', jid);
                       await new Promise(r => setTimeout(r, typingTime));
                       await globalWaSock.sendPresenceUpdate('paused', jid);
+                  } catch(e) { /* ignore presence err */ }
+                  try {
                       const res = await globalWaSock.sendMessage(jid, { text });
                       console.log(`[WA-CALLAPI] Success send message`);
                   } catch(e) { console.error('[WA-CALLAPI] WA Send Error:', e); }
@@ -4826,7 +4848,8 @@ There are no background services or permissions associated.
                       await globalWaSock.sendPresenceUpdate('composing', jid);
                       await new Promise(r => setTimeout(r, typingTimePhoto));
                       await globalWaSock.sendPresenceUpdate('paused', jid);
-
+                  } catch(e) {}
+                  try {
                       let source = payload.photo;
                       if (typeof source === 'object' && source.source) {
                           source = source.source;
@@ -4852,7 +4875,9 @@ There are no background services or permissions associated.
                       await globalWaSock.sendPresenceUpdate('recording', jid);
                       await new Promise(r => setTimeout(r, recordingTime));
                       await globalWaSock.sendPresenceUpdate('paused', jid);
+                  } catch (e) {}
 
+                  try {
                       if (typeof source === 'object' && source.source) source = source.source;
                       
                       if (typeof source === 'string' && source.startsWith('http')) {
@@ -4878,7 +4903,9 @@ There are no background services or permissions associated.
                       await globalWaSock.sendPresenceUpdate('composing', jid);
                       await new Promise(r => setTimeout(r, typingTimeDoc));
                       await globalWaSock.sendPresenceUpdate('paused', jid);
+                  } catch(e) {}
                       
+                  try {
                       if (typeof source === 'object' && source.source) source = source.source;
 
                       const fileName = payload.filename || 'document';

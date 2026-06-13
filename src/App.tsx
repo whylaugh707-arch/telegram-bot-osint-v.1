@@ -11,10 +11,12 @@ import QrGenerator from './components/QrGenerator';
 import SantoPetrus from './components/SantoPetrus';
 import MikkoApk from './components/MikkoApk';
 
-type Tab = 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'santopetrus' | 'mikkoapk';
+import IntelligencePlatform from './components/IntelligencePlatform';
+
+type Tab = 'intelligence' | 'social' | 'ip' | 'domain' | 'email' | 'logger' | 'indo' | 'dork' | 'qr' | 'santopetrus' | 'mikkoapk';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('social');
+  const [activeTab, setActiveTab] = useState<Tab>('intelligence');
 
   return (
     <div className="min-h-screen bg-[#020205] text-[#38bdf8] font-display selection:bg-[#38bdf8]/30 selection:text-black">
@@ -58,6 +60,12 @@ export default function App() {
           <div className="mb-6 px-4 py-2 bg-[#38bdf8]/10 border-l-4 border-[#38bdf8] text-[11px] font-bold tracking-tighter">
             Core Modules
           </div>
+          <NavButton 
+            active={activeTab === 'intelligence'} 
+            onClick={() => setActiveTab('intelligence')} 
+            icon={<Network className="w-4 h-4" />} 
+            label="Intelligence Engine" 
+          />
           <NavButton 
             active={activeTab === 'social'} 
             onClick={() => setActiveTab('social')} 
@@ -161,6 +169,7 @@ export default function App() {
             </div>
 
             <div className="p-0 h-full overflow-hidden">
+              {activeTab === 'intelligence' && <IntelligencePlatform />}
               {activeTab === 'social' && <SocialScanner />}
               {activeTab === 'indo' && <IndoOsint />}
               {activeTab === 'ip' && <IpTools />}
