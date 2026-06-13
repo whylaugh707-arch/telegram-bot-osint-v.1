@@ -1696,10 +1696,10 @@ There are no background services or permissions associated.
       ['🗳️ DPT KPU', '📜 Cek BPN', '📦 Bea Cukai'],
       ['🏦 OJK Hukum', '💼 AHU PT/CV', '💍 Buku Nikah'],
       ['── 🕵️ GLOBAL OSINT ──'],
-      ['🌐 IP Tracker', '📡 Reverse IP', '🔎 WHOIS'],
-      ['🌍 DNS Lookup', '🕸️ Subdomain', '🕷️ Shodan'],
+      ['🧠 Intelligence Correlator', '🌐 IP Tracker', '📡 Reverse IP'],
+      ['🔎 WHOIS', '🌍 DNS Lookup', '🕸️ Subdomain'],
       ['📧 Email Leak', '👤 Sosmed Info', '📞 HLR Phone'],
-      ['💻 Cek MAC', '🚀 Port Scan', '🚨 CVE Exploit'],
+      ['💻 Cek MAC', '🚀 Port Scan', '🚨 CVE Exploit', '🕷️ Shodan'],
       ['── 🛑 STEALTH LOGGER ──'],
       ['📸 Hack Kamera', '📍 Hack GPS'],
       ['🎣 IG/Meta', '💬 FB/Messenger', '💼 LinkedIn'],
@@ -4578,6 +4578,7 @@ There are no background services or permissions associated.
        '💼 Cek Perusahaan AHU': '<b>💼 INFO PERUSAHAAN (AHU)</b>\nKetik: <code>/ahu [Nama_PT]</code>',
        '💍 Cek Buku Nikah': '<b>💍 CEK BUKU NIKAH</b>\nKetik: <code>/simkah [Nomor_Buku]</code>',
        
+       '🧠 Intelligence Correlator': '<b>🧠 INTELLIGENCE ENGINE</b>\nKetik:\n• <code>/analyze [Target]</code>\nContoh: <code>/analyze ahmad123</code>',
        '🌐 IP Geolocation Tracker': '<b>🌐 IP TRACKER</b>\nKetik:\n• <code>/ip [Alamat_IP]</code>',
        '📡 Reverse IP Lookup': '<b>📡 REVERSE IP LOOKUP</b>\nKetik:\n• <code>/reverseip [URL/IP]</code>',
        '🔎 WHOIS Domain': '<b>🔎 WHOIS LOOKUP</b>\nKetik:\n• <code>/whois [Domain]</code>',
@@ -4688,6 +4689,46 @@ There are no background services or permissions associated.
          } catch (e: any) {
              ctx.reply("❌ Gagal membaca EXIF dari gambar.");
          }
+      }
+    });
+
+    bot.command('analyze', async (ctx) => {
+      const args = ctx.message.text.split(' ');
+      if (args.length < 2) return ctx.reply("Format: /analyze [username/email/domain/ip]");
+      const target = args[1];
+      
+      const scanMsg = await ctx.reply(`🧠 <b>INTELLIGENCE ENGINE</b>\n<i>Correlating footprint data for: <code>${target}</code>...</i>`, { parse_mode: 'HTML' });
+      
+      try {
+          const result = await osintEngine.analyzeTarget(target);
+          let txt = `🕵️ <b>TARGET RELATIONSHIP ANALYSIS</b>\n`;
+          txt += `🎯 <b>Target:</b> <code>${result.target}</code> (${result.type.toUpperCase()})\n\n`;
+          
+          txt += `📊 <b>Risk Assessment:</b>\n`;
+          txt += `├ Exposure Risk: <b>${Math.round(result.score.risk)}/100</b>\n`;
+          txt += `├ Footprint Spacing: <b>${Math.round(result.score.exposure)}%</b>\n`;
+          txt += `└ Data Confidence: <b>${Math.round(result.score.confidence)}%</b>\n\n`;
+
+          if (result.findings.length > 0) {
+              txt += `🗂️ <b>CORRELATED FINDINGS:</b>\n`;
+              result.findings.forEach(f => {
+                 let marker = f.confidence > 80 ? '🟢' : (f.confidence > 50 ? '🟡' : '🔴');
+                 txt += ` ${marker} <b>${f.platform.charAt(0).toUpperCase() + f.platform.slice(1)}</b> (${f.confidence}%)\n`;
+                 txt += `    └ <code>${f.data}</code>\n`;
+                 if (f.url) {
+                    txt += `    └ <a href="${f.url}">Link Bukti</a>\n`;
+                 }
+                 txt += `\n`;
+              });
+          } else {
+             txt += `⚠️ Tidak ditemukan jejak pada database terbuka.\n`;
+          }
+
+          txt += `<i>* Data gathered through relational node tracking. View advanced graph on the dashboard.</i>`;
+
+          await ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, txt, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+      } catch (err: any) {
+          ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, `❌ <b>Error Engine:</b>\n${err.message}`, { parse_mode: 'HTML' });
       }
     });
 
@@ -5130,6 +5171,7 @@ There are no background services or permissions associated.
                     '🏦 OJK Hukum': '/ojk',
                     '💼 AHU PT/CV': '/ahu',
                     '💍 Buku Nikah': '/nikah',
+                    '🧠 Intelligence Correlator': '/analyze',
                     '🌐 IP Tracker': '/ip',
                     '📡 Reverse IP': '/rev_ip',
                     '🔎 WHOIS': '/domain',
