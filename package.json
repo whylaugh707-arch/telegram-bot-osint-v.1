@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "postinstall": "node patch-baileys.cjs",
-    "build": "node patch-baileys.cjs && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node obfuscate-build.cjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js dist/server.cjs",
@@ -20,6 +19,7 @@
     "@whiskeysockets/baileys": "^7.0.0-rc11",
     "adm-zip": "^0.5.17",
     "axios": "^1.16.1",
+    "better-sqlite3": "^12.10.1",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
@@ -44,10 +44,12 @@
     "vite": "^6.2.3",
     "whatsapp-rust-bridge": "^0.5.4",
     "youtube-dl-exec": "^3.1.6",
-    "yt-search": "^2.13.1"
+    "yt-search": "^2.13.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/d3": "^7.4.3",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",

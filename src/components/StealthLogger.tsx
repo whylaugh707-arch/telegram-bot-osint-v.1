@@ -48,16 +48,16 @@ export default function StealthLogger() {
     <div className="flex flex-col h-full bg-slate-950 text-[#38bdf8]">
       <div className="p-6 border-b border-[#38bdf8]/20 bg-[#38bdf8]/5">
         <h2 className="text-xl font-bold flex items-center mb-2 tracking-tighter">
-          <ShieldAlert className="w-5 h-5 mr-3 text-[#38bdf8]" /> STEALTH_LOGGER_DEPLOY
+          <ShieldAlert className="w-5 h-5 mr-3 text-[#38bdf8]" /> TRAP LINK GENERATOR
         </h2>
-        <p className="text-xs text-[#38bdf8]/60 uppercase tracking-widest">Generate persistent tracking nodes with advanced browser exploitation markers.</p>
+        <p className="text-xs text-[#38bdf8]/60 uppercase tracking-widest">Create custom links to log interactions and metadata.</p>
       </div>
 
       <div className="p-6 overflow-y-auto space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Configuration */}
           <div className="space-y-6">
-            <h3 className="font-display text-[10px] font-bold text-[#38bdf8]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#38bdf8]/10 pb-2">NODE_CONFIG</h3>
+            <h3 className="font-display text-[10px] font-bold text-[#38bdf8]/40 uppercase tracking-[0.3em] mb-4 border-b border-[#38bdf8]/10 pb-2">CONFIGURATION</h3>
             
             <div className="space-y-4">
               <div>
@@ -90,7 +90,7 @@ export default function StealthLogger() {
                 className="w-full py-4 bg-[#38bdf8] hover:bg-[#38bdf8]/80 text-black font-bold text-sm uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center space-x-3 shadow-[0_0_20px_rgba(0,255,0,0.1)]"
               >
                 <Zap className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>{loading ? 'DEPLOYING_NODE...' : 'DEPLOY_TRACER_NODE'}</span>
+                <span>{loading ? 'GENERATING...' : 'GENERATE_LINK'}</span>
               </button>
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function StealthLogger() {
             {generatedLink ? (
               <div className="space-y-4 animate-in zoom-in-95 duration-300">
                 <div className="p-4 bg-[#38bdf8]/10 border border-[#38bdf8]/40 rounded relative group">
-                  <div className="text-[9px] font-bold text-[#38bdf8] mb-2 tracking-widest uppercase">UNIQUE_UPLINK_URL:</div>
+                  <div className="text-[9px] font-bold text-[#38bdf8] mb-2 tracking-widest uppercase">GENERATED_URL:</div>
                   <div className="font-display text-xs break-all pr-12 text-white font-bold select-all">{generatedLink}</div>
                   <button 
                     onClick={copyToClipboard}
@@ -133,7 +133,7 @@ export default function StealthLogger() {
             ) : (
               <div className="p-8 border border-dashed border-[#38bdf8]/10 flex flex-col items-center justify-center text-center opacity-30">
                 <Link className="w-8 h-8 mb-4 animate-pulse" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Link Generation Parametric Input</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Link Generation Parameter Input</span>
               </div>
             )}
 
@@ -141,13 +141,13 @@ export default function StealthLogger() {
               <div className="flex items-start space-x-3">
                 <Info className="w-4 h-4 text-[#38bdf8]/40 mt-0.5 shrink-0" />
                 <p className="text-[#38bdf8]/40 uppercase tracking-tight font-bold">
-                  All captured data (GPS, Hardware, Audio-Sig, Fonts, IPs) will be streamed directly to your configured Telegram Bot.
+                  All captured data (IPs, Basic Metadata) will be logged here and to your configured Telegram Bot.
                 </p>
               </div>
               <div className="flex items-start space-x-3">
                 <Info className="w-4 h-4 text-[#38bdf8]/40 mt-0.5 shrink-0" />
                 <p className="text-[#38bdf8]/40 uppercase tracking-tight font-bold">
-                  Extreme templates (e.g. Pegasus) require additional user interaction for ring-0 bus access.
+                  Certain templates require additional user browser permissions to function.
                 </p>
               </div>
             </div>
