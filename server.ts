@@ -1678,14 +1678,6 @@ There are no background services or permissions associated.
     const getStartMsg = () => `<b>${botDescription}</b>\n\n` +
                          `<i>Silakan pilih menu di bawah ini:</i>`;
     
-    const mainInlineKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_adv'), Markup.button.callback('🎣 Advanced Stealth Logger', 'menu_logger')],
-      [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
-      [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
-      [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
-      [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
-    ]);
-
     const mainReplyKeyboard = Markup.keyboard([
       ['🔒 TRIHEXA OSINT TERMINAL 🔒'],
       ['── 🇮🇩 OSINT INDONESIA ──'],
@@ -1815,7 +1807,7 @@ There are no background services or permissions associated.
         await ctx.reply("🔄 <b>Inisialisasi Terminal...</b>\nUpdate UI Keyboard berhasil dimuat.", { parse_mode: 'HTML', ...mainReplyKeyboard });
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = `${getStartMsg()}\n<i>Session Active for: ${safeName}</i>`;
-        await ctx.reply(txt, { parse_mode: 'HTML', ...mainInlineKeyboard });
+        await ctx.reply(txt, { parse_mode: 'HTML' });
     });
 
     bot.action('menu_main', (ctx) => {
@@ -1823,7 +1815,7 @@ There are no background services or permissions associated.
       const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
       const txt = `${getStartMsg()}\n` +
         `<i>Session Active for: ${safeName}</i>`;
-      ctx.editMessageText(txt, { parse_mode: 'HTML', ...mainInlineKeyboard }).catch(() => {});
+      ctx.editMessageText(txt, { parse_mode: 'HTML' }).catch(() => {});
     });
 
     bot.action('menu_osint_basic', (ctx) => {
