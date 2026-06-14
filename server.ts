@@ -1580,7 +1580,7 @@ There are no background services or permissions associated.
         const startMsgText = getStartMsg(safeName);
         
         try {
-            await ctx.replyWithPhoto('https://i.pinimg.com/736x/8f/3e/68/8f3e680a6b47c0ac75b7501a3cf8828f.jpg', {
+            await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: startMsgText,
                 parse_mode: 'HTML',
                 ...mainReplyKeyboard
@@ -1606,7 +1606,7 @@ There are no background services or permissions associated.
                `📜 Wajib mematuhi peraturan perundang-undangan` +
                `</blockquote>\n\n` +
                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-               `© BLUEBOT - Hak Cipta Dilindungi`;
+               `© JeeMikko - Hak Cipta Dilindungi`;
     };
     
     const mainReplyKeyboard = Markup.keyboard([
@@ -1789,7 +1789,7 @@ There are no background services or permissions associated.
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = getStartMsg(safeName);
         try {
-            await ctx.replyWithPhoto('https://i.pinimg.com/736x/8f/3e/68/8f3e680a6b47c0ac75b7501a3cf8828f.jpg', {
+            await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: txt,
                 parse_mode: 'HTML',
                 ...mainReplyKeyboard
@@ -4540,8 +4540,8 @@ There are no background services or permissions associated.
        '── 🧩 UTILITAS & MEDIA ──': '<b>🧩 UTILITAS & MEDIA</b>\nPilih alat hiburan dan utilitas dari tombol di bawah.',
        '── 💀 PRO FITUR ──': '<b>💀 VIP & PRO FITUR</b>\nAkses layanan khusus dan eksperimental.',
 
-       '🆔 Cek NIK [TRIAL]': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
        '🖨️ Cek Kartu Keluarga [TRIAL]': '<b>🖨️ CEK KARTU KELUARGA</b>\nKetik: <code>/kk [Nomor_KK]</code>',
+       '🆔 Cek NIK [TRIAL]': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
        '🔍 Cek Data Bocor': '<b>🔍 CEK DATA BOCOR</b>\nKetik: <code>/leak [Email/NoHP]</code>\n<i>Fitur Beta</i>',
 
        '🚗 Cek Plat Nopol': '<b>🚗 CEK PLAT KENDARAAN</b>\nKetik: <code>/plat [Nomor_Plat]</code>\nContoh: <code>/plat B1234XYZ</code>',
