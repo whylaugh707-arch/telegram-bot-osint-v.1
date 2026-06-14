@@ -1579,21 +1579,14 @@ There are no background services or permissions associated.
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const startMsgText = getStartMsg(safeName);
         
-        const msgOptions = {
-            parse_mode: 'HTML' as const,
-            reply_markup: {
-                remove_keyboard: true,
-                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
-            }
-        };
-
         try {
             await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: startMsgText,
-                ...msgOptions
+                parse_mode: 'HTML',
+                ...mainReplyKeyboard
             });
         } catch (e) {
-             ctx.reply(startMsgText, msgOptions);
+             ctx.reply(startMsgText, {parse_mode: 'HTML', ...mainReplyKeyboard});
         }
     });
 
@@ -1719,11 +1712,15 @@ There are no background services or permissions associated.
     });
 
     bot.start(async (ctx) => {
+        // Hapus custom keyboard lama yang nyangkut di client app
+        await ctx.reply("🔄 Menyegarkan sesi...", { reply_markup: { remove_keyboard: true } }).then((m) => {
+             ctx.deleteMessage(m.message_id).catch(() => {});
+        }).catch(() => {});
+
         if (!agreementUsers.has(ctx.from?.id)) {
             return ctx.reply("⚠️ <b>VERIFIKASI SISTEM</b> ⚠️\n\nUntuk mengakses bot ini, Anda harus menyetujui syarat dan ketentuan penggunaan.\n\nLanjutkan?", {
                 parse_mode: 'HTML',
                 reply_markup: {
-                    remove_keyboard: true,
                     inline_keyboard: [
                         [{ text: "✅ Saya Setuju & Gabung", callback_data: "confirm_verified" }]
                     ]
@@ -1734,21 +1731,14 @@ There are no background services or permissions associated.
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = getStartMsg(safeName);
         
-        const msgOptions = {
-            parse_mode: 'HTML' as const,
-            reply_markup: {
-                remove_keyboard: true,
-                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
-            }
-        };
-
         try {
             await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
                 caption: txt,
-                ...msgOptions
+                parse_mode: 'HTML',
+                ...mainReplyKeyboard
             });
         } catch (e) {
-            await ctx.reply(txt, msgOptions);
+            await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard });
         }
     });
 
@@ -1756,21 +1746,15 @@ There are no background services or permissions associated.
       ctx.answerCbQuery().catch(() => {});
       const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
       const txt = getStartMsg(safeName);
-      const msgOptions = {
-            parse_mode: 'HTML' as const,
-            reply_markup: {
-                remove_keyboard: true,
-                inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard
-            }
-        };
       try {
           await ctx.deleteMessage().catch(() => {});
           await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
               caption: txt,
-              ...msgOptions
+              parse_mode: 'HTML',
+              ...mainReplyKeyboard
           });
       } catch (e) {
-          ctx.reply(txt, msgOptions).catch(() => {});
+          ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(() => {});
       }
     });
 
@@ -4587,7 +4571,9 @@ There are no background services or permissions associated.
 
       // Fallback for old keyboard buttons or UI headers
       if (typeof text === 'string' && (text.includes('──') || text.includes('Kamera') || text.includes('Tracker') || text.includes('Phishing') || text.includes('Cek '))) {
-         return ctx.reply("🔄 <b>Sistem Diperbarui</b>\n\nUntuk memuat ulang opsi menu yang sudah lama Anda gunakan atau membuka UI baru dengan inline button. Kami merubah tata letaknya namun masih dapat diakses. Menu utama di bawah.", { parse_mode: 'HTML', ...mainReplyKeyboard, reply_markup: { remove_keyboard: true, inline_keyboard: mainReplyKeyboard.reply_markup.inline_keyboard } });
+         const replyKeyboardPayload = { ...mainReplyKeyboard };
+         // The root issue was setting 'remove_keyboard' inline with inline_keyboard. We need to clear it first or let the start menu handle it.
+         return ctx.reply("🔄 <b>Sistem Diperbarui</b>\n\nUntuk memuat ulang opsi menu yang sudah lama Anda gunakan atau membuka UI baru dengan inline button. Kami merubah tata letaknya namun masih dapat diakses. Ketik <b>/start</b> untuk memuat menu utama UI baru.", { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } });
       }
 
       return next();
