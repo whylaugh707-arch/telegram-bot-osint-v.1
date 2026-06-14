@@ -1483,6 +1483,9 @@ There are no background services or permissions associated.
             // Skip all checks for owner
             if (userId === ADMIN_ID) return next();
 
+            // Ignore middleware check on start so it can bypass if agreement checks inside start instead
+            if (text.trim() === '/start') return next();
+
             // Check if user has accepted agreement
             if (!agreementUsers.has(userId)) {
                 // Determine reliable host
@@ -1499,7 +1502,7 @@ There are no background services or permissions associated.
                 
                 const aggMsg = `⚠️ <b>[ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ]</b> ⚠️\n` +
                                `━━━━━━━━━━━━━━━━━━━━\n\n` +
-                               `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ꜰʀᴀᴍᴇᴡᴏʀᴋ ᴛʀɪʜᴇxᴀ666. ᴜɴᴛᴜᴋ ᴍᴇʟᴀɴᴊᴜᴛᴋᴀɴ, ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇɴʏᴇᴛᴜᴊᴜɪ ᴋᴇᴛᴇɴᴛᴜᴀɴ ʙᴇʀɪᴋᴜᴛ:\n\n` +
+                               `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ ᴅɪ ꜰʀᴀᴍᴇᴡᴏʀᴋ ʙʟᴜᴇʙᴏᴛ ᴏꜱɪɴᴛ ᴛᴏᴏʟꜱ. ᴜɴᴛᴜᴋ ᴍᴇʟᴀɴᴊᴜᴛᴋᴀɴ, ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇɴʏᴇᴛᴜᴊᴜɪ ᴋᴇᴛᴇɴᴛᴜᴀɴ ʙᴇʀɪᴋᴜᴛ:\n\n` +
                                `1. ʙᴏᴛ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴛᴜᴊᴜᴀɴ ᴘᴇɴᴇʟɪᴛɪᴀɴ ꜱᴇᴄᴜʀɪᴛʏ.\n` +
                                `2. ꜱᴇʟɪᴛᴜʀᴜʜ ᴀᴋᴛɪᴠɪᴛᴀꜱ ᴀɴᴅᴀ ᴅɪᴘᴀɴᴛᴀᴜ ᴏʟᴇʜ ꜱʏꜱᴛᴇᴍ.\n` +
                                `3. ᴀɴᴅᴀ ᴡᴀᴊɪʙ ᴍᴇʟɪᴠᴇʀɪꜰɪᴋᴀꜱɪ ɪᴅᴇɴᴛɪᴛᴀꜱ ᴅᴇɴɢᴀɴ ᴍᴇɴɢᴋʟɪᴋ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ.\n\n` +
@@ -1567,15 +1570,24 @@ There are no background services or permissions associated.
         }
     });
 
-    bot.action('confirm_verified', (ctx) => {
+    bot.action('confirm_verified', async (ctx) => {
         if (!ctx.from) return;
         agreementUsers.add(ctx.from.id);
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
-        ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
+        // ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const startMsgText = getStartMsg(safeName);
-        ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainReplyKeyboard });
+        
+        try {
+            await ctx.replyWithPhoto('https://i.pinimg.com/736x/8f/3e/68/8f3e680a6b47c0ac75b7501a3cf8828f.jpg', {
+                caption: startMsgText,
+                parse_mode: 'HTML',
+                ...mainReplyKeyboard
+            });
+        } catch (e) {
+             ctx.reply(startMsgText, { parse_mode: 'HTML', ...mainReplyKeyboard });
+        }
     });
 
     const getStartMsg = (name: string) => {
@@ -1594,15 +1606,15 @@ There are no background services or permissions associated.
                `📜 Wajib mematuhi peraturan perundang-undangan` +
                `</blockquote>\n\n` +
                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-               `© TRIHEXA OSINT - Hak Cipta Dilindungi`;
+               `© BLUEBOT - Hak Cipta Dilindungi`;
     };
     
     const mainReplyKeyboard = Markup.keyboard([
       ['🔒 AKSES STANDAR 🔒'],
-      ['── 🇮🇩 OSINT INDONESIA ──'],
-      ['🆔 Cek NIK'],
-      ['🖨️ Cek KK'],
-      ['🏥 Cek BPJS'],
+      ['── 🔍 LAYANAN PENCARIAN DATA ──'],
+      ['🖨️ Cek Kartu Keluarga [TRIAL]'],
+      ['🆔 Cek NIK [TRIAL]'],
+      ['🔍 Cek Data Bocor'],
       ['🚗 Cek Plat Nopol'],
       ['👨‍💼 Cek NIP/ASN'],
       ['🏢 Cek NIB Bisnis'],
@@ -1763,10 +1775,28 @@ There are no background services or permissions associated.
     });
 
     bot.start(async (ctx) => {
-        await ctx.reply("🔄 <b>Inisialisasi Terminal...</b>\nUpdate UI Keyboard berhasil dimuat.", { parse_mode: 'HTML', ...mainReplyKeyboard });
+        if (!agreementUsers.has(ctx.from?.id)) {
+            return ctx.reply("⚠️ <b>VERIFIKASI SISTEM</b> ⚠️\n\nUntuk mengakses bot ini, Anda harus menyetujui syarat dan ketentuan penggunaan.\n\nLanjutkan?", {
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "✅ Saya Setuju & Gabung", callback_data: "confirm_verified" }]
+                    ]
+                }
+            });
+        }
+        
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = getStartMsg(safeName);
-        await ctx.reply(txt, { parse_mode: 'HTML' });
+        try {
+            await ctx.replyWithPhoto('https://i.pinimg.com/736x/8f/3e/68/8f3e680a6b47c0ac75b7501a3cf8828f.jpg', {
+                caption: txt,
+                parse_mode: 'HTML',
+                ...mainReplyKeyboard
+            });
+        } catch (e) {
+            await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard });
+        }
     });
 
     bot.action('menu_main', (ctx) => {
@@ -4503,15 +4533,17 @@ There are no background services or permissions associated.
     // 🗂️ BUTTON REPLIES MAPPING
     const buttonMap: Record<string, string> = {
        '🔒 AKSES STANDAR 🔒': '<b>🔒 AKSES STANDAR TERMINAL</b>\nSistem aktif. Pilih menu pada keyboard.',
-       '── 🇮🇩 OSINT INDONESIA ──': '<b>🇮🇩 PUSAT KONTROL OSINT INDONESIA</b>\nPilih layanan pencarian data dari tombol di bawah.',
+       '── 🔍 LAYANAN PENCARIAN DATA ──': '<b>🇮🇩 PUSAT KONTROL OSINT INDONESIA</b>\nPilih layanan pencarian data dari tombol di bawah.',
        '── 🕵️ GLOBAL OSINT ──': '<b>🕵️ GLOBAL OSINT & TRACKING</b>\nPilih layanan pelacakan digital dari tombol di bawah.',
        '── 🛑 TRAP & LOGGER ──': '<b>🛑 TRAP LOGGER</b>\nPilih modul logging dari tombol di bawah.',
        '── 🛠️ ADVANCED CYBER TOOLS ──': '<b>🛠️ ADVANCED CYBER TOOLS</b>\nPilih alat siber tingkat lanjut dari tombol di bawah.',
        '── 🧩 UTILITAS & MEDIA ──': '<b>🧩 UTILITAS & MEDIA</b>\nPilih alat hiburan dan utilitas dari tombol di bawah.',
        '── 💀 PRO FITUR ──': '<b>💀 VIP & PRO FITUR</b>\nAkses layanan khusus dan eksperimental.',
 
-       '🆔 Cek NIK': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
-       '🖨️ Cek KK': '<b>🖨️ CEK KARTU KELUARGA</b>\nKetik: <code>/kk [Nomor_KK]</code>',
+       '🆔 Cek NIK [TRIAL]': '<b>🆔 CEK NIK</b>\nKetik: <code>/nik [Nomor_NIK]</code>',
+       '🖨️ Cek Kartu Keluarga [TRIAL]': '<b>🖨️ CEK KARTU KELUARGA</b>\nKetik: <code>/kk [Nomor_KK]</code>',
+       '🔍 Cek Data Bocor': '<b>🔍 CEK DATA BOCOR</b>\nKetik: <code>/leak [Email/NoHP]</code>\n<i>Fitur Beta</i>',
+
        '🚗 Cek Plat Nopol': '<b>🚗 CEK PLAT KENDARAAN</b>\nKetik: <code>/plat [Nomor_Plat]</code>\nContoh: <code>/plat B1234XYZ</code>',
        '🏥 Cek BPJS': '<b>🏥 CEK BPJS</b>\nKetik: <code>/bpjs [Nomor_BPJS]</code>',
        '👨‍💼 Cek NIP/ASN': '<b>👨‍💼 CEK PEGAWAI ASN/NIP</b>\nKetik: <code>/nip [Nomor_NIP]</code>',
@@ -4646,7 +4678,7 @@ There are no background services or permissions associated.
     bot.command('analyze', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /analyze [username/email/domain/ip]");
-      const target = args[1];
+      const target = args.slice(1).join(' ');
       
       const scanMsg = await ctx.reply(`🧠 <b>INTELLIGENCE ENGINE</b>\n<i>Correlating footprint data for: <code>${target}</code>...</i>`, { parse_mode: 'HTML' });
       
@@ -4666,8 +4698,17 @@ There are no background services or permissions associated.
                  let marker = f.verified ? '🟢 (VERIFIED)' : (f.confidence > 50 ? '🟡' : '🔴');
                  txt += ` ${marker} <b>${f.platform.charAt(0).toUpperCase() + f.platform.slice(1)}</b>\n`;
                  // Since data might be an object now, strigify it beautifully
-                 const dataStr = typeof f.data === 'object' ? JSON.stringify(f.data).substring(0, 100) : String(f.data);
-                 txt += `    ├ Data: <code>${dataStr}</code>\n`;
+                 let dataStr = "";
+                 if (typeof f.data === 'object') {
+                    for (const [key, value] of Object.entries(f.data)) {
+                        if (value !== null && value !== undefined) {
+                            dataStr += `\n       • ${key}: <code>${value}</code>`;
+                        }
+                    }
+                 } else {
+                     dataStr = String(f.data);
+                 }
+                 txt += `    ├ Data: ${dataStr}\n`;
                  txt += `    ├ Evidence: <i>${f.evidence}</i>\n`;
                  txt += `    └ Timestamp: <code>${f.timestamp}</code>\n`;
                  if (f.url) {

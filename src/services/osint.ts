@@ -46,19 +46,39 @@ export class OsintEngine {
         if (type === 'username') {
             // Check Github Real API
             try {
-                const ghRes = await axios.get(`https://api.github.com/users/${target}`, { validateStatus: () => true, timeout: 5000 });
-                if (ghRes.status === 200 && ghRes.data.login) {
-                    findings.push({ 
-                        platform: 'GitHub', 
-                        url: ghRes.data.html_url, 
-                        data: { name: ghRes.data.name, bio: ghRes.data.bio, public_repos: ghRes.data.public_repos },
-                        evidence: `HTTP 200 OK from api.github.com/users/${target}`,
-                        confidence: 100,
-                        verified: true,
-                        timestamp 
-                    });
-                    risk += 15;
-                    confidenceAgg += 100;
+                const queryStr = encodeURIComponent(target);
+                const ghRes = await axios.get(`https://api.github.com/search/users?q=${queryStr}`, { validateStatus: () => true, timeout: 5000 });
+                if (ghRes.status === 200 && ghRes.data.items && ghRes.data.items.length > 0) {
+                    const firstMatch = ghRes.data.items[0];
+                    const detailRes = await axios.get(firstMatch.url);
+                    if(detailRes.status === 200) {
+                          findings.push({ 
+                            platform: 'GitHub (Search Match)', 
+                            url: detailRes.data.html_url, 
+                            data: { name: detailRes.data.name, login: detailRes.data.login, bio: detailRes.data.bio, public_repos: detailRes.data.public_repos },
+                            evidence: `Search API match for '${target}' resolved to user ${firstMatch.login}`,
+                            confidence: 90,
+                            verified: true,
+                            timestamp 
+                        });
+                        risk += 15;
+                        confidenceAgg += 90;
+                    }
+                } else {
+                     const directGh = await axios.get(`https://api.github.com/users/${encodeURIComponent(target.replace(/\s/g, ''))}`, { validateStatus: () => true, timeout: 5000 });
+                     if (directGh.status === 200 && directGh.data.login) {
+                        findings.push({ 
+                            platform: 'GitHub (Direct Match)', 
+                            url: directGh.data.html_url, 
+                            data: { name: directGh.data.name, login: directGh.data.login, bio: directGh.data.bio, public_repos: directGh.data.public_repos },
+                            evidence: `Direct HTTP 200 OK from api.github.com/users/${encodeURIComponent(target.replace(/\s/g, ''))}`,
+                            confidence: 100,
+                            verified: true,
+                            timestamp 
+                        });
+                        risk += 15;
+                        confidenceAgg += 100;
+                     }
                 }
             } catch (e) {}
 
