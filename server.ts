@@ -1591,22 +1591,7 @@ There are no background services or permissions associated.
     });
 
     const getStartMsg = (name: string) => {
-        const hour = new Date().getHours();
-        let greeting = 'malam';
-        if (hour >= 4 && hour < 11) greeting = 'pagi';
-        else if (hour >= 11 && hour < 15) greeting = 'siang';
-        else if (hour >= 15 && hour < 18) greeting = 'sore';
-
-        return `👋 Selamat ${greeting}, <b>${name}</b>! 🚀\n\n` +
-               `⚠️ <b>P E N G G U N A A N  B O T</b> ⚠️\n` +
-               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-               `<blockquote>` +
-               `🔒 Larangan keras penyalahgunaan sistem\n` +
-               `⚖️ Admin tidak bertanggung jawab atas kerugian\n` +
-               `📜 Wajib mematuhi peraturan perundang-undangan` +
-               `</blockquote>\n\n` +
-               `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-               `© JeeMikko - Hak Cipta Dilindungi`;
+        return `HALO PRIA-PRIA YANG TERSAKITI SELAMAT DATANG DI TERMINAL 🐉 TRIHEXA 🐉\n\nBOT INI MENYEDIAKAN BANYAK FITUR FITUR ADVANCE SECARA GRATIS, SELAMA MASIH ADA OTAK DAN LOGIKA DIBALIKNYA MOHON GUNAKAN DENGAN BIJAK.\n\n"KAMI, TRIHEXA, BUKAN KAPITALIS. KARENA INI GRATIS MOHON GUNAKAN DENGAN OTAK YANG BENAR"\n\nSALAM HORMAT PEMBUAT SAYA\n- JEEMIKKO\n\n<i>Silakan pilih menu di bawah ini:</i>\n<i>Session Active for: ${name}</i>`;
     };
     
     const mainReplyKeyboard = Markup.inlineKeyboard([
@@ -1712,12 +1697,10 @@ There are no background services or permissions associated.
     });
 
     bot.start(async (ctx) => {
-        // Hapus custom keyboard lama yang nyangkut di client app
-        await ctx.reply("🔄 Menyegarkan sesi...", { reply_markup: { remove_keyboard: true } }).then((m) => {
-             ctx.deleteMessage(m.message_id).catch(() => {});
-        }).catch(() => {});
+        console.log(`[BOT] /start called by ${ctx.from?.id}`);
 
-        if (!agreementUsers.has(ctx.from?.id)) {
+        if (ctx.from && !agreementUsers.has(ctx.from.id)) {
+            console.log(`[BOT] User ${ctx.from.id} needs agreement`);
             return ctx.reply("⚠️ <b>VERIFIKASI SISTEM</b> ⚠️\n\nUntuk mengakses bot ini, Anda harus menyetujui syarat dan ketentuan penggunaan.\n\nLanjutkan?", {
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -1725,9 +1708,10 @@ There are no background services or permissions associated.
                         [{ text: "✅ Saya Setuju & Gabung", callback_data: "confirm_verified" }]
                     ]
                 }
-            });
+            }).catch(e => console.error(`[BOT] Error sending agreement:`, e));
         }
         
+        console.log(`[BOT] User ${ctx.from?.id} has agreement, sending main menu`);
         const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
         const txt = getStartMsg(safeName);
         
@@ -1738,7 +1722,8 @@ There are no background services or permissions associated.
                 ...mainReplyKeyboard
             });
         } catch (e) {
-            await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard });
+            console.error(`[BOT] Error sending main menu photo:`, e);
+            await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(err => console.error(`[BOT] Error sending main menu text:`, err));
         }
     });
 
