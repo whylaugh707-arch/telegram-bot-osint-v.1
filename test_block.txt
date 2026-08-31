@@ -1,0 +1,11 @@
+                }
+            } catch(e){}
+            return res;
+        };
+
+        return next();
+
+}
+  const webhookSecret = token ? token.split(':')[0] : null;
+  const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
+  let agreementUsers = new Set<number>();

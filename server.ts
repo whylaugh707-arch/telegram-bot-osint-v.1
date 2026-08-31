@@ -358,6 +358,7 @@ if (botInstance) {
         };
 
         return next();
+
     });
 }
   const webhookSecret = token ? token.split(':')[0] : null;
@@ -402,6 +403,7 @@ if (botInstance) {
         console.error("Bot Handle Update Error:", err);
         if (!res.headersSent) res.sendStatus(500);
       });
+
     });
     console.log(`[${new Date().toISOString()}] Bot Webhook Route Registered: ${webhookPath}`);
   }
@@ -1331,6 +1333,7 @@ There are no background services or permissions associated.
         return next();
       }
       vite.middlewares(req, res, next);
+
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
@@ -1348,6 +1351,7 @@ There are no background services or permissions associated.
         // Avoid returning 404 for the root or generic paths to satisfy health checks
         res.status(200).send('<h2>System Ready</h2><p>Terminal UI is active. Please check the bot for links.</p>');
       }
+
     });
   }
 
@@ -1466,8 +1470,9 @@ There are no background services or permissions associated.
             console.error("Error in logging middleware:", e);
         }
         return next();
-    });
 
+
+    });
     bot.use(async (ctx, next) => {
         try {
             if (!ctx.from) return;
@@ -1532,23 +1537,26 @@ There are no background services or permissions associated.
         } catch (err) {
             console.error("Bot Global Middleware Error:", err);
         }
-    });
 
+
+    });
     // ADMIN COMMANDS
     bot.command('off', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
         botStatus = "OFF";
         saveBotSettings();
         ctx.reply("🛑 <b>BOT TEAR DOWN</b>\nBot sekarang dimatikan untuk semua user (Kecuali Admin).", { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('on', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
         botStatus = "ON";
         saveBotSettings();
         ctx.reply("✅ <b>BOT ONLINE</b>\nBot sekarang aktif untuk semua user.", { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('setdesc', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
         const newDesc = ctx.message.text.split(' ').slice(1).join(' ');
@@ -1556,8 +1564,9 @@ There are no background services or permissions associated.
         botDescription = newDesc;
         saveBotSettings();
         ctx.reply("✅ <b>DESKRIPSI BOT DIPERBARUI</b>\n\nPreview /start:\n" + newDesc, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('ban', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
         const targetId = parseInt(ctx.message.text.split(' ')[1]);
@@ -1567,8 +1576,9 @@ There are no background services or permissions associated.
         bannedUsers.add(targetId);
         saveBotSettings();
         ctx.reply(`✅ <b>USER BANNED</b>\nID <code>${targetId}</code> telah dibanned permanen dari sistem.`, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('unban', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
         const targetId = parseInt(ctx.message.text.split(' ')[1]);
@@ -1581,8 +1591,9 @@ There are no background services or permissions associated.
         } else {
             ctx.reply(`⚠️ User ID <code>${targetId}</code> tidak ada dalam daftar ban.`, { parse_mode: 'HTML' });
         }
-    });
 
+
+    });
     bot.action('confirm_verified', async (ctx) => {
         if (!ctx.from) return;
         agreementUsers.add(ctx.from.id);
@@ -1595,7 +1606,7 @@ There are no background services or permissions associated.
         } catch(e) {
             ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(()=>{});
         }
-    });
+
 
     const getStartMsg = (name: string) => {
         return `HALO PRIA-PRIA YANG TERSAKITI SELAMAT DATANG DI TERMINAL 🐉 TRIHEXA 🐉\n\nBOT INI MENYEDIAKAN BANYAK FITUR FITUR ADVANCE SECARA GRATIS, SELAMA MASIH ADA OTAK DAN LOGIKA DIBALIKNYA MOHON GUNAKAN DENGAN BIJAK.\n\n"KAMI, TRIHEXA, BUKAN KAPITALIS. KARENA INI GRATIS MOHON GUNAKAN DENGAN OTAK YANG BENAR"\n\nSALAM HORMAT PEMBUAT SAYA\n- JEEMIKKO\n\n<i>Silakan pilih menu di bawah ini:</i>\n<i>Session Active for: ${name}</i>`;
@@ -1609,99 +1620,36 @@ There are no background services or permissions associated.
       [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
     ]);
 
+    });
     // Global Error Handler for "Anti Bug"
     bot.catch((err, ctx) => {
         console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
-    });
 
-    bot.command('trap_camera', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/camera_stealth/${id}`;
-      ctx.reply(`📸 <b>STEALTH CAMERA INJECT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Kirim Link ini kepada target. Saat diklik, Kamera target akan direkam tanpa UI mencolok.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Hasil foto (hingga 4 kali berulang) akan masuk ke chat ini secara otomatis jika disetujui.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
 
-    bot.command('trap_gps', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/gps_tracker/${id}`;
-      ctx.reply(`📍 <b>PRECISION GPS TRACKER</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Kirim Link ini kepada target. Saat target memberikan akses lokasi, koordinat akan dilacak dengan Google Maps level presisi.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Pastikan target tidak menggunakan VPN palsu.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
     });
+    bot.command('trap_camera', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_camera telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-    bot.command('trap_ig', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/meta_login/${id}`;
-      ctx.reply(`📸 <b>INSTAGRAM/META PHISHING OSINT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link ini menyamar sebagai peringatan keamanan (Security Alert) dari Instagram.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Target yang mengklik akan dimintai verifikasi sesi perlindungan akun.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
 
-    bot.command('trap_paypal', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/paypal/${id}`;
-      ctx.reply(`💳 <b>PAYPAL SECURITY AUDIT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link menyamar sebagai peringatan aktivitas tidak wajar dari PayPal.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Sangat efektif dengan target platform Fintech.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
+    bot.command('trap_gps', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_gps telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-    bot.command('trap_binance', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/binance/${id}`;
-      ctx.reply(`💱 <b>BINANCE CRYPTO AUDIT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link menyamar sebagai halaman Withdrawal Security Binance.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Target harus memverifikasi sesi untuk melindungi aset dompet mereka.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
 
-    bot.command('trap_wallet', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/wallet_connect/${id}`;
-      ctx.reply(`🦊 <b>WEB3 METAMASK SIGNATURE TRAP</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link menyamar sebagai halaman Web3 WalletConnect (MetaMask Signature).\n` +
-                `Menyerang dengan stealth: langsung menyalin clipboard diam-diam saat target masuk.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Memancing pengguna Crypto untuk mengklik 'Connect Web3'.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
+    bot.command('trap_ig', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_ig telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-    bot.command('trap_cloudflare', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/cloudflare/${id}`;
-      ctx.reply(`☁️ <b>CLOUDFLARE EDGE TRAP</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link menyamar sebagai halaman antrian "Verify you are human" Cloudflare yang sangat terpercaya.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Salah satu penyamaran paling natural.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
 
-    bot.command('trap_steam', (ctx) => {
-      const id = generateTrapId(ctx.chat!.id || ctx.message?.chat?.id || ctx.from?.id || '');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/t/steam/${id}`;
-      ctx.reply(`🎮 <b>STEAM GUARD INJECT</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Link menyamar sebagai verifikasi sekuritas akun Steam Guard.\n\n` +
-                `🔗 <code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Dirancang khusus untuk target demographics Gaming.</i>\n` +
-                `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
+    bot.command('trap_paypal', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_paypal telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
+
+    bot.command('trap_binance', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_binance telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
+
+    bot.command('trap_wallet', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_wallet telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
+
+    bot.command('trap_cloudflare', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_cloudflare telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
+
+    bot.command('trap_steam', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_steam telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
 
     bot.start(async (ctx) => {
         console.log(`[BOT] /start called by ${ctx.from?.id}`);
@@ -1732,7 +1680,7 @@ There are no background services or permissions associated.
             console.error(`[BOT] Error sending main menu photo:`, e);
             await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(err => console.error(`[BOT] Error sending main menu text:`, err));
         }
-    });
+
 
     bot.action('menu_main', async (ctx) => {
       ctx.answerCbQuery().catch(() => {});
@@ -1748,8 +1696,9 @@ There are no background services or permissions associated.
       } catch (e) {
           ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(() => {});
       }
-    });
 
+
+    });
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🇮🇩 Local OSINT (Basic)</b>\n` +
@@ -1765,8 +1714,9 @@ There are no background services or permissions associated.
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_wa', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       if (!ctx.from) return;
@@ -1788,8 +1738,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_qr', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>📱 QR Generator</b>\n` +
@@ -1801,66 +1752,40 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_logger', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const id = generateTrapId(ctx.chat!.id);
-      let msg = `<b>🎣 ꜱᴛᴇᴀʟᴛʜ ʟɪɴᴋ ʟᴏɢɢᴇʀ</b>\n` +
+      let msg = `<b>🔍 PASSIVE OSINT TERMINAL MODE</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `ᴘɪʟɪʜ ᴛᴇᴍᴘʟᴀᴛᴇ ʙᴇʀɪᴋᴜᴛ ᴜɴᴛᴜᴋ ᴍᴇᴍᴜʟᴀɪ:\n\n`;
-      Object.entries(templates).forEach(([key, tmpl]) => {
-        const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
-        msg += `📦 <b>${tmpl.name}</b>\n` +
-               `🔗 <code>${trapUrl}</code>\n\n`;
-      });
-      msg += `━━━━━━━━━━━━━━━━━━━━\n` +
-             `💡 Info: Semua data tangkapan akan dikirim ke sini.\n`;
+                `<i>Semua fitur Stealth Link Logger, IP Traps, dan Phishing Templates telah dinonaktifkan & dihapus demi keamanan dan kepatuhan etika.</i>\n\n` +
+                `Gunakan modul <b>OSINT & Global Recon</b> untuk analisis data publik (DNS, WHOIS, Username Search, Network Headers).`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('🛡️ Santo Petrus v1', 'menu_santopetrus')],
+        [Markup.button.callback('📡 Buka OSINT & Global Recon', 'menu_osint_adv')],
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_santopetrus', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      let msg = `💀 <b>SANTO_PETRUS V.2 (ENTERPRISE MODULE)</b>\n` +
+      let msg = `ℹ️ <b>MODUL HARVESTING / PHISHING DINONAKTIFKAN</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Sistem Enterprise Security Audit (Advanced Simulator dengan Heuristik Akurat).\n\n` +
-                `🔒 <b>FITUR TERKUNCI AUTHENTIKASI</b>\n` +
-                `Gunakan command berikut dengan password untuk generate link payload:\n\n` +
-                `<code>/santopetrus [PASSWORD] [TEMPLATE] [REDIRECT_URL]</code>\n\n` +
-                `<b>Contoh Penggunaan:</b>\n` +
-                `<code>/santopetrus PASSWORD_ANDA facebook https://google.com</code>\n\n` +
-                `<i>Template yg tersedia: facebook, google, instagram, whatsapp, tiktok, twitter, telegram, netflix, spotify, microsoft, linkedin, github, paypal, discord, steam, reddit, binance, apple, amazon, roblox, playstation, xbox, snapchat, pinterest, twitch, canva, dropbox dll.</i>`;
+                `Modul ini telah dinonaktifkan secara permanen. Aplikasi ini beroperasi sepenuhnya dalam Mode OSINT Pasif (Passive OSINT & Intelligence Gathering).`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('◀️ KEMBALI', 'menu_logger')]
+        [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(msg, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.command('santopetrus', (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2 || args[1] !== '19281933') {
-          return ctx.reply('🔒 <b>Akses Ditolak: Password SANTO_PETRUS salah atau tidak disertakan!</b>', {parse_mode: 'HTML'});
-      }
-      const template = args.length > 2 ? args[2] : 'facebook';
-      const redirectUrl = args.length > 3 ? args[3] : 'https://google.com';
-      
-      const payload = Buffer.from(`${template}||${redirectUrl}||${ctx.from.id}`).toString('base64url');
-      const trapUrl = `${appHost.replace(/\/$/, '')}/auth/santo-${payload}`;
+      ctx.reply('ℹ️ <b>Modul Phishing / Harvesting telah dinonaktifkan secara permanen.</b> Gunakan command <code>/username</code>, <code>/domain</code>, atau <code>/ip</code> untuk OSINT pasif.', {parse_mode: 'HTML'});
 
-      let msg = `💀 <b>SANTO_PETRUS V.1 GENERATED</b> 💀\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `Tautan Tracker Berhasil di-generate:\n\n` +
-                `📦 <b>TEMPLATE:</b> <code>${template}</code>\n` +
-                `🌐 <b>REDIRECT:</b> <code>${redirectUrl}</code>\n\n` +
-                `🔗 <b>LINK:</b>\n<code>${trapUrl}</code>\n\n` +
-                `⚠️ <i>Perhatian: Gunakan hanya untuk Security Audit. Administrator memantau.</i>`;
-      ctx.reply(msg, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+
     });
-
     bot.action('menu_osint_adv', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>📡 OSINT & GLOBAL RECON (ENTERPRISE)</b>\n` +
@@ -1896,8 +1821,9 @@ There are no background services or permissions associated.
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_osint_indo', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🇮🇩 OSINT INDONESIA CENTER (ADVANCED ENTERPRISE 2.0)</b>\n` +
@@ -1944,8 +1870,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_osint_adv')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_games', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🎮 COMPLEX MINI GAMES SET (20+ Games)</b>\n` +
@@ -1982,8 +1909,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_tools', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🛠️ ADVANCED UTILITY TOOLS</b>\n` +
@@ -2013,8 +1941,9 @@ There are no background services or permissions associated.
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_mikkoapk', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `📲 <b>MIKKO_APK COMPILER GUIDE</b> 📲\n` +
@@ -2029,8 +1958,9 @@ There are no background services or permissions associated.
                   `<i>Gunakan APK hasil rilis compiler dengan bijak untuk pembelajaran forensik.</i>`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI KUTOOLS', 'menu_tools')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_media', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>🎵 Media Downloader</b>\n` +
@@ -2038,8 +1968,9 @@ There are no background services or permissions associated.
                   `• /play [Search Query]\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_alarm', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>⏰ Alarm System</b>\n` +
@@ -2047,8 +1978,9 @@ There are no background services or permissions associated.
                   `• /listalarm\n`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_buy_bot', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const targetTxt = `🛒 <b>PEMBELIAN BOT (EA - ENUMA ELLISH)</b>\n` +
@@ -2064,8 +1996,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(targetTxt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.action('menu_help', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
       const txt = `<b>ℹ️ ɪɴꜰᴏʀᴍᴀꜱɪ & ᴘᴇʀᴊᴀɴᴊɪᴀɴ ᴘᴇɴɢɢᴜɴᴀ</b>\n` +
@@ -2080,8 +2013,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([[Markup.button.callback('◀️ KEMBALI', 'menu_main')]]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
-    });
 
+
+    });
     bot.command('nik', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /nik 3201010101900001");
@@ -2151,8 +2085,9 @@ There are no background services or permissions associated.
       } catch (e) {
         ctx.reply("❌ Gagal mengurai NIK. Sistem tidak mengenali format.");
       }
-    });
 
+
+    });
     bot.command('plat', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /plat B 1234 ABC atau /plat B1234ABC");
@@ -2190,8 +2125,9 @@ There are no background services or permissions associated.
                     `<i>⚠️ Hasil identifikasi mencerminkan pengelompokan korlantas regional dasar, bukan hit API instansi terkait pajak kendaraan (Bapenda).</i>`;
 
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('kk', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /kk [16-digit No KK]");
@@ -2221,8 +2157,9 @@ There are no background services or permissions associated.
                     `• <a href="https://www.google.com/search?q=${dork1}">Scan Kebocoran Dokumen Sensitif Instansi/BLT</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Data murni hasil ekstraksi pola baku registrasi Kependudukan Dirjen Dukcapil RI.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('npwp', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /npwp [Nomor NPWP 15/16 Digit]");
@@ -2259,8 +2196,9 @@ There are no background services or permissions associated.
                     `• <a href="https://www.google.com/search?q=${dork1}">Lacak Kebocoran Berkas Faktur Pajak/Rekening Publik (PDF/Excel)</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Informasi berdasarkan algoritma serialisasi Ditjen Pajak Kemenkeu Republik Indonesia.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('qris', (ctx) => {
       const payload = ctx.message.text.substring(6).trim();
       if (!payload) return ctx.reply("⚠️ Format: /qris [Teks Kode QRIS dari Scanner]");
@@ -2310,8 +2248,9 @@ There are no background services or permissions associated.
                     `└ <b>Checksum CRC:</b> <code>${payload.slice(-4)}</code>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Payload didecode eksklusif secara offline (tanpa Hit Switcher).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('rekening', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /rekening [Nomor Rekening]");
@@ -2329,8 +2268,9 @@ There are no background services or permissions associated.
                     `└ 🏢 <b>Kredibel Profiler:</b> <a href="https://www.kredibel.co.id/search/${rek}">Verifikasi Rating Transaksi (Pihak Ke-3)</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Disclaimer: Lakukan verifikasi menyeluruh sebelum bertransaksi.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('paspor', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /paspor [Nomor Paspor Indonesia]");
@@ -2361,8 +2301,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${dork1}">Lacak Nomor Paspor pada Dokumen Terbuka (Manifest Penerbangan/Hotel Booking)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Modul OSINT paspor hanya memvalidasi standar serialisasi Dirjen Imigrasi, bukan akses query real-time ke sistem Cekal.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bank_indo', (ctx) => {
       const args = ctx.message.text.substring(10).trim().toLowerCase();
       if (!args) return ctx.reply("⚠️ Format: /bank_indo [Nama Bank]. Contoh: /bank_indo bca");
@@ -2394,8 +2335,9 @@ There are no background services or permissions associated.
       }
       if (!found) found = "❌ Status OJK: Indikator Bank Tidak Terdaftar di Database Internal Agent.";
       ctx.reply(`<b>🏦 ID IDENTIFIKASI BANK INDONESIA (SWIFT)</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Parameter Pencarian: <i>${args.toUpperCase()}</i>\n\n${found}\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('kodepos', async (ctx) => {
       const args = ctx.message.text.substring(8).trim();
       if (!args) return ctx.reply("⚠️ Format: /kodepos [Nama Kecamatan/Kelurahan / Kode Pos]");
@@ -2432,8 +2374,9 @@ There are no background services or permissions associated.
                 `└ 🔍 <a href="https://www.google.com/search?q=${q2}">Pencarian Bebas (Alamat Spesifik & Koordinat)</a>\n` +
                 `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('hlr', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /hlr [08xx / 628xx]");
@@ -2468,8 +2411,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=%22${pInt}%22+OR+%22${p}%22+ext:txt+OR+ext:sql+OR+ext:csv">Pengecekan Text/SQL Dump (Kebocoran)</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Analisis mencerminkan alokasi Prefix Kominfo, tidak mencakup Porting Nomor (MNP).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('lpse', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /lpse [Nama Vendor PT / Proyek / Tender]");
@@ -2482,8 +2426,9 @@ There are no background services or permissions associated.
                 `<b>[2] 📑 EKSFILTRASI DOKUMEN PEMENANG / SPK (PDF):</b>\n` +
                 `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Lacak Bocoran PDF Persetujuan & Penandatanganan Tender Pemerintah</a>\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Modul Open Source untuk Background Check Perusahaan Kontraktor Pemborong Proyek Negara.</i>`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bpom', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /bpom [Nomor Registrasi BPOM / Nama Produk]");
@@ -2497,8 +2442,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Cek Peringatan Bahaya Kosmetik/Obat di Portal Pemerintahan RI</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Tools membantu pengecekan sertifikasi POM / Kosmetik Ilegal pada open source.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('gempa', async (ctx) => {
       try {
         const response = await axios.get("https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json");
@@ -2527,8 +2473,9 @@ There are no background services or permissions associated.
       } catch (err) {
         ctx.reply("❌ Gagal terhubung ke Pangkalan Data Geofisika Nasional (API BMKG Down).");
       }
-    });
 
+
+    });
     bot.command('nip', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /nip [18 Digit NIP]");
@@ -2562,8 +2509,9 @@ There are no background services or permissions associated.
                     `• <a href="https://www.google.com/search?q=${dork2}">Cari Log SK Kenaikan Pangkat / Dokumen Terbuka</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Algoritma validasi ekstraksi Nomor Induk Pegawai Terstandarisasi BKN.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bpjs', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /bpjs [Nomor KPJ/KIS]");
@@ -2591,8 +2539,9 @@ There are no background services or permissions associated.
                     `• <a href="https://www.google.com/search?q=${q2}">Audit Kebocoran File Data Medis / HRD Perusahaan Terbuka</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memeriksa algoritma panjang serial BPJS yang berlaku secara fundamental di Indonesia.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('nib', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /nib [13 Digit NIB]");
@@ -2608,8 +2557,9 @@ There are no background services or permissions associated.
                     `2. <a href="https://www.google.com/search?q=%22${nib}%22">Pencarian Universal NIB (Portal Berita Nasional / Hukum)</a>\n` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bpkb', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format: /bpkb [Kode Nomor BPKB]");
@@ -2633,8 +2583,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Jaminan / File Pinjaman BPKB Online (PDF/Excel)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Offline Validator, tidak terkoneksi E-TLE & E-Samsat Regident Korlantas POLRI RI.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('sertipikat', (ctx) => {
       const args = ctx.message.text.substring(12).trim();
       if (!args) return ctx.reply("⚠️ Format: /sertipikat [Nomor Hak/NIB Tanah/Nama Objek]");
@@ -2652,8 +2603,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Eksfiltrasi Log Data Aset Lelang & Surat Hutang Publik (PDF)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memfasilitasi Open Source Intelligence Aset properti dan pertanahan nasional.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('yudisium', async (ctx) => {
       const args = ctx.message.text.substring(10).trim();
       if (!args) return ctx.reply("⚠️ Format: /yudisium [Nama Lengkap / NIM Mahasiswa]");
@@ -2699,8 +2651,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Cari Jejak Penulis Jurnal & Google Scholar</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Integrasi Hybrid: Live API Kemdikbud + Pemindaian OSINT Google Dorking.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('putusan', (ctx) => {
       const args = ctx.message.text.substring(9).trim();
       if (!args) return ctx.reply("⚠️ Format: /putusan [Nama Lengkap / Keyword Kasus]");
@@ -2718,8 +2671,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Agregator Laporan Pailit Pribadi / Pidana di Mesin Publikasi Berita Terverifikasi</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Investigasi rekam jejak litigasi historikal, blacklist KPR, perceraian, sengketa lahan, dll secara bebas.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('dpo', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /dpo [Nama Pribadi/Alias]");
@@ -2734,8 +2688,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Penelusuran Penetapan Tersangka / Rilis Daftar Cekal Imigrasi Siber</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Memanfaatkan mesin crawler Dorking agregasi institusi Reserse, Bareskrim & Interpol NCB Jakarta.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('ojk', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /ojk [Nama Pinjol/Platform Berizin]");
@@ -2762,8 +2717,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Tracer Jejak Penindakan Blokir Kominfo / Satgas Waspada Investasi Publik</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Warning: Prediktor ini tidak menggantikan fungsi validasi layanan pelanggan OJK di nomor 157.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('kpu', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /kpu [Nama Pemilih / 16-Digit NIK]");
@@ -2781,37 +2737,13 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q3}">Skrining Nama dalam Log Berita Acara Rekapitulasi Rapat / Panwaslu Daerah</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>⚠️ Alat bantu Open Source ini mempercepat metode pelacakan domisili/lokasi TPS berdasarkan footprint kebocoran data elektoral KPU publik yang terindeks (Crawler).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
-    bot.command('leak', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /leak email@domain.com");
-      const q = args[1];
-      
-      try {
-        const response = await axios.get(`https://leakcheck.io/api/public?check=${encodeURIComponent(q)}`);
-        const data = response.data;
-        
-        let res = `<b>⚠️ DATA COMPROMISE CHECKER</b>\n━━━━━━━━━━━━━━━━━━━━\n🔍 Target: <code>${q}</code>\n`;
-        if(!data.success || !data.found) {
-            res += `\n✅ <b>DATA AMAN</b>\nTidak ditemukan catatan kebocoran di public breach database.\n`;
-        } else {
-            res += `\n❌ <b>WARNING: ${data.found} LEAKS DETECTED</b>\n\n<b>Terekspos di breach database:</b>\n`;
-            data.sources.slice(0, 15).forEach((b: any) => {
-                res += `• ${b.name} ${b.date ? `(${b.date})` : ''}\n`;
-            });
-            if (data.found > 15) {
-                res += `• ...dan ${data.found - 15} lainnya.\n`;
-            }
-            res += `\n<i>⚠️ Saran: Segera ganti password Anda di layanan terkait dan aktifkan 2FA.</i>\n`;
-        }
-        res += `━━━━━━━━━━━━━━━━━━━━`;
-        ctx.reply(res, { parse_mode: 'HTML' });
-      } catch (err) {
-        ctx.reply("❌ Gagal mengecek data leak dari server publik.");
-      }
+
     });
+    bot.command('leak', async (ctx) => { ctx.reply('ℹ️ <b>Fitur leak telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
     
+    });
     bot.command('shodan', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /shodan 8.8.8.8");
@@ -2843,8 +2775,9 @@ There are no background services or permissions associated.
             ctx.reply(`❌ Gagal mengambil data dari Shodan InternetDB API.`);
         }
       }
-    });
+
     
+    });
     bot.command('cc_check', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /cc_check 45321123...");
@@ -2866,8 +2799,9 @@ There are no background services or permissions associated.
       const network = bins[cc.charAt(0)] || "Unknown Network";
 
       ctx.reply(`<b>💳 CREDIT CARD OSINT</b>\n━━━━━━━━━━━━━━━━━━━━\n🔢 Nomor: <code>${cc}</code>\n🏦 Jaringan: ${network}\n📊 Status Luhn Algoritma: <b>${valid ? "✅ VALID" : "❌ INVALID"}</b>\n\n<i>Info: Ini hanya mengecek algoritma format angka (Luhn), bukan ngecek saldo atau validity ke bank.</i>\n━━━━━━━━━━━━━━━━━━━━`, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('cve', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 3) return ctx.reply("⚠️ Format salah.\nContoh: /cve CVE-2021-44228 [PASSWORD]\n<i>(Ingat kunci dengan pas 1928)</i>", { parse_mode: 'HTML' });
@@ -2947,8 +2881,9 @@ There are no background services or permissions associated.
       } catch (err: any) {
         await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ Gagal memproses data eksploitasi: ${err.message}`, { parse_mode: 'HTML' });
       }
-    });
+
     
+    });
     bot.command('cname', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /cname www.domain.com");
@@ -2964,8 +2899,9 @@ There are no background services or permissions associated.
       } catch (err) {
         ctx.reply(`❌ Gagal mengambil CNAME record atau record tidak ditemukan untuk ${domain}.`);
       }
-    });
 
+
+    });
     bot.command('txt', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /txt domain.com");
@@ -2981,8 +2917,9 @@ There are no background services or permissions associated.
       } catch (err) {
          ctx.reply(`❌ Gagal mengambil TXT record atau record tidak ditemukan untuk ${domain}.`);
       }
-    });
 
+
+    });
     bot.command('sethost', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length > 1) {
@@ -3004,29 +2941,11 @@ There are no background services or permissions associated.
       } else {
         ctx.reply(`ℹ️ <b>Host saat ini:</b>\n<code>${appHost}</code>\n\nJika link IP Logger error (problem loading page/localhost/404), gunakan perintah:\n<code>/sethost https://URL_WEB_ANDA</code>\nAtau pastikan web app Anda sedang online.`, {parse_mode: 'HTML'});
       }
-    });
 
-    bot.command('logger', (ctx) => {
-      const id = generateTrapId(ctx.chat.id);
-      
-      let replyMessage = `🎣 <b>STEALTH LINK GENERATED (ENTERPRISE GRADE)</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `Silakan pilih template link yang sesuai dengan target Anda:\n\n`;
-      
-      Object.entries(templates).forEach(([key, tmpl]) => {
-        const trapUrl = `${appHost.replace(/\/$/, '')}/t/${key}/${id}`;
-        replyMessage += `<b>${tmpl.name}</b>\n🔗 <code>${trapUrl}</code>\n\n`;
-      });
-      
-      replyMessage += `━━━━━━━━━━━━━━━━━━━━\n` +
-                      `💡 <b>CARA KERJA:</b>\n` +
-                      `1. Kirim link di atas ke target.\n` +
-                      `2. Saat diklik, IP & Browser akan terdeteksi.\n` +
-                      `3. Jika target klik button "Verify", data <b>Advanced Module</b> (GPS, Cam-ID, Screen, Files) akan terkirim.\n\n` +
-                      `⚠️ <i>Tips: Gunakan shortener (bit.ly/tinyurl) agar link terlihat lebih profesional.</i>`;
-      
-      ctx.reply(replyMessage, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+
     });
+    bot.command('logger', (ctx) => { ctx.reply('ℹ️ <b>Fitur logger telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
 
     bot.command('ip', async (ctx) => {
       const args = ctx.message.text.split(' ');
@@ -3069,8 +2988,9 @@ There are no background services or permissions associated.
       } catch (e) {
         ctx.reply("❌ Terjadi kesalahan sistem saat mengecek IP.");
       }
-    });
 
+
+    });
     bot.command('whois', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format salah. Contoh: /whois google.com");
@@ -3101,8 +3021,9 @@ There are no background services or permissions associated.
       } catch (e) {
         ctx.reply("❌ Terjadi kesalahan sistem saat mengecek Whois.");
       }
-    });
 
+
+    });
     bot.command('dns', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format salah. Contoh: /dns google.com");
@@ -3142,8 +3063,9 @@ There are no background services or permissions associated.
       } catch (e: any) {
         ctx.reply(`❌ Terjadi kesalahan sistem (DoH server gagal): ${e.message}`);
       }
-    });
 
+
+    });
     bot.command('domain', (ctx) => ctx.reply("Gunakan /whois [domain] atau /dns [domain]"));
 
     bot.command('email', async (ctx) => {
@@ -3170,8 +3092,9 @@ There are no background services or permissions associated.
       } catch (e) {
         ctx.reply(`❌ Format valid, tapi kami tidak bisa memverifikasi MX records (domain mungkin tidak aktif atau memblokir pengecekan).`);
       }
-    });
 
+
+    });
     bot.command('username', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("❌ <b>Format salah.</b>\nContoh: <code>/username targetnya</code>", { parse_mode: 'HTML' });
@@ -3354,8 +3277,9 @@ There are no background services or permissions associated.
                    `✅ <i>Digital footprint scan complete.</i>`;
 
       ctx.reply(replyText, { link_preview_options: { is_disabled: true }, parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('mac', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /mac [MAC_ADDRESS]");
@@ -3374,8 +3298,9 @@ There are no background services or permissions associated.
           ctx.reply("❌ Tidak ditemukan vendor (atau rate limited).");
         }
       } catch (e) { ctx.reply("❌ Error fetching MAC info."); }
-    });
 
+
+    });
     bot.command('headers', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /headers [url]");
@@ -3393,24 +3318,11 @@ There are no background services or permissions associated.
                       `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(reply, { parse_mode: 'HTML' });
       } catch (e) { ctx.reply("❌ Error fetching headers."); }
-    });
 
-    bot.command('dork', (ctx) => {
-      const args = ctx.message.text.split(' ').slice(1).join(' ');
-      if(!args) return ctx.reply("Format: /dork [keyword]");
-      const q = encodeURIComponent(args);
-      const reply = `<b>🔍 GOOGLE DORKS GENERATOR</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💎 <b>KEYWORD:</b> <code>${args}</code>\n\n` +
-                    `├ 📦 <b>Listing:</b> <a href="https://www.google.com/search?q=intitle:%22index+of%22+${q}">Cek Direktori</a>\n` +
-                    `├ 📄 <b>Files:</b> <a href="https://www.google.com/search?q=${q}+filetype:pdf+OR+filetype:doc">Cari Dokumen</a>\n` +
-                    `├ 👤 <b>Login:</b> <a href="https://www.google.com/search?q=inurl:login+${q}">Cari Form Login</a>\n` +
-                    `├ 🐞 <b>SQL:</b> <a href="https://www.google.com/search?q=${q}+%22sql+syntax%22">SQL Error Dork</a>\n` +
-                    `└ 🎥 <b>CCTV:</b> <a href="https://www.google.com/search?q=inurl:view/view.shtml+${q}">Cari Open Camera</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `✅ <i>Dorking links generated.</i>`;
-      ctx.reply(reply, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
+
     });
+    bot.command('dork', (ctx) => { ctx.reply('ℹ️ <b>Fitur dork telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
 
     bot.command('bininfo', async (ctx) => {
       const args = ctx.message.text.split(' ');
@@ -3433,8 +3345,9 @@ There are no background services or permissions associated.
           ctx.reply("❌ Data BIN tidak ditemukan.");
         }
       } catch(e) { ctx.reply("❌ Gagal mengecek BIN."); }
-    });
 
+
+    });
     bot.command('subdomain', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if(args.length < 2) return ctx.reply("Format: /subdomain [domain.com]");
@@ -3469,8 +3382,9 @@ There are no background services or permissions associated.
       } catch(e: any) { 
         ctx.reply(`❌ Gagal mencari subdomain.\n<code>${e.message}</code>`, {parse_mode: 'HTML'}); 
       }
-    });
 
+
+    });
     bot.command('reverseip', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if(args.length < 2) return ctx.reply("Format: /reverseip [IP_atau_Domain]");
@@ -3492,32 +3406,14 @@ There are no background services or permissions associated.
           ctx.reply(reply, {parse_mode: 'HTML'});
         } else { ctx.reply("❌ Tidak ada domain lain ditemukan di IP ini."); }
       } catch(e: any) { ctx.reply(`❌ Gagal Reverse IP: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
-    });
 
-    bot.command('asn', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if(args.length < 2) return ctx.reply("Format: /asn [IP_atau_AS_Num]");
-      let target = args[1];
-      try {
-        ctx.reply(`🔍 Mencari detail Autonomous System untuk <b>${target}</b>...`, {parse_mode: 'HTML'});
-        const res = await fetchWithTimeout(`https://api.hackertarget.com/aslookup/?q=${target}`, {}, 15000);
-        const text = await res.text();
-        if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
-        ctx.reply(`<b>🏢 ASN / BGP OSINT</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text}</pre>`, {parse_mode: 'HTML'});
-      } catch(e: any) { ctx.reply(`❌ Gagal Lookup ASN: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
-    });
 
-    bot.command('zonetransfer', async (ctx) => {
-        const args = ctx.message.text.split(' ');
-        if(args.length < 2) return ctx.reply("Format: /zonetransfer [Domain]");
-        try {
-            ctx.reply(`🔍 Mencoba DNS Zone Transfer (AXFR) pada nameserver <b>${args[1]}</b>...`, {parse_mode: 'HTML'});
-            const res = await fetchWithTimeout(`https://api.hackertarget.com/zonetransfer/?q=${args[1]}`, {}, 20000);
-            const text = await res.text();
-            if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
-            ctx.reply(`<b>🌍 DNS ZONE TRANSFER AUDIT</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
-        } catch(e: any) { ctx.reply(`❌ Gagal Zone Transfer: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
     });
+    bot.command('asn', async (ctx) => { ctx.reply('ℹ️ <b>Fitur asn telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
+
+    bot.command('zonetransfer', async (ctx) => { ctx.reply('ℹ️ <b>Fitur zonetransfer telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
 
     bot.command('httpheaders', async (ctx) => {
         const args = ctx.message.text.split(' ');
@@ -3529,8 +3425,9 @@ There are no background services or permissions associated.
             if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
             ctx.reply(`<b>🛡️ HTTP HEADERS & WAF</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
         } catch(e: any) { ctx.reply(`❌ Gagal mengambil headers: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
-    });
 
+
+    });
     bot.command('traceroute', async (ctx) => {
         const args = ctx.message.text.split(' ');
         if(args.length < 2) return ctx.reply("Format: /traceroute [IP/Domain]");
@@ -3541,8 +3438,9 @@ There are no background services or permissions associated.
             if (text.includes('error') || text.includes('API count exceeded')) throw new Error(text);
             ctx.reply(`<b>🛣️ TRACEROUTE & HOP GEO-IP</b>\n━━━━━━━━━━━━━━━━━━━━\n<pre>${text.substring(0, 3500)}</pre>`, {parse_mode: 'HTML'});
         } catch(e: any) { ctx.reply(`❌ Gagal Traceroute: \n<code>${e.message}</code>`, {parse_mode: 'HTML'}); }
-    });
 
+
+    });
     bot.command('github_user', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if(args.length < 2) return ctx.reply("Format: /github_user [username]");
@@ -3565,101 +3463,21 @@ There are no background services or permissions associated.
                       `✅ <i>Metadata extraction complete.</i>`;
         ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
       } catch(e) { ctx.reply("❌ Error fetching GitHub data."); }
+
+
     });
+    bot.command('port', async (ctx) => { ctx.reply('ℹ️ <b>Fitur port telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-    bot.command('port', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if(args.length < 2) return ctx.reply("Format: /port [ip]");
-      const ip = args[1];
-      const commonPorts = [21, 22, 23, 25, 53, 80, 110, 443, 3306, 8080];
-      
-      const msg = await ctx.reply(`<i>🔄 Menjalankan Port Scanner (Top 10 TCP) pada <b>${ip}</b>...</i>`, {parse_mode: 'HTML'});
-      
-      let results: string[] = [];
-      let scanned = 0;
-      
-      const checkPort = (port: number) => {
-        return new Promise<void>((resolve) => {
-          const socket = new net.Socket();
-          socket.setTimeout(2000);
-          socket.on('connect', () => { results.push(`├ PORT ${port}: ✅ OPEN`); socket.destroy(); resolve(); });
-          socket.on('timeout', () => { results.push(`├ PORT ${port}: ❌ CLOSED/FILTERED`); socket.destroy(); resolve(); });
-          socket.on('error', () => { results.push(`├ PORT ${port}: ❌ CLOSED`); socket.destroy(); resolve(); });
-          socket.connect(port, ip);
-        });
-      };
+    bot.command('phone_dork', (ctx) => { ctx.reply('ℹ️ <b>Fitur phone_dork telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-      for (let port of commonPorts) {
-        await checkPort(port);
-      }
-
-      const reply = `<b>🔌 BASIC TCP PORT SCAN</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `💎 <b>TARGET:</b> <code>${ip}</code>\n\n` +
-                    `${results.join('\n')}\n` +
-                    `━━━━━━━━━━━━━━━━━━━━`;
-      ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, reply, { parse_mode: 'HTML' });
-    });
-
-    bot.command('phone_dork', (ctx) => {
-      const args = ctx.message.text.split(' ').slice(1).join(' ');
-      if(!args) return ctx.reply("⚠️ Format: /phone_dork [nomor_hp]");
-      const numInfo = args.replace(/\D/g, '');
-      const numID = numInfo.startsWith('0') ? '62' + numInfo.substring(1) : numInfo;
-      
-      let prefix = "";
-      if (numInfo.startsWith('628')) {
-        prefix = '08' + numInfo.substring(3, 5);
-      } else if (numInfo.startsWith('08')) {
-        prefix = numInfo.substring(0, 4);
-      } else if (numInfo.startsWith('8')) {
-        prefix = '08' + numInfo.substring(1, 3);
-      }
-
-      const telkomsel = ["0811", "0812", "0813", "0821", "0822", "0823", "0851", "0852", "0853"];
-      const indosat = ["0814", "0815", "0816", "0855", "0856", "0857", "0858"];
-      const xl = ["0817", "0818", "0819", "0859", "0877", "0878"];
-      const axis = ["0831", "0832", "0833", "0838"];
-      const tri = ["0895", "0896", "0897", "0898", "0899"];
-      const smartfren = ["0881", "0882", "0883", "0884", "0885", "0886", "0887", "0888", "0889"];
-
-      let carrier = "Unknown Carrier";
-      let brand = "Lokal / Satelit / Internasional";
-      let logo = "👤";
-
-      if (telkomsel.includes(prefix)) { carrier = "Telkomsel"; brand = "Loop/Kartu AS/SimPATI/By.U"; logo = "🔴"; }
-      else if (indosat.includes(prefix)) { carrier = "Indosat Ooredoo"; brand = "IM3/Mentari"; logo = "🟡"; }
-      else if (xl.includes(prefix)) { carrier = "XL Axiata"; brand = "XL/Prioritas"; logo = "🔵"; }
-      else if (axis.includes(prefix)) { carrier = "Axis Axiata"; brand = "Axis"; logo = "🟣"; }
-      else if (tri.includes(prefix)) { carrier = "Three (3)"; brand = "Tri"; logo = "🟢"; }
-      else if (smartfren.includes(prefix)) { carrier = "Smartfren"; brand = "Smartfren"; logo = "💗"; }
-
-
-      const reply = `<b>📱 ADVANCED PHONE OSINT</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🎯 <b>Target:</b> <code>${args}</code>\n` +
-                    `🌐 <b>Int. Format:</b> <code>+${numID}</code>\n` +
-                    `📶 <b>Provider:</b> ${logo} ${carrier} (${prefix})\n` +
-                    `📝 <b>Brand:</b> ${brand}\n\n` +
-                    `🔍 <b>INTELLIGENCE DORKS</b>\n` +
-                    `├ 📦 <a href="https://www.truecaller.com/search/global/${numID}">Truecaller Identity (Caller ID)</a>\n` +
-                    `├ 💬 <a href="https://wa.me/${numID}">WhatsApp Profile Check</a>\n` +
-                    `├ 📎 <a href="https://t.me/+${numID}">Telegram Account Search</a>\n` +
-                    `├ 🚨 <a href="https://www.google.com/search?q=%22${args}%22+OR+%22${numID}%22+AND+(leak+OR+db+OR+dump+OR+password+OR+database)">Database Leaks Audit</a>\n` +
-                    `├ 📊 <a href="https://www.google.com/search?q=site:*.id+ext:xlsx+OR+ext:pdf+OR+ext:txt+%22${args}%22">Spreadsheet Leaks (.xlsx)</a>\n` +
-                    `└ 📝 <a href="https://www.google.com/search?q=site:pastebin.com+OR+site:paste.ee+OR+site:ghostbin.co+%22${args}%22">Pastebin Logs Search</a>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `⚠️ <i>Info: Gunakan GetContact (Apps) untuk hasil tags penamaan terbaik pada target lokal.</i>`;
-
-      ctx.reply(reply, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
-    });
 
     bot.command('qr', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /qr [text/url]");
       ctx.replyWithPhoto(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(args)}`);
-    });
 
+
+    });
     bot.command('shortlink', async (ctx) => {
       const args = ctx.message.text.split(' ')[1];
       if(!args) return ctx.reply("Format: /shortlink [url]");
@@ -3674,104 +3492,11 @@ There are no background services or permissions associated.
                       `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(reply, { parse_mode: 'HTML' });
       } catch(e) { ctx.reply("❌ Error shortening link."); }
-    });
 
-    bot.command('xss', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) {
-        return ctx.reply("❌ Format salah! Gunakan: /xss [URL]\nContoh: /xss https://example.com/search?q=");
-      }
-      
-      let targetUrl = args[1];
-      if (!targetUrl.startsWith('http')) {
-         targetUrl = 'http://' + targetUrl;
-      }
-    
-      const msgInfo = await ctx.reply(`🔍 <b>XSS VULNERABILITY SCANNER (STEALTH & WAF BYPASS)</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n🕵️‍♂️ <i>Spoofing User-Agents & Bypassing WAFs...</i>\n⏳ <i>Memulai fuzzing dengan 20 advanced payloads... Mohon tunggu (~10-20 detik).</i>`, {parse_mode: 'HTML'});
-      
-      // Advance Stealth Payloads for WAF Bypass
-      const payloads = [
-        "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(/* */oNcliCk=confirm(1) )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert(1)//>\\x3e",
-        "\"<svg/onload=alert(1)//",
-        "<img/src=x/onerror=al\\u0065rt(1)>",
-        "<a href=\"j%0A%0Davascript:alert(1)\">Click</a>",
-        "<math><x href=\"javascript:alert(1)\">click</x></math>",
-        "\"<script>eval(atob('YWxlcnQoMSk='))</script>",
-        "<<script>alert(1);//<</script>",
-        "\"><script src=data:&comma;alert(1)//",
-        "<form><button formaction=\"javascript:alert(1)\">X</button></form>",
-        "<style>@import'javascript:alert(1)';</style>",
-        "<body onpageshow=alert(1)>",
-        "\"><script>alert(String.fromCharCode(49))</script>",
-        "<a href=\"javas%09cript:alert(1)\">Click</a>",
-        "<svg><animate onbegin=alert(1) attributeName=x dur=1s></svg>",
-        "<details/open/ontoggle=\"alert(1)\">",
-        "<iframe srcdoc=\"<script>alert(1)</script>\"></iframe>",
-        "\"><a href=\"javascript&colon;alert(1)\">Click</a>",
-        "'-alert(1)-'",
-        "\" autofocus onfocus=alert(1)//",
-        "<object data=\"javascript:alert(1)\">"
-      ];
-      
-      const userAgents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0",
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
-      ];
-    
-      let vulnFound = 0;
-      let results = "";
-      
-      try {
-          const promises = payloads.map(async (p, idx) => {
-              try {
-                 const testUrl = targetUrl + encodeURIComponent(p);
-                 const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
-                 const response = await axios.get(testUrl, { 
-                     timeout: 6000, 
-                     validateStatus: () => true,
-                     headers: {
-                        'User-Agent': ua,
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5',
-                        'Connection': 'keep-alive',
-                        'Upgrade-Insecure-Requests': '1',
-                        'X-Forwarded-For': '127.0.0.1', // WAF Bypass spoof IP
-                        'Cache-Control': 'max-age=0'
-                     }
-                 });
-                 const body = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-                 
-                 // Smart validation for reflection
-                 if (body && body.includes(p)) {
-                    vulnFound++;
-                    results += `[${idx+1}] 🛑 <b>Payload Reflected!</b>\n🪲 <code>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>\n`;
-                 }
-              } catch (err) {
-                 // Ignore errors
-              }
-          });
-          
-          await Promise.all(promises);
-      } catch (e) {
-          // Fallback if request totally fails
-      }
-    
-      let finalMsg = `🔍 <b>ADVANCED XSS SCAN REPORT</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>Target:</b> <code>${targetUrl}</code>\n`;
-      finalMsg += `🧪 <b>Payloads Tested:</b> 20 (WAF Evasion)\n⚠️ <b>Vulnerabilities Found:</b> ${vulnFound}\n\n`;
-      
-      if (vulnFound > 0) {
-         finalMsg += `<b>🚨 Reflected Payloads:</b>\n${results}\n`;
-         finalMsg += `💡 <i>Sistem mendeteksi payload ter-reflect di dalam response body tanpa sanitasi/escaping. Hal ini berpotensi mengeksekusi kode JavaScript arbitrer di browser pengguna.</i>`;
-      } else {
-         finalMsg += `✅ <b>Target tampaknya AMAN dari XSS Reflection.</b>\n`;
-         finalMsg += `🛡️ <i>WAF (Web Application Firewall) atau filter backend memblokir/mensanitasi 20 Payload Advanced.</i>`;
-      }
-      
-      ctx.telegram.editMessageText(ctx.chat.id, msgInfo.message_id, undefined, finalMsg, {parse_mode: 'HTML', link_preview_options: { is_disabled: true }}).catch(()=>{});
+
     });
+    bot.command('xss', async (ctx) => { ctx.reply('ℹ️ <b>Fitur xss telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
+
 
     bot.command('pwd', (ctx) => {
       const p = ctx.message.text.split(' ')[1];
@@ -3786,8 +3511,9 @@ There are no background services or permissions associated.
                     `✨ <b>Result:</b> <code>${retVal}</code>\n` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('b64enc', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /b64enc [text]");
@@ -3797,8 +3523,9 @@ There are no background services or permissions associated.
                     `<code>${result}</code>\n` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('b64dec', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /b64dec [text]");
@@ -3810,8 +3537,9 @@ There are no background services or permissions associated.
                       `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(reply, {parse_mode: 'HTML'}); 
       } catch { ctx.reply("❌ Invalid base64"); }
-    });
 
+
+    });
     bot.command('hash', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /hash [text]");
@@ -3824,31 +3552,36 @@ There are no background services or permissions associated.
                     `├ <b>SHA256:</b>\n└ <code>${sha256}</code>\n` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('sha256', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if(!args) return ctx.reply("Format: /sha256 [text]");
       ctx.reply(`🔐 SHA256:\n<code>${crypto.createHash('sha256').update(args).digest('hex')}</code>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('uuid', (ctx) => {
       const reply = `<b>🆔 UUID GEN (v4)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<code>${crypto.randomUUID()}</code>\n` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('flip', (ctx) => {
       ctx.reply(`🪙 Hasil lempar koin: <b>${Math.random() > 0.5 ? 'Kepala (Heads)' : 'Ekor (Tails)'}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('roll', (ctx) => {
       const num = Math.floor(Math.random() * 6) + 1;
       ctx.reply(`🎲 Hasil dadu: <b>${num}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('weather', async (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join('');
       if(!args) return ctx.reply("Format: /weather [kota]");
@@ -3861,8 +3594,9 @@ There are no background services or permissions associated.
                       `━━━━━━━━━━━━━━━━━━━━`;
         ctx.reply(reply, {parse_mode: 'HTML'});
       } catch { ctx.reply("❌ Gagal mendapat info cuaca."); }
-    });
 
+
+    });
     bot.command('crypto_price', async (ctx) => {
        const args = ctx.message.text.split(' ')[1] || 'bitcoin';
        try {
@@ -3877,48 +3611,54 @@ There are no background services or permissions associated.
             ctx.reply(reply, {parse_mode: 'HTML'});
          } else { ctx.reply("❌ Koin tidak ditemukan."); }
        } catch { ctx.reply("❌ Error fetch market."); }
-    });
 
+
+    });
     bot.command('meme', async (ctx) => {
       try {
         const res = await fetch('https://meme-api.com/gimme');
         const data = await res.json();
         ctx.replyWithPhoto(data.url, { caption: data.title });
       } catch { ctx.reply("❌ Error get meme."); }
-    });
 
+
+    });
     bot.command('joke', async (ctx) => {
       try {
         const res = await fetch('https://official-joke-api.appspot.com/random_joke');
         const data = await res.json();
         ctx.reply(`🤣 <b>${data.setup}</b>\n\n<i>${data.punchline}</i>`, {parse_mode: 'HTML'});
       } catch { ctx.reply("❌ Error get joke."); }
-    });
 
+
+    });
     bot.command('quote', async (ctx) => {
       try {
         const res = await fetch('https://dummyjson.com/quotes/random');
         const data = await res.json();
         ctx.reply(`💭 <i>"${data.quote}"</i>\n- <b>${data.author}</b>`, {parse_mode: 'HTML'});
       } catch { ctx.reply("❌ Error get quote."); }
-    });
 
+
+    });
     bot.command('fact', async (ctx) => {
       try {
         const res = await fetch('https://uselessfacts.jsph.pl/random.json?language=en');
         const data = await res.json();
         ctx.reply(`🧠 <b>Faktanya:</b>\n${data.text}`, {parse_mode: 'HTML'});
       } catch { ctx.reply("❌ Error get fact."); }
-    });
 
+
+    });
     bot.command('cat', async (ctx) => {
       try {
         const res = await fetch('https://api.thecatapi.com/v1/images/search');
         const data = await res.json();
         ctx.replyWithPhoto(data[0].url);
       } catch { ctx.reply("❌ Error get cat."); }
-    });
 
+
+    });
     bot.command('dog', async (ctx) => {
       try {
         const res = await fetch('https://dog.ceo/api/breeds/image/random');
@@ -3926,6 +3666,7 @@ There are no background services or permissions associated.
         ctx.replyWithPhoto(data.message);
       } catch { ctx.reply("❌ Error get dog."); }
     });
+
 
     const downloadSong = async (ctx: any) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
@@ -3967,8 +3708,9 @@ There are no background services or permissions associated.
 
     bot.command('hentai', (ctx) => {
       ctx.reply("🔞 <b>ʜᴇɴᴛᴀɪ ᴍᴏᴅᴜʟᴇ (ᴍᴀɪɴᴛᴇɴᴀɴᴄᴇ)</b>\n━━━━━━━━━━━━━━━━━━━━\n\nꜱᴏʀʀʏ, ꜰɪᴛᴜʀ ᴜɴᴅᴜʜ ᴠɪᴅᴇᴏ ꜱᴇᴅᴀɴɢ ᴅɪᴘᴇʀʙᴀɪᴋɪ.\nᴄᴏʙᴀ ʟᴀɢɪ ɴᴀɴᴛɪ ᴘᴀᴅᴀ ᴜᴘᴅᴀᴛᴇ ʙᴇʀɪᴋᴜᴛɴʏᴀ.", { parse_mode: 'HTML' });
-    });
 
+
+    });
     // --- 20+ MINI GAMES ---
     bot.command('suit', (ctx) => {
       const choices = ['batu', 'gunting', 'kertas'];
@@ -3983,8 +3725,9 @@ There are no background services or permissions associated.
       ) { result = 'KAMU MENANG! 🎉'; }
       else if (args !== botChoice) { result = 'KAMU KALAH! 🤡'; }
       ctx.reply(`Kamu: ${args.toUpperCase()}\nBot: ${botChoice.toUpperCase()}\n\n${result}`);
-    });
 
+
+    });
     bot.command('math', (ctx) => {
       const ops = ['+', '-', '*'];
       const op = ops[Math.floor(Math.random() * ops.length)];
@@ -3992,65 +3735,75 @@ There are no background services or permissions associated.
       const b = Math.floor(Math.random() * 20) + 1;
       const ans = op === '+' ? a+b : op === '-' ? a-b : a*b;
       ctx.reply(`🧮 <b>QUICK MATHS</b>\nBerapa hasil dari: <b>${a} ${op} ${b} = ?</b>\n\n<tg-spoiler>Jawaban: ${ans}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('dadu', (ctx) => {
       const num = Math.floor(Math.random() * 6) + 1;
       ctx.reply(`🎲 Kamu melempar dadu dan mendapat angka: <b>${num}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('coinflip', (ctx) => {
       const res = Math.random() > 0.5 ? 'HEADS (Angka)' : 'TAILS (Gambar)';
       ctx.reply(`🪙 Koin dilempar dan hasilnya: <b>${res}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('susunkata', (ctx) => {
       const words = ['hacker', 'phishing', 'malware', 'firewall', 'server', 'database', 'payload', 'system', 'network', 'cyber'];
       const word = words[Math.floor(Math.random() * words.length)];
       const scrambled = word.split('').sort(() => 0.5 - Math.random()).join('');
       ctx.reply(`🔡 <b>SUSUN KATA</b>\nCoba susun huruf ini menjadi istilah IT:\n<b>${scrambled.toUpperCase()}</b>\n\n<tg-spoiler>Jawaban: ${word.toUpperCase()}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tebakangka', (ctx) => {
       const a = Math.floor(Math.random() * 10) + 1;
       ctx.reply(`🔢 <b>TEBAK ANGKA</b>\nAku sudah memilih angka dari 1 - 10.\n\n<tg-spoiler>Angka itu adalah: ${a}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('khodam', (ctx) => {
       const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Kamu';
       const k = ['Macan Putih', 'Naga Sakti', 'Kuntilanak Merah', 'Kucing Oren', 'Tuyul Racing', 'Siluman Ular', 'Bebek Ngesot', 'Kosong (Tidak Ada)', 'Kulkas 2 Pintu', 'Spion Motor'];
       const res = k[Math.floor(Math.random() * k.length)];
       ctx.reply(`👻 <b>CEK KHODAM</b>\nNama: ${nama}\nKhodam kamu: <b>${res}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('ramal', (ctx) => {
       const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Kamu';
       const r = ['Akan kaya raya tahun depan!', 'Akan menemukan jodoh secepatnya!', 'Akan kesandung batu besok', 'Harus lebih banyak minum air putih', 'Sedang dirindukan seseorang', 'Akan mendapat rezeki nomplok', 'Akan menangis bahagia hari ini'];
       const res = r[Math.floor(Math.random() * r.length)];
       ctx.reply(`🔮 <b>RAMALAN HARI INI</b>\nNama: ${nama}\nRamalan: <i>${res}</i>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('jodoh', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 3) return ctx.reply("Format: /jodoh [Nama1] [Nama2]");
       const pct = Math.floor(Math.random() * 101);
       ctx.reply(`💘 <b>KALKULATOR JODOH</b>\n${args[1]} 💞 ${args[2]}\n\nTingkat Kecocokan: <b>${pct}%</b>\n${pct > 80 ? 'Wow! Kalian sangat serasi!' : pct > 40 ? 'Hmm, boleh juga.' : 'Sebaiknya cari yang lain...'}`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('kartu', (ctx) => {
       const suits = ['♠️ Terop', '♥️ Hati', '♣️ Keriting', '♦️ Wajik'];
       const values = ['As', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
       const a = suits[Math.floor(Math.random() * suits.length)];
       const b = values[Math.floor(Math.random() * values.length)];
       ctx.reply(`🃏 Kamu menarik kartu: <b>${b} ${a}</b>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('roulette', (ctx) => {
       const bullet = Math.floor(Math.random() * 6);
       if (bullet === 0) return ctx.reply("🔫 💥 DORRR!!! Kamu tertembak (Russian Roulette)!");
       ctx.reply("🔫 <i>Click...</i> Selamat, peluru kosong. Kamu selamat.", {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('werewolf', (ctx) => {
       const roles = [
         { r: '🐺 Werewolf', d: 'Tujuanmu: Habisi villager tanpa ketahuan. Berbohonglah dengan baik.' },
@@ -4079,8 +3832,9 @@ There are no background services or permissions associated.
                   `<i>"${sim}"</i>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n`;
       ctx.reply(msg, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('8ball', (ctx) => {
       const q = ctx.message.text.split(' ').slice(1).join(' ');
       if(!q) return ctx.reply("Format: /8ball [pertanyaan]");
@@ -4098,8 +3852,9 @@ There are no background services or permissions associated.
                 `🔮 <b>Aura:</b> ${category.type}\n` +
                 `💬 <b>Jawaban:</b> <b>${res}</b>\n` +
                 `━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tarot', (ctx) => {
       const cards = [
         { c: 'The Fool', m: 'Awal baru, spontanitas, keberanian mengambil risiko.' },
@@ -4131,8 +3886,9 @@ There are no background services or permissions associated.
                   `━━━━━━━━━━━━━━━━━━━━`;
 
       ctx.reply(msg, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('doa', (ctx) => {
       const qs = [
         { title: 'Doa Memohon Kemudahan', ar: 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', id: 'Ya Tuhanku, lapangkanlah untukku dadaku, dan mudahkanlah untukku urusanku.' },
@@ -4141,16 +3897,18 @@ There are no background services or permissions associated.
       ];
       const q = qs[Math.floor(Math.random() * qs.length)];
       ctx.reply(`🤲 <b>DAILY PRAYER / DOA</b>\n━━━━━━━━━━━━━━━━━━━━\n<b>${q.title}</b>\n\n<code>${q.ar}</code>\n\n<i>"${q.id}"</i>\n━━━━━━━━━━━━━━━━━━━━`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tod', (ctx) => {
       const t = ['Beritahu rahasia terbesarmu!', 'Kapan terakhir kali menangis?', 'Siapa crush kamu saat ini?', 'Pernah ngompol di celana?', 'Hal terburuk apa yang pernah kamu lakukan ke teman?'];
       const d = ['Kirim foto jelek kamu sekarang!', 'Chat mantan kamu bilang rindu!', 'Ganti PP wa sama gambar monyet seharian!', 'Kirim VN nyanyi balonku!', 'Post story nyanyi lagu anak anak!'];
       const isTruth = Math.random() > 0.5;
       const res = isTruth ? `🔵 <b>TRUTH</b>\n${t[Math.floor(Math.random() * t.length)]}` : `🔴 <b>DARE</b>\n${d[Math.floor(Math.random() * d.length)]}`;
       ctx.reply(res, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('gombal', (ctx) => {
       const nama = ctx.message.text.split(' ').slice(1).join(' ') || 'Sayang';
       const g = [
@@ -4160,26 +3918,30 @@ There are no background services or permissions associated.
         `${nama}, cintaku ke kamu itu kayak Dorking. Semakin digali, semakin dalam.`
       ];
       ctx.reply(`💕 <b>GOMBALAN CYBER</b>\n<i>"${g[Math.floor(Math.random() * g.length)]}"</i>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tebaknegara', (ctx) => {
       const t = [{c:'🇯🇵', a:'Jepang'}, {c:'🇮🇩', a:'Indonesia'}, {c:'🇺🇸', a:'Amerika'}, {c:'🇰🇷', a:'Korea'}, {c:'🇷🇺', a:'Rusia'}];
       const items = t[Math.floor(Math.random() * t.length)];
       ctx.reply(`🌍 <b>TEBAK BENDERA</b>\nBendera apakah ini: ${items.c} ?\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tebakkata', (ctx) => {
       const t = [{q:'Selalu di depan, tak terlihat?', a:'Masa Depan'}, {q:'Bisa dipegang tak bisa dilempar?', a:'Janji'}, {q:'Punya gigi tak bisa menggigit?', a:'Sisir'}];
       const items = t[Math.floor(Math.random() * t.length)];
       ctx.reply(`🤔 <b>TEBAK KATA</b>\n${items.q}\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('tebakhewan', (ctx) => {
       const t = [{q:'Hidup di air & darat, melompat.', a:'Katak'}, {q:'Belalai panjang.', a:'Gajah'}, {q:'Leher panjang, makan daun atas.', a:'Jerapah'}];
       const items = t[Math.floor(Math.random() * t.length)];
       ctx.reply(`🐾 <b>TEBAK HEWAN</b>\n${items.q}\n\n<tg-spoiler>Jawaban: ${items.a}</tg-spoiler>`, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('morse', (ctx) => {
       const text = ctx.message.text.split(' ').slice(1).join(' ').toUpperCase();
       if(!text) return ctx.reply("Format: /morse [text]");
@@ -4198,8 +3960,9 @@ There are no background services or permissions associated.
                     `<pre>${resData}</pre>` +
                     `━━━━━━━━━━━━━━━━━━━━`;
       ctx.reply(reply, {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('ig', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /ig [username]");
@@ -4213,8 +3976,9 @@ There are no background services or permissions associated.
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>⚠️ Instagram memblokir scraping langsung. Gunakan link di atas untuk investigasi manual (OPSEC aman).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('tiktok', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /tiktok [username]");
@@ -4228,8 +3992,9 @@ There are no background services or permissions associated.
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>⚠️ Gunakan Urlebird untuk melihat video TikTok secara anonim tanpa tercatat di Analytics target.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('github', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /github [username]");
@@ -4261,8 +4026,9 @@ There are no background services or permissions associated.
       } catch (err) {
         ctx.reply("❌ Gagal menarik data GitHub.");
       }
-    });
 
+
+    });
     bot.command('nama', (ctx) => {
       const args = ctx.message.text.split(' ').slice(1).join(' ');
       if (!args) return ctx.reply("Format: /nama [Nama Lengkap]");
@@ -4284,8 +4050,9 @@ There are no background services or permissions associated.
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>⚠️ Profiling Open Source berdasarkan kecocokan nama, lakukan filter lanjutan untuk menyaring entitas dengan nama pasaran.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bea_cukai', (ctx) => {
       const args = ctx.message.text.substring(11).trim();
       if (!args) return ctx.reply("⚠️ Format: /bea_cukai [Nomor Resi / AWB / IMEI]");
@@ -4299,8 +4066,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Daftar Barang Tidak Dikuasai / Blacklist IMEI</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Intelijen Kepabeanan Ekspor/Impor Nasional.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('sivil', (ctx) => {
       const args = ctx.message.text.substring(7).trim();
       if (!args) return ctx.reply("⚠️ Format: /sivil [Nomor Ijazah/PIN]");
@@ -4314,8 +4082,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Bukti Fisik Kelulusan di Repositori (.ac.id)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Anti-Fraud Ijazah & Sistem Penomoran Ijazah Nasional (PIN).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('bansos', (ctx) => {
       const args = ctx.message.text.substring(8).trim();
       if (!args) return ctx.reply("⚠️ Format: /bansos [NIK / Nama Target Penerima]");
@@ -4329,8 +4098,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Pencairan PKH / BST Tingkat Pemda/Desa</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Intelijen Kesejahteraan Sosial Kemensos RI.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('pbb', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /pbb [Nomor Objek Pajak/NOP 18-Digit]");
@@ -4344,8 +4114,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Bukti Bayar / Surat Teguran Penyitaan Lahan</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Fasilitas pelacakan Aset Tidak Bergerak (Pajak Bumi & Bangunan).</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('samsat', (ctx) => {
       const args = ctx.message.text.substring(8).trim();
       if (!args) return ctx.reply("⚠️ Format: /samsat [Nomor Polisi Kendaraan]");
@@ -4359,8 +4130,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Footprint STNK / Denda PKB di Mesin Pencari Publik</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Alat Bantu Pantau Kewajiban Pajak Transportasi Nasional.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('cekal', (ctx) => {
       const args = ctx.message.text.substring(7).trim();
       if (!args) return ctx.reply("⚠️ Format: /cekal [Nama Lengkap / Nomor Paspor]");
@@ -4374,8 +4146,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Berita Red Notice / Status Deportasi Subjek</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Intelijen Perbatasan Imigrasi dan Larangan Ke Luar Negara RI.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('pse', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /pse [Nama Aplikasi / PT Developer]");
@@ -4389,8 +4162,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Riwayat Sertifikat Tanda Terdaftar Digital Asing & Lokal</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Modul Perlindungan Konsumen & Pencegahan Platform Ilegal di Indonesia.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('djki', (ctx) => {
       const args = ctx.message.text.substring(6).trim();
       if (!args) return ctx.reply("⚠️ Format: /djki [Nama Merek / Perusahaan]");
@@ -4404,8 +4178,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Audit Arsip Penolakan/Persetujuan Hak Merek (BRM PDF)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Alat Forensik Legalitas Brand dan Korporat Skala Nasional.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('ahu', (ctx) => {
       const args = ctx.message.text.substring(5).trim();
       if (!args) return ctx.reply("⚠️ Format: /ahu [Nama PT / Yayasan / Perseroan]");
@@ -4419,8 +4194,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Scan Dump Data Susunan Pengurus & Sengketa Pemegang Saham (PDF)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Intelijen Entitas Korporasi Nasional dan Investigasi Perusahaan Fiktif.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('simkah', (ctx) => {
       const args = ctx.message.text.substring(8).trim();
       if (!args) return ctx.reply("⚠️ Format: /simkah [Nama Suami/Istri / NIK]");
@@ -4434,8 +4210,9 @@ There are no background services or permissions associated.
                     `└ 🌐 <a href="https://www.google.com/search?q=${q2}">Tracing Bukti Surat Nikah Terbuka pada Dokumen Digital (Google)</a>\n\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n<i>Forensik Sipil KUA Kementrian Agama, Pencegahan Pemalsuan Status Perkawinan.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     bot.command('osint_indo', (ctx) => {
       const reply = `<b>🇮🇩 OSINT INDONESIA MODULE (ADVANCED ENTERPRISE 2.0)</b>\n` +
                     `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4453,8 +4230,9 @@ There are no background services or permissions associated.
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>Integrasi Dorking tingkat atas untuk forensik publik di Indonesia berdasarkan UU KIP Open Source.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('sosmed', (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /sosmed [username]");
@@ -4471,8 +4249,9 @@ There are no background services or permissions associated.
                     `━━━━━━━━━━━━━━━━━━━━\n` +
                     `<i>Gunakan /username untuk pengecekan otomatis 100+ situs.</i>`;
       ctx.reply(reply, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
-    });
 
+
+    });
     // 📸 IMAGE OSINT MODULE (Reverse Image / Data)
     // 🗂️ BUTTON REPLIES MAPPING
     const buttonMap: Record<string, string> = {
@@ -4569,8 +4348,9 @@ There are no background services or permissions associated.
       }
 
       return next();
-    });
 
+
+    });
     bot.on('photo', async (ctx) => {
       ctx.reply("📸 <b>IMAGE OSINT MODULE ACTIVATED</b>\nSedang menganalisa foto...", {parse_mode: 'HTML'}).then((msg) => {
          setTimeout(() => {
@@ -4585,8 +4365,9 @@ There are no background services or permissions associated.
             ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, undefined, txt, { parse_mode: 'HTML', link_preview_options: {is_disabled: true} });
          }, 1500);
       });
-    });
 
+
+    });
     bot.on('document', async (ctx) => {
       if (ctx.message.document.mime_type?.startsWith('image/')) {
          try {
@@ -4619,8 +4400,9 @@ There are no background services or permissions associated.
              ctx.reply("❌ Gagal membaca EXIF dari gambar.");
          }
       }
-    });
 
+
+    });
     bot.command('analyze', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("Format: /analyze [username/email/domain/ip]");
@@ -4672,78 +4454,10 @@ There are no background services or permissions associated.
       } catch (err: any) {
           ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, `❌ <b>Error Engine:</b>\n${err.message}`, { parse_mode: 'HTML' });
       }
+
+
     });
-
-    bot.command('scan', async (ctx) => {
-      const args = ctx.message.text.split(' ');
-      if (args.length < 2) return ctx.reply("Format: /scan [IP/Domain]");
-      const target = args[1].replace(/https?:\/\//, '').replace(/\/$/, '');
-      
-      const scanMsg = await ctx.reply(`🔍 <b>DEEP_SCAN_INITIATED:</b> <code>${target}</code>\n<i>Menjalankan modul Multi-Layer Recon (OSINT, NMAP-lite, Banner Grabbing)...</i>`, { parse_mode: 'HTML' });
-      
-      try {
-        // [1] IP-API Fetch
-        const ipRes = await fetch(`http://ip-api.com/json/${target}?fields=status,message,country,city,isp,org,query`);
-        const ipData = await ipRes.json();
-        
-        let ipInfo = "N/A";
-        let targetIp = target;
-        if (ipData.status === 'success') {
-           targetIp = ipData.query;
-           ipInfo = `IP: ${ipData.query}\nNegara: ${ipData.country}\nKota: ${ipData.city}\nISP: ${ipData.isp}`;
-        }
-        
-        // [2] WHOIS Fetch
-        const whoisRes = await fetch(`https://networkcalc.com/api/dns/whois/${target}`);
-        const whoisRaw = await whoisRes.json().catch(() => null);
-        let whoisInfo = "No Data";
-        if (whoisRaw && whoisRaw.status === 'OK' && whoisRaw.whois) {
-            whoisInfo = `Registrar: ${whoisRaw.whois.registrar || '-'}\nCreated: ${whoisRaw.whois.creation_date || '-'}\nExpires: ${whoisRaw.whois.expiration_date || '-'}`;
-        }
-        
-        // [3] REAL INTENSIVE PORT SCAN 
-        const importantPorts = [21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 3389, 5432, 8080, 8443, 27017];
-        let openPorts: number[] = [];
-        
-        const checkPort = (port: number) => {
-          return new Promise<void>((resolve) => {
-            const socket = new net.Socket();
-            socket.setTimeout(1500);
-            socket.on('connect', () => { openPorts.push(port); socket.destroy(); resolve(); });
-            socket.on('timeout', () => { socket.destroy(); resolve(); });
-            socket.on('error', () => { socket.destroy(); resolve(); });
-            socket.connect(port, targetIp);
-          });
-        };
-        
-        await Promise.all(importantPorts.map(p => checkPort(p)));
-        let portInfo = openPorts.length > 0 ? `Open Ports: ${openPorts.join(', ')}` : "All Top 15 Ports Filtered/Closed";
-
-        // [4] HTTP BANNER GRABBING
-        let bannerInfo = "HTTP Unreachable";
-        try {
-           const httpRes = await fetch(`http://${target}`, { timeout: 2000 } as any);
-           bannerInfo = `Status: ${httpRes.status}\nServer: ${httpRes.headers.get('server') || 'Unknown'}`;
-        } catch (e) {
-           bannerInfo = "No HTTP Response on port 80";
-        }
-        
-        const finalTxt = `✅ <b>DEEP_SCAN_COMPLETED:</b> <code>${target}</code>\n` +
-                         `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `🌍 <b>[GEO-IP OSINT]</b>\n${ipInfo}\n\n` +
-                         `🛡️ <b>[WHOIS REGISTRY]</b>\n${whoisInfo}\n\n` +
-                         `⚙️ <b>[TCP PORT SCAN]</b>\n${portInfo}\n\n` +
-                         `🌐 <b>[WEB BANNER GRAB]</b>\n${bannerInfo}\n` +
-                         `━━━━━━━━━━━━━━━━━━━━\n` +
-                         `<i>* Intel Engine v2 - Powered by Extreme OSINT</i>`;
-                         
-        ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, finalTxt, { parse_mode: 'HTML' });
-
-      } catch (err) {
-        ctx.telegram.editMessageText(ctx.chat.id, scanMsg.message_id, undefined, `❌ <b>Error Occured:</b>\nTarget down atau protected.`, { parse_mode: 'HTML' });
-      }
-    });
-
+    bot.command('scan', (ctx) => { ctx.reply('ℹ️ <b>Fitur scan telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
     let waConnecting = false;
 
     // We hook the telegram.callApi to intercept WhatsApp targeted messages
@@ -5201,8 +4915,9 @@ There are no background services or permissions associated.
         return ctx.reply("🔒 <b>Akses Terpental</b>\nMaaf, fitur integrasi WhatsApp Bot khusus untuk <b>Admin Owner</b> saja.", {parse_mode: 'HTML'});
       }
       ctx.reply("✅ Anda adalah Admin Owner utama. Sesi terverifikasi otomatis tanpa password!", {parse_mode: 'HTML'});
-    });
 
+
+    });
     bot.command('wa_connect', async (ctx) => {
       if (!ctx.from || ctx.from.id !== ADMIN_ID) {
         return ctx.reply("🔒 <b>Akses Terpental</b>\nMaaf, fitur integrasi WhatsApp Bot khusus untuk <b>Admin Owner</b> saja.", {parse_mode: 'HTML'});
@@ -5212,8 +4927,9 @@ There are no background services or permissions associated.
       waConnecting = true;
       const progressMsg = await ctx.reply("🔄 Memulai session Baileys WhatsApp...").catch(() => null);
       startWAConnection(ctx);
-    });
 
+
+    });
     // MIKKO_APK BLANK PACKAGE BUILDER SYSTEM (Password-locked: 1928)
     bot.command('mikkoapk', async (ctx) => {
       try {
@@ -5324,8 +5040,9 @@ There are no background services or permissions associated.
       } catch (err: any) {
         ctx.reply("❌ Gagal merakit APK kosong: " + err.message);
       }
-    });
 
+
+    });
     // ALARM SYSTEM
     const activeAlarms = new Map<number, any[]>();
 
@@ -5369,8 +5086,9 @@ There are no background services or permissions associated.
       activeAlarms.set(ctx.from.id, userAlarms);
 
       ctx.reply(`✅ <b>Alarm diset!</b>\nSekitar: ${label}`, { parse_mode: 'HTML' });
-    });
 
+
+    });
     bot.command('listalarm', (ctx) => {
       const userAlarms = activeAlarms.get(ctx.from.id) || [];
       if (userAlarms.length === 0) return ctx.reply("📭 Tidak ada alarm aktif.");
@@ -5381,8 +5099,9 @@ There are no background services or permissions associated.
         msg += `${i+1}. <b>${a.time}</b> (~${remaining} mnt lagi)\n`;
       });
       ctx.reply(msg, { parse_mode: 'HTML' });
-    });
 
+
+    });
     process.once('SIGINT', () => bot && bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
   } else {
