@@ -8,18 +8,24 @@ export interface CorrelatePlatform {
   category: 'Indo' | 'Social' | 'Dev' | 'Design' | 'Gaming' | 'Audio' | 'Creator' | 'Content' | 'Finance';
   url: string;
   apiEndpoint?: string;
-  checkMethod: 'api_github' | 'api_gravatar' | 'api_npm' | 'api_reddit' | 'api_duolingo' | 'api_gitlab' | 'api_docker' | 'api_codeforces' | 'api_hackernews' | 'api_keybase' | 'api_chess' | 'get_with_signature' | 'status_only';
+  checkMethod: 'api_github' | 'api_gravatar' | 'api_npm' | 'api_reddit' | 'api_duolingo' | 'api_gitlab' | 'api_docker' | 'api_codeforces' | 'api_hackernews' | 'api_keybase' | 'api_chess' | 'get_with_signature';
   mustContain?: string[];
   mustNotContain?: string[];
-  expectedStatus?: number[];
   extractBio?: boolean;
 }
 
 export interface DiscoveredContact {
-  type: 'whatsapp' | 'email' | 'instagram' | 'telegram' | 'phone' | 'website' | 'name';
+  type: 'whatsapp' | 'email' | 'instagram' | 'telegram' | 'phone' | 'website' | 'name' | 'location';
   value: string;
   source: string;
   link?: string;
+}
+
+export interface DiscoveredPublicRecord {
+  title: string;
+  source: string;
+  details: string;
+  url?: string;
 }
 
 export interface PlatformCheckResult {
@@ -31,15 +37,13 @@ export interface PlatformCheckResult {
   extractedText?: string;
 }
 
-// 12 Realistic Modern User-Agents across Windows, Mac, Linux, iOS, Android
+// Realistic modern User-Agents
 const REAL_USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:125.0) Gecko/20100101 Firefox/125.0",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0",
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
   "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
 ];
@@ -72,7 +76,53 @@ export function getRandomHeaders(): Record<string, string> {
   };
 }
 
-// Build strictly verified platforms with zero false-positives
+// Generate handle and email candidates from raw name input
+export function generatePermutations(rawInput: string): {
+  fullName?: string;
+  handles: string[];
+  emailCandidates: string[];
+} {
+  const cleaned = rawInput.trim();
+  const hasSpaces = /\s+/.test(cleaned);
+
+  if (hasSpaces) {
+    const parts = cleaned.split(/\s+/).map(p => p.toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean);
+    const joined = parts.join('');
+    const dot = parts.join('.');
+    const under = parts.join('_');
+    const dash = parts.join('-');
+
+    const handles = Array.from(new Set([joined, under, dot, dash])).filter(h => h.length >= 3);
+    const emailCandidates = [
+      `${joined}@gmail.com`,
+      `${dot}@gmail.com`,
+      `${under}@gmail.com`,
+      `${joined}@yahoo.com`,
+      `${dot}@yahoo.com`,
+      `${joined}@hotmail.com`,
+      `${joined}@outlook.com`
+    ];
+
+    return {
+      fullName: cleaned,
+      handles,
+      emailCandidates
+    };
+  } else {
+    const handle = cleaned.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const emailCandidates = [
+      `${handle}@gmail.com`,
+      `${handle}@yahoo.com`,
+      `${handle}@outlook.com`
+    ];
+    return {
+      handles: [handle],
+      emailCandidates
+    };
+  }
+}
+
+// Build platform list with zero false positives
 export function buildPlatformList(user: string): CorrelatePlatform[] {
   const u = encodeURIComponent(user);
   return [
@@ -82,7 +132,7 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       category: "Indo",
       url: `https://saweria.co/${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["Halaman tidak ditemukan", "404", "User not found"],
+      mustNotContain: ["Halaman tidak ditemukan", "404", "User not found", "Page not found"],
       mustContain: [u, "saweria"],
       extractBio: true
     },
@@ -112,14 +162,6 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustNotContain: ["404", "Page Not Found", "Halaman tidak ditemukan", "User Not Found"],
       mustContain: ["sociabuzz.com/", u],
       extractBio: true
-    },
-    {
-      name: "Kitabisa",
-      category: "Indo",
-      url: `https://kitabisa.com/@${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["Halaman Tidak Ditemukan", "404"],
-      mustContain: [u]
     },
     {
       name: "Blogger ID",
@@ -175,14 +217,6 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       checkMethod: 'api_keybase'
     },
     {
-      name: "Mastodon",
-      category: "Social",
-      url: `https://mastodon.social/@${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["404", "Record not found", "Page not found"],
-      mustContain: [`@${user}`]
-    },
-    {
       name: "Pinterest",
       category: "Social",
       url: `https://www.pinterest.com/${u}/`,
@@ -206,15 +240,6 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       checkMethod: 'get_with_signature',
       mustNotContain: ["This site doesn't exist", "404", "Site Not Found"],
       mustContain: ["carrd.co"],
-      extractBio: true
-    },
-    {
-      name: "Bento.me",
-      category: "Social",
-      url: `https://bento.me/${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["404", "Page Not Found", "User not found", "bento.me"],
-      mustContain: [user],
       extractBio: true
     },
 
@@ -277,24 +302,8 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustNotContain: ["404", "Page Not Found", "We couldn't find that"],
       mustContain: [`@${user}`]
     },
-    {
-      name: "CodePen",
-      category: "Dev",
-      url: `https://codepen.io/${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["404", "Page Not Found", "Couldn't find that"],
-      mustContain: [user]
-    },
-    {
-      name: "Pastebin",
-      category: "Dev",
-      url: `https://pastebin.com/u/${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["Not Found", "Unknown User", "404"],
-      mustContain: [`Public Pastes of ${user}`]
-    },
 
-    // 🎮 GAMING & ENTERTAINMENT
+    // 🎮 GAMING & CONTENT
     {
       name: "Steam Community",
       category: "Gaming",
@@ -312,14 +321,6 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       checkMethod: 'api_chess'
     },
     {
-      name: "Lichess",
-      category: "Gaming",
-      url: `https://lichess.org/@/${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["Page not found", "404", "No user found"],
-      mustContain: [user]
-    },
-    {
       name: "Duolingo",
       category: "Content",
       url: `https://www.duolingo.com/profile/${u}`,
@@ -335,27 +336,11 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustContain: [user]
     },
     {
-      name: "Bandcamp",
-      category: "Audio",
-      url: `https://${u}.bandcamp.com`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["Sorry, that isn't a Bandcamp artist or label", "404"],
-      mustContain: ["bandcamp.com"]
-    },
-    {
       name: "BuyMeACoffee",
       category: "Finance",
       url: `https://www.buymeacoffee.com/${u}`,
       checkMethod: 'get_with_signature',
       mustNotContain: ["Page not found", "404", "Couldn't find this creator"],
-      mustContain: [user]
-    },
-    {
-      name: "Ko-fi",
-      category: "Finance",
-      url: `https://ko-fi.com/${u}`,
-      checkMethod: 'get_with_signature',
-      mustNotContain: ["Page Not Found", "404", "Page not found!"],
       mustContain: [user]
     }
   ];
@@ -392,7 +377,6 @@ export function sanitizeHtmlToText(html: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-// Strictly extract contacts with ZERO false positives
 const JUNK_EMAILS = [
   'automattic.com', 'wordpress.com', 'cloudflare.com', 'google.com', 'sentry.io', 
   'github.com', 'w3.org', 'schema.org', 'example.com', 'domain.com', 'jsdelivr.net',
@@ -405,6 +389,7 @@ const JUNK_EMAIL_PREFIXES = [
   'press', 'feedback', 'team', 'service', 'notification', 'notifications'
 ];
 
+// Extract contacts strictly with real values
 export function extractContactsFromText(rawHtmlOrText: string, sourceName: string): DiscoveredContact[] {
   const contacts: DiscoveredContact[] = [];
   if (!rawHtmlOrText || typeof rawHtmlOrText !== 'string') return contacts;
@@ -450,7 +435,6 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
     const em = match[1].toLowerCase();
     const [userPart, domainPart] = em.split('@');
     
-    // Check junk domain
     const isJunkDomain = JUNK_EMAILS.some(j => domainPart.includes(j));
     const isJunkPrefix = JUNK_EMAIL_PREFIXES.includes(userPart.toLowerCase().replace(/[^a-z]/g, ''));
 
@@ -479,7 +463,6 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
     }
   }
 
-  // Explicit keyword IG: @username (NOT random word matching)
   const igKeywordRegex = /\b(?:instagram|ig)\s*[:=]\s*@?([a-zA-Z0-9_.]{3,30})\b/gi;
   while ((match = igKeywordRegex.exec(cleanText)) !== null) {
     const handle = match[1];
@@ -511,6 +494,73 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
   return contacts;
 }
 
+// Query academic and public registries (OpenAlex, CrossRef, Wikipedia)
+export async function queryPublicRegistries(targetName: string): Promise<DiscoveredPublicRecord[]> {
+  const records: DiscoveredPublicRecord[] = [];
+  if (!targetName || targetName.length < 3) return records;
+
+  // 1. CrossRef Works & Papers
+  try {
+    const crRes = await axios.get(`https://api.crossref.org/works?query.author=${encodeURIComponent(targetName)}&rows=3`, {
+      headers: { 'User-Agent': 'OSINT-Nexus/2.0 (contact: admin@nexus-intel.org)' },
+      timeout: 4500
+    });
+    if (crRes.data?.message?.items?.length > 0) {
+      crRes.data.message.items.forEach((item: any) => {
+        const title = item.title?.[0] || 'Karya Ilmiah / Publikasi';
+        const publisher = item.publisher || 'Penerbit Jurnal';
+        const doi = item.DOI ? `https://doi.org/${item.DOI}` : undefined;
+        records.push({
+          title: `Publikasi Jurnal / Karya Ilmiah: ${title}`,
+          source: `CrossRef (${publisher})`,
+          details: `DOI: ${item.DOI || 'Tercatat'} | Tahun: ${item.created?.['date-parts']?.[0]?.[0] || '-'}`,
+          url: doi
+        });
+      });
+    }
+  } catch(e) {}
+
+  // 2. OpenAlex Academic Author Registry
+  try {
+    const alexRes = await axios.get(`https://api.openalex.org/authors?search=${encodeURIComponent(targetName)}`, {
+      headers: { 'User-Agent': 'OSINT-Nexus/2.0' },
+      timeout: 4500
+    });
+    if (alexRes.data?.results?.length > 0) {
+      alexRes.data.results.slice(0, 2).forEach((a: any) => {
+        const institution = a.last_known_institutions?.[0]?.display_name || 'Institusi Akademik';
+        records.push({
+          title: `Profil Akademisi / Peneliti: ${a.display_name}`,
+          source: 'OpenAlex Scholarly Registry',
+          details: `Institusi/Afiliasi: ${institution} | Jumlah Karya: ${a.works_count || 1}`,
+          url: a.id
+        });
+      });
+    }
+  } catch(e) {}
+
+  // 3. Wikipedia Search
+  try {
+    const wikiRes = await axios.get(`https://id.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(targetName)}&format=json`, {
+      headers: { 'User-Agent': 'OSINT-Nexus/2.0' },
+      timeout: 4000
+    });
+    if (wikiRes.data?.query?.search?.length > 0) {
+      const top = wikiRes.data.query.search[0];
+      if (top.title.toLowerCase().includes(targetName.toLowerCase())) {
+        records.push({
+          title: `Entri Ensiklopedia: ${top.title}`,
+          source: 'Wikipedia Indonesia',
+          details: top.snippet.replace(/<[^>]+>/g, ''),
+          url: `https://id.wikipedia.org/wiki/${encodeURIComponent(top.title)}`
+        });
+      }
+    }
+  } catch(e) {}
+
+  return records;
+}
+
 // Generate Actionable Google Dork Matrix
 export function generateDorkMatrix(target: string, type: 'username' | 'email' | 'domain' | 'ip') {
   const dorks: { title: string; query: string; url: string }[] = [];
@@ -519,7 +569,7 @@ export function generateDorkMatrix(target: string, type: 'username' | 'email' | 
   if (type === 'username') {
     const u = target;
     dorks.push({
-      title: "📱 WhatsApp & Kontak Terindeks",
+      title: "📱 WhatsApp & Nomor HP Terindeks",
       query: `"${u}" ("wa.me" OR "08" OR "chat.whatsapp.com" OR "kontak")`,
       url: `https://www.google.com/search?q=${q(`"${u}" ("wa.me" OR "08" OR "chat.whatsapp.com" OR "kontak")`)}`
     });
@@ -539,13 +589,13 @@ export function generateDorkMatrix(target: string, type: 'username' | 'email' | 
       url: `https://www.google.com/search?q=${q(`"${u}" (site:github.com OR site:gitlab.com OR site:pastebin.com) ("api_key" OR "password" OR "token" OR "secret")`)}`
     });
     dorks.push({
-      title: "📸 Lintas Media Sosial (IG, TikTok, X, FB)",
-      query: `"${u}" (site:instagram.com OR site:tiktok.com OR site:twitter.com OR site:facebook.com OR site:threads.net)`,
-      url: `https://www.google.com/search?q=${q(`"${u}" (site:instagram.com OR site:tiktok.com OR site:twitter.com OR site:facebook.com OR site:threads.net)`)}`
+      title: "📸 Lintas Media Sosial (IG, TikTok, X, FB, LinkedIn)",
+      query: `"${u}" (site:instagram.com OR site:tiktok.com OR site:twitter.com OR site:facebook.com OR site:linkedin.com)`,
+      url: `https://www.google.com/search?q=${q(`"${u}" (site:instagram.com OR site:tiktok.com OR site:twitter.com OR site:facebook.com OR site:linkedin.com)`)}`
     });
   } else if (type === 'email') {
     const em = target;
-    const [user, domain] = em.split('@');
+    const [user] = em.split('@');
     dorks.push({
       title: "📬 Kebocoran Database Publik (Pastebin / Text)",
       query: `"${em}" (site:pastebin.com OR site:throwbin.io OR filetype:txt OR filetype:sql)`,
@@ -573,22 +623,12 @@ export function generateDorkMatrix(target: string, type: 'username' | 'email' | 
       query: `site:${d} inurl:admin OR inurl:login OR inurl:portal OR inurl:dashboard`,
       url: `https://www.google.com/search?q=${q(`site:${d} inurl:admin OR inurl:login OR inurl:portal OR inurl:dashboard`)}`
     });
-    dorks.push({
-      title: "📑 Index of / Directory Listing",
-      query: `site:${d} "index of /" OR "parent directory"`,
-      url: `https://www.google.com/search?q=${q(`site:${d} "index of /" OR "parent directory"`)}`
-    });
   } else {
     const ip = target;
     dorks.push({
       title: "🌐 Shodan InternetDB Query",
       query: `https://internetdb.shodan.io/${ip}`,
       url: `https://internetdb.shodan.io/${ip}`
-    });
-    dorks.push({
-      title: "🔍 Google Index on IP",
-      query: `"${ip}"`,
-      url: `https://www.google.com/search?q=${q(`"${ip}"`)}`
     });
   }
 

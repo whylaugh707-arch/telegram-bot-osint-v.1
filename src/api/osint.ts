@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { osintEngine } from '../services/osint';
-import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix } from '../services/correlator';
+import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix, generatePermutations, queryPublicRegistries } from '../services/correlator';
 import axios from 'axios';
 import dns from 'dns/promises';
 import crypto from 'crypto';
@@ -65,66 +65,89 @@ router.get('/correlate', async (req, res) => {
             });
         }
 
-        // Persona scan
-        const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
-        const platforms = buildPlatformList(cleanUser);
+        // Persona & Multi-Handle / Name Scan
+        const perm = generatePermutations(target);
+        const primaryHandle = perm.handles[0] || target.replace(/[^a-zA-Z0-9_.-]/g, '');
         const confirmed: any[] = [];
         const contacts: any[] = [];
 
-        // Check platforms in batches of 15
-        for (let i = 0; i < platforms.length; i += 15) {
-            const batch = platforms.slice(i, i + 15);
-            await Promise.all(batch.map(async (p) => {
-                const headers = getRandomHeaders();
-                try {
-                    if (p.checkMethod === 'api_github') {
-                        const gh = await axios.get(`https://api.github.com/users/${cleanUser}`, { headers: { ...headers, 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
-                        if (gh.status === 200 && gh.data?.login) {
-                            if (gh.data.email) contacts.push({ type: 'email', value: gh.data.email, source: 'GitHub' });
-                            if (gh.data.bio) contacts.push(...extractContactsFromText(gh.data.bio, 'GitHub Bio'));
-                            confirmed.push({ name: p.name, category: p.category, url: gh.data.html_url, note: gh.data.name });
-                        }
-                    } else if (p.checkMethod === 'api_gravatar') {
-                        const grav = await axios.get(`https://en.gravatar.com/${cleanUser}.json`, { headers, timeout: 4000, validateStatus: () => true });
-                        if (grav.status === 200 && grav.data?.entry?.[0]) {
-                            const entry = grav.data.entry[0];
-                            if (entry.displayName) contacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
-                            confirmed.push({ name: p.name, category: p.category, url: entry.profileUrl || p.url, note: entry.displayName });
-                        }
-                    } else if (p.checkMethod === 'api_reddit') {
-                        const r = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${cleanUser}/about.json`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
-                        if (r.status === 200 && r.data?.data?.name) {
-                            confirmed.push({ name: p.name, category: p.category, url: p.url, note: `Karma: ${r.data.data.total_karma || 0}` });
-                        }
-                    } else if (p.checkMethod === 'api_npm') {
-                        const npm = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${cleanUser}`, { headers, timeout: 3500, validateStatus: () => true });
-                        if (npm.status === 200 && npm.data?.name) {
-                            if (npm.data.email) contacts.push({ type: 'email', value: npm.data.email, source: 'NPM' });
-                            confirmed.push({ name: p.name, category: p.category, url: p.url });
-                        }
-                    } else if (p.checkMethod === 'get_with_signature') {
-                        const res = await axios.get(p.url, { headers, timeout: 4000, validateStatus: () => true, maxRedirects: 3 });
-                        if (res.status === 200) {
-                            const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-                            if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) return;
-                            if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) return;
-                            if (p.extractBio) {
-                                contacts.push(...extractContactsFromText(text, p.name));
+        // 1. Check Public Registries (CrossRef, OpenAlex, Wikipedia)
+        const publicRecords = await queryPublicRegistries(perm.fullName || target);
+
+        // 2. Gravatar Hash Permutations for common email variants
+        for (const em of perm.emailCandidates) {
+            const hash = crypto.createHash('md5').update(em).digest('hex');
+            try {
+                const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { timeout: 3000, validateStatus: () => true });
+                if (gRes.status === 200 && gRes.data?.entry?.[0]) {
+                    const entry = gRes.data.entry[0];
+                    if (entry.displayName) contacts.push({ type: 'name', value: entry.displayName, source: `Gravatar (${em})` });
+                    if (entry.currentLocation) contacts.push({ type: 'location', value: entry.currentLocation, source: 'Gravatar' });
+                    if (entry.aboutMe) contacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
+                    confirmed.push({ name: 'Gravatar Profile', category: 'Social', url: entry.profileUrl, note: entry.displayName });
+                }
+            } catch(e) {}
+        }
+
+        // 3. Scan Verified Platforms for handles
+        const handlesToScan = perm.handles.slice(0, 3);
+        for (const h of handlesToScan) {
+            const platforms = buildPlatformList(h);
+            for (let i = 0; i < platforms.length; i += 15) {
+                const batch = platforms.slice(i, i + 15);
+                await Promise.all(batch.map(async (p) => {
+                    const headers = getRandomHeaders();
+                    try {
+                        if (p.checkMethod === 'api_github') {
+                            const gh = await axios.get(`https://api.github.com/users/${h}`, { headers: { ...headers, 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
+                            if (gh.status === 200 && gh.data?.login) {
+                                if (gh.data.email) contacts.push({ type: 'email', value: gh.data.email, source: 'GitHub' });
+                                if (gh.data.bio) contacts.push(...extractContactsFromText(gh.data.bio, 'GitHub Bio'));
+                                confirmed.push({ name: `${p.name} (@${h})`, category: p.category, url: gh.data.html_url, note: gh.data.name });
                             }
-                            confirmed.push({ name: p.name, category: p.category, url: p.url });
+                        } else if (p.checkMethod === 'api_gravatar') {
+                            const grav = await axios.get(`https://en.gravatar.com/${h}.json`, { headers, timeout: 4000, validateStatus: () => true });
+                            if (grav.status === 200 && grav.data?.entry?.[0]) {
+                                const entry = grav.data.entry[0];
+                                if (entry.displayName) contacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
+                                confirmed.push({ name: `${p.name} (@${h})`, category: p.category, url: entry.profileUrl || p.url, note: entry.displayName });
+                            }
+                        } else if (p.checkMethod === 'api_reddit') {
+                            const r = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${h}/about.json`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
+                            if (r.status === 200 && r.data?.data?.name) {
+                                confirmed.push({ name: `${p.name} (@${h})`, category: p.category, url: p.url, note: `Karma: ${r.data.data.total_karma || 0}` });
+                            }
+                        } else if (p.checkMethod === 'api_npm') {
+                            const npm = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${h}`, { headers, timeout: 3500, validateStatus: () => true });
+                            if (npm.status === 200 && npm.data?.name) {
+                                if (npm.data.email) contacts.push({ type: 'email', value: npm.data.email, source: 'NPM' });
+                                confirmed.push({ name: `${p.name} (@${h})`, category: p.category, url: p.url });
+                            }
+                        } else if (p.checkMethod === 'get_with_signature') {
+                            const res = await axios.get(p.url, { headers, timeout: 4000, validateStatus: () => true, maxRedirects: 3 });
+                            if (res.status === 200) {
+                                const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+                                if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) return;
+                                if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) return;
+                                if (p.extractBio) {
+                                    contacts.push(...extractContactsFromText(text, p.name));
+                                }
+                                confirmed.push({ name: `${p.name} (@${h})`, category: p.category, url: p.url });
+                            }
                         }
-                    }
-                } catch(e) {}
-            }));
+                    } catch(e) {}
+                }));
+            }
         }
 
         return res.json({
-            target: cleanUser,
-            type: 'username',
-            totalScanned: platforms.length,
+            target: perm.fullName || primaryHandle,
+            type: perm.fullName ? 'Full Name / Persona' : 'username',
+            handles: perm.handles,
             confirmed,
             contacts,
-            dorks: generateDorkMatrix(cleanUser, 'username'),
+            publicRecords,
+            dorks: generateDorkMatrix(primaryHandle, 'username'),
             elapsedMs: Date.now() - startTime
         });
 

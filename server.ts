@@ -12,7 +12,7 @@ import db from './src/db/sqlite';
 import crypto from "crypto";
 import fs from "fs";
 import { osintEngine } from "./src/services/osint";
-import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix, splitTelegramMessages } from "./src/services/correlator";
+import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix, splitTelegramMessages, generatePermutations, queryPublicRegistries } from "./src/services/correlator";
 import osintRouter from "./src/api/osint";
 import { templates } from "./src/templates";
 import rateLimit from "express-rate-limit";
@@ -2941,216 +2941,243 @@ There are no background services or permissions associated.
                    (nsRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[NS: ${nsRecords[0]}]</code>\n` : '');
 
         } else {
-          // 🚀 DIGITAL PERSONA / USERNAME ANALYSIS (210+ Platforms & Multi-Headers)
-          const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
-          const platforms = buildPlatformList(cleanUser);
-          const totalPlatforms = platforms.length;
-          
+          // 🚀 DIGITAL PERSONA & FULL NAME MULTI-VECTOR OSINT ENGINE
+          const perm = generatePermutations(target);
+          const primaryHandle = perm.handles[0] || target.replace(/[^a-zA-Z0-9_.-]/g, '');
+          const isFullName = Boolean(perm.fullName);
+
           let confirmedList: { name: string; category: string; url: string; note?: string }[] = [];
           let discoveredContacts: any[] = [];
-          let githubDetails: any = null;
+          let publicRecords: any[] = [];
 
-          // Process in concurrent batches of 18 with live status updates
-          const batchSize = 18;
-          for (let i = 0; i < totalPlatforms; i += batchSize) {
-            const batch = platforms.slice(i, i + batchSize);
-            const currentSeconds = Math.floor((Date.now() - startTime) / 1000);
+          // 1. Query Public Registries in parallel (CrossRef, OpenAlex, Wikipedia)
+          if (isFullName || target.length >= 4) {
+            try {
+              publicRecords = await queryPublicRegistries(perm.fullName || target);
+            } catch(e) {}
+          }
 
-            // Edit progress message every batch
-            if (statusMsg && i > 0 && i % (batchSize * 2) === 0) {
-              const progressTxt = 
-                `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-                `🎯 <b>TARGET INVESTIGASI:</b> <code>${cleanUser}</code>\n` +
-                `📡 <b>PROSES:</b> Memindai ${i} / ${totalPlatforms} platform (Batch ${Math.floor(i/batchSize)+1}/${Math.ceil(totalPlatforms/batchSize)})...\n` +
-                `⏱️ <b>WAKTU PENCARIAN:</b> ${currentSeconds} detik\n` +
-                `🔎 <b>TERDETEKSI:</b> ${confirmedList.length} akun aktif\n` +
-                `━━━━━━━━━━━━━━━━━━━━`;
-              await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, progressTxt, { parse_mode: 'HTML' }).catch(() => {});
-            }
-
-            const batchResults = await Promise.all(batch.map(async (p) => {
-              const headers = getRandomHeaders();
+          // 2. Gravatar Hash Permutations for email candidates
+          if (perm.emailCandidates && perm.emailCandidates.length > 0) {
+            await Promise.all(perm.emailCandidates.slice(0, 5).map(async (em) => {
+              const hash = crypto.createHash('md5').update(em).digest('hex');
               try {
-                // 1. GitHub API
-                if (p.checkMethod === 'api_github') {
-                  const ghRes = await axios.get(`https://api.github.com/users/${cleanUser}`, {
-                    headers: { ...headers, 'User-Agent': 'Mozilla/5.0' },
-                    timeout: 4500,
-                    validateStatus: () => true
-                  });
-                  if (ghRes.status === 200 && ghRes.data?.login) {
-                    const data = ghRes.data;
-                    githubDetails = data;
-                    if (data.email) {
-                      discoveredContacts.push({ type: 'email', value: data.email, source: 'GitHub Profile', link: `mailto:${data.email}` });
-                    }
-                    if (data.blog) {
-                      discoveredContacts.push(...extractContactsFromText(data.blog, 'GitHub Website'));
-                    }
-                    if (data.bio) {
-                      discoveredContacts.push(...extractContactsFromText(data.bio, 'GitHub Bio'));
-                    }
-                    return { name: p.name, category: p.category, url: data.html_url || p.url, found: true, note: data.name ? `Nama: ${data.name}` : undefined };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
+                const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { timeout: 3500, validateStatus: () => true });
+                if (gRes.status === 200 && gRes.data?.entry?.[0]) {
+                  const entry = gRes.data.entry[0];
+                  if (entry.displayName) discoveredContacts.push({ type: 'name', value: entry.displayName, source: `Gravatar (${em})` });
+                  if (entry.currentLocation) discoveredContacts.push({ type: 'location', value: entry.currentLocation, source: 'Gravatar' });
+                  if (entry.aboutMe) discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
+                  confirmedList.push({ name: `Gravatar Profile (${em})`, category: 'Social', url: entry.profileUrl, note: entry.displayName });
                 }
-
-                // 2. Gravatar API
-                if (p.checkMethod === 'api_gravatar') {
-                  const gravRes = await axios.get(`https://en.gravatar.com/${cleanUser}.json`, {
-                    headers,
-                    timeout: 4000,
-                    validateStatus: () => true
-                  });
-                  if (gravRes.status === 200 && gravRes.data?.entry?.[0]) {
-                    const entry = gravRes.data.entry[0];
-                    if (entry.displayName) {
-                      discoveredContacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
-                    }
-                    if (entry.aboutMe) {
-                      discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
-                    }
-                    return { name: p.name, category: p.category, url: entry.profileUrl || p.url, found: true, note: entry.displayName ? `Nama: ${entry.displayName}` : undefined };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 3. Reddit JSON API
-                if (p.checkMethod === 'api_reddit') {
-                  const rRes = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${cleanUser}/about.json`, {
-                    headers: { 'User-Agent': 'Mozilla/5.0' },
-                    timeout: 4000,
-                    validateStatus: () => true
-                  });
-                  if (rRes.status === 200 && rRes.data?.data?.name) {
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: `Karma: ${rRes.data.data.total_karma || 0}` };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 4. NPM Registry API
-                if (p.checkMethod === 'api_npm') {
-                  const npmRes = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${cleanUser}`, {
-                    headers,
-                    timeout: 3500,
-                    validateStatus: () => true
-                  });
-                  if (npmRes.status === 200 && npmRes.data?.name) {
-                    if (npmRes.data.email) {
-                      discoveredContacts.push({ type: 'email', value: npmRes.data.email, source: 'NPM Registry', link: `mailto:${npmRes.data.email}` });
-                    }
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: 'Registered Developer' };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 5. GitLab API
-                if (p.checkMethod === 'api_gitlab') {
-                  const glRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (glRes.status === 200 && Array.isArray(glRes.data) && glRes.data.length > 0) {
-                    const user = glRes.data[0];
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: user.name ? `Nama: ${user.name}` : undefined };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 6. DockerHub API
-                if (p.checkMethod === 'api_docker') {
-                  const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (dRes.status === 200 && dRes.data?.username) {
-                    return { name: p.name, category: p.category, url: p.url, found: true };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 7. Keybase API
-                if (p.checkMethod === 'api_keybase') {
-                  const kRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (kRes.status === 200 && kRes.data?.them?.[0]?.basics?.username) {
-                    return { name: p.name, category: p.category, url: p.url, found: true };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 8. Chess.com API
-                if (p.checkMethod === 'api_chess') {
-                  const cRes = await axios.get(p.apiEndpoint!, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500, validateStatus: () => true });
-                  if (cRes.status === 200 && cRes.data?.username) {
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: cRes.data.title || 'Player' };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 9. Duolingo API
-                if (p.checkMethod === 'api_duolingo') {
-                  const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (dRes.status === 200 && dRes.data?.users?.length > 0) {
-                    return { name: p.name, category: p.category, url: p.url, found: true };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 10. HackerNews API
-                if (p.checkMethod === 'api_hackernews') {
-                  const hnRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (hnRes.status === 200 && hnRes.data?.id) {
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: `Karma: ${hnRes.data.karma || 0}` };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 11. Codeforces API
-                if (p.checkMethod === 'api_codeforces') {
-                  const cfRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                  if (cfRes.status === 200 && cfRes.data?.status === 'OK' && cfRes.data?.result?.length > 0) {
-                    return { name: p.name, category: p.category, url: p.url, found: true, note: cfRes.data.result[0].rank };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                // 12. GET with Strict Signature & Body Check (Zero false positive)
-                if (p.checkMethod === 'get_with_signature') {
-                  const res = await axios.get(p.url, {
-                    headers,
-                    timeout: 4500,
-                    validateStatus: () => true,
-                    maxRedirects: 3
-                  });
-
-                  if (res.status === 200) {
-                    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-                    
-                    // Check mustNotContain
-                    if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) {
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // Check mustContain
-                    if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) {
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // If extractBio is enabled, extract real contacts safely
-                    if (p.extractBio) {
-                      const contactsFromPage = extractContactsFromText(text, p.name);
-                      discoveredContacts.push(...contactsFromPage);
-                    }
-
-                    return { name: p.name, category: p.category, url: p.url, found: true };
-                  }
-                  return { name: p.name, category: p.category, url: p.url, found: false };
-                }
-
-                return { name: p.name, category: p.category, url: p.url, found: false };
-              } catch (e) {
-                return { name: p.name, category: p.category, url: p.url, found: false };
-              }
+              } catch(e) {}
             }));
+          }
 
-            for (const r of batchResults) {
-              if (r.found) {
-                confirmedList.push(r);
+          // 3. Scan Verified Platforms across handles
+          const handlesToScan = perm.handles.slice(0, 3);
+          for (const h of handlesToScan) {
+            const platforms = buildPlatformList(h);
+            const totalPlatforms = platforms.length;
+
+            for (let i = 0; i < totalPlatforms; i += 18) {
+              const batch = platforms.slice(i, i + 18);
+              const currentSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+              if (statusMsg && i === 0 && h === handlesToScan[0]) {
+                const progressTxt = 
+                  `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🎯 <b>TARGET INVESTIGASI:</b> <code>${perm.fullName || h}</code>\n` +
+                  `📡 <b>PROSES:</b> Memindai ${totalPlatforms} platform publik & database...\n` +
+                  `⏱️ <b>WAKTU PENCARIAN:</b> ${currentSeconds} detik\n` +
+                  `🔎 <b>TERDETEKSI:</b> ${confirmedList.length + publicRecords.length} jejak aktif\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+                await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, progressTxt, { parse_mode: 'HTML' }).catch(() => {});
+              }
+
+              const batchResults = await Promise.all(batch.map(async (p) => {
+                const headers = getRandomHeaders();
+                try {
+                  // 1. GitHub API
+                  if (p.checkMethod === 'api_github') {
+                    const ghRes = await axios.get(`https://api.github.com/users/${h}`, {
+                      headers: { ...headers, 'User-Agent': 'Mozilla/5.0' },
+                      timeout: 4000,
+                      validateStatus: () => true
+                    });
+                    if (ghRes.status === 200 && ghRes.data?.login) {
+                      const data = ghRes.data;
+                      if (data.email) {
+                        discoveredContacts.push({ type: 'email', value: data.email, source: 'GitHub Profile', link: `mailto:${data.email}` });
+                      }
+                      if (data.blog) {
+                        discoveredContacts.push(...extractContactsFromText(data.blog, 'GitHub Website'));
+                      }
+                      if (data.bio) {
+                        discoveredContacts.push(...extractContactsFromText(data.bio, 'GitHub Bio'));
+                      }
+                      return { name: `${p.name} (@${h})`, category: p.category, url: data.html_url || p.url, found: true, note: data.name ? `Nama: ${data.name}` : undefined };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 2. Gravatar API
+                  if (p.checkMethod === 'api_gravatar') {
+                    const gravRes = await axios.get(`https://en.gravatar.com/${h}.json`, {
+                      headers,
+                      timeout: 3500,
+                      validateStatus: () => true
+                    });
+                    if (gravRes.status === 200 && gravRes.data?.entry?.[0]) {
+                      const entry = gravRes.data.entry[0];
+                      if (entry.displayName) {
+                        discoveredContacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
+                      }
+                      if (entry.aboutMe) {
+                        discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
+                      }
+                      return { name: `${p.name} (@${h})`, category: p.category, url: entry.profileUrl || p.url, found: true, note: entry.displayName ? `Nama: ${entry.displayName}` : undefined };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 3. Reddit JSON API
+                  if (p.checkMethod === 'api_reddit') {
+                    const rRes = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${h}/about.json`, {
+                      headers: { 'User-Agent': 'Mozilla/5.0' },
+                      timeout: 3500,
+                      validateStatus: () => true
+                    });
+                    if (rRes.status === 200 && rRes.data?.data?.name) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: `Karma: ${rRes.data.data.total_karma || 0}` };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 4. NPM Registry API
+                  if (p.checkMethod === 'api_npm') {
+                    const npmRes = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${h}`, {
+                      headers,
+                      timeout: 3000,
+                      validateStatus: () => true
+                    });
+                    if (npmRes.status === 200 && npmRes.data?.name) {
+                      if (npmRes.data.email) {
+                        discoveredContacts.push({ type: 'email', value: npmRes.data.email, source: 'NPM Registry', link: `mailto:${npmRes.data.email}` });
+                      }
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: 'Registered Developer' };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 5. GitLab API
+                  if (p.checkMethod === 'api_gitlab') {
+                    const glRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (glRes.status === 200 && Array.isArray(glRes.data) && glRes.data.length > 0) {
+                      const user = glRes.data[0];
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: user.name ? `Nama: ${user.name}` : undefined };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 6. DockerHub API
+                  if (p.checkMethod === 'api_docker') {
+                    const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (dRes.status === 200 && dRes.data?.username) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 7. Keybase API
+                  if (p.checkMethod === 'api_keybase') {
+                    const kRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (kRes.status === 200 && kRes.data?.them?.[0]?.basics?.username) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 8. Chess.com API
+                  if (p.checkMethod === 'api_chess') {
+                    const cRes = await axios.get(p.apiEndpoint!, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500, validateStatus: () => true });
+                    if (cRes.status === 200 && cRes.data?.username) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: cRes.data.title || 'Player' };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 9. Duolingo API
+                  if (p.checkMethod === 'api_duolingo') {
+                    const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (dRes.status === 200 && dRes.data?.users?.length > 0) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 10. HackerNews API
+                  if (p.checkMethod === 'api_hackernews') {
+                    const hnRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (hnRes.status === 200 && hnRes.data?.id) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: `Karma: ${hnRes.data.karma || 0}` };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 11. Codeforces API
+                  if (p.checkMethod === 'api_codeforces') {
+                    const cfRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                    if (cfRes.status === 200 && cfRes.data?.status === 'OK' && cfRes.data?.result?.length > 0) {
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: cfRes.data.result[0].rank };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  // 12. GET with Strict Signature & Body Check (Zero false positive)
+                  if (p.checkMethod === 'get_with_signature') {
+                    const res = await axios.get(p.url, {
+                      headers,
+                      timeout: 4000,
+                      validateStatus: () => true,
+                      maxRedirects: 3
+                    });
+
+                    if (res.status === 200) {
+                      const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+                      
+                      // Check mustNotContain
+                      if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) {
+                        return { name: p.name, category: p.category, url: p.url, found: false };
+                      }
+
+                      // Check mustContain
+                      if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) {
+                        return { name: p.name, category: p.category, url: p.url, found: false };
+                      }
+
+                      // If extractBio is enabled, extract real contacts safely
+                      if (p.extractBio) {
+                        const contactsFromPage = extractContactsFromText(text, p.name);
+                        discoveredContacts.push(...contactsFromPage);
+                      }
+
+                      return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                } catch (e) {
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+              }));
+
+              for (const r of batchResults) {
+                if (r.found) {
+                  confirmedList.push(r);
+                }
               }
             }
           }
@@ -3163,20 +3190,21 @@ There are no background services or permissions associated.
             }
           }
 
-          const dorks = generateDorkMatrix(cleanUser, 'username');
+          const dorks = generateDorkMatrix(perm.fullName ? `"${perm.fullName}"` : primaryHandle, 'username');
           elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
 
           const indoPlatforms = confirmedList.filter(c => c.category === 'Indo');
           const globalPlatforms = confirmedList.filter(c => c.category !== 'Indo');
-          const confidence = Math.min(98, Math.max(35, confirmedList.length * 8 + (uniqueContacts.length * 10) + 15));
-          const riskScore = Math.min(95, confirmedList.length * 6 + (uniqueContacts.length * 12) + (indoPlatforms.length * 10) + 10);
+          const totalFindings = confirmedList.length + publicRecords.length + uniqueContacts.length;
+          const confidence = Math.min(98, Math.max(35, confirmedList.length * 8 + (uniqueContacts.length * 12) + (publicRecords.length * 15) + 15));
+          const riskScore = Math.min(95, confirmedList.length * 6 + (uniqueContacts.length * 12) + (indoPlatforms.length * 10) + (publicRecords.length * 10) + 10);
 
           report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                   `🎯 <b>TARGET PERSONA:</b> <code>@${cleanUser}</code>\n` +
-                   `🏷️ <b>TYPE:</b> <code>Digital Persona / Handle (${totalPlatforms} Platforms Scanned)</code>\n` +
+                   `🎯 <b>TARGET INVESTIGASI:</b> <code>${perm.fullName || '@' + primaryHandle}</code>\n` +
+                   `🏷️ <b>TYPE:</b> <code>${isFullName ? 'Nama Lengkap / Identitas Publik' : 'Digital Persona / Handle'}</code>\n` +
                    `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
-                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (${confidence >= 80 ? 'Tinggi / Verified Match' : 'Moderat'})\n` +
+                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (${confidence >= 75 ? 'Tinggi / Verified Match' : 'Moderat'})\n` +
                    `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${riskScore}%</b>\n\n`;
 
           // Discovered Contact Vectors
@@ -3193,10 +3221,23 @@ There are no background services or permissions associated.
                 report += `├ ✈️ <b>Telegram:</b> <a href="${c.link}">${c.value}</a> [${c.source}]\n`;
               } else if (c.type === 'name') {
                 report += `├ 👤 <b>Nama Terdeteksi:</b> <code>${c.value}</code> [${c.source}]\n`;
+              } else if (c.type === 'location') {
+                report += `├ 📍 <b>Lokasi / Domisili:</b> <code>${c.value}</code> [${c.source}]\n`;
               } else {
                 report += `├ 🌐 <b>Link:</b> <a href="${c.link || c.value}">${c.value}</a> [${c.source}]\n`;
               }
             }
+            report += `\n`;
+          }
+
+          // Public & Academic Records (CrossRef, OpenAlex, Wikipedia)
+          if (publicRecords.length > 0) {
+            report += `📄 <b>REKAM JEJAK PUBLIK & AKADEMIK / INSTITUSI (${publicRecords.length}):</b>\n`;
+            publicRecords.forEach(rec => {
+              report += `├ 🏛️ <b>${rec.title}</b>\n` +
+                        `│  └ <i>${rec.details}</i> [${rec.source}]` +
+                        (rec.url ? ` (<a href="${rec.url}">Akses Dokumen</a>)\n` : '\n');
+            });
             report += `\n`;
           }
 
@@ -3218,9 +3259,9 @@ There are no background services or permissions associated.
             report += `\n`;
           }
 
-          if (confirmedList.length === 0) {
+          if (totalFindings === 0) {
             report += `⚠️ <b>HASIL PEMINDAIAN LANGSUNG:</b>\n` +
-                      `└ <i>Tidak ditemukan profil instan terbuka di platform publik tanpa otentikasi. Gunakan matriks Google Dorking di bawah untuk mencari jejak tersembunyi.</i>\n\n`;
+                      `└ <i>Tidak ditemukan profil instan terbuka tanpa otentikasi. Gunakan matriks Google Dorking di bawah untuk mencari jejak tersembunyi.</i>\n\n`;
           }
 
           // Dork Matrix
@@ -3232,7 +3273,7 @@ There are no background services or permissions associated.
 
           // Relation Graph Nodes
           report += `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    `• <code>[Persona: ${cleanUser}]</code> ➔ <code>[Platform Terhubung: ${confirmedList.length}]</code> ➔ <code>[Vektor Kontak: ${uniqueContacts.length}]</code>\n`;
+                    `• <code>[Target: ${perm.fullName || primaryHandle}]</code> ➔ <code>[Publikasi/Institusi: ${publicRecords.length}]</code> ➔ <code>[Platform Terhubung: ${confirmedList.length}]</code> ➔ <code>[Vektor Kontak: ${uniqueContacts.length}]</code>\n`;
         }
 
         report += `━━━━━━━━━━━━━━━━━━━━\n` +
