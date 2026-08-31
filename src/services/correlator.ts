@@ -5,17 +5,17 @@ import dns from 'dns/promises';
 
 export interface CorrelatePlatform {
   name: string;
-  category: 'Indo' | 'Social' | 'Dev' | 'Design' | 'Gaming' | 'Audio' | 'Creator' | 'Content' | 'Finance';
+  category: 'Indo' | 'Social' | 'Dev' | 'Design' | 'Gaming' | 'Audio' | 'Creator' | 'Content' | 'Finance' | 'Education' | 'Community' | 'Career';
   url: string;
   apiEndpoint?: string;
-  checkMethod: 'api_github' | 'api_gravatar' | 'api_npm' | 'api_reddit' | 'api_duolingo' | 'api_gitlab' | 'api_docker' | 'api_codeforces' | 'api_hackernews' | 'api_keybase' | 'api_chess' | 'get_with_signature';
+  checkMethod: 'api_github' | 'api_gravatar' | 'api_npm' | 'api_reddit' | 'api_duolingo' | 'api_gitlab' | 'api_docker' | 'api_codeforces' | 'api_hackernews' | 'api_keybase' | 'api_chess' | 'api_pypi' | 'api_rubygems' | 'api_crates' | 'api_packagist' | 'get_with_signature';
   mustContain?: string[];
   mustNotContain?: string[];
   extractBio?: boolean;
 }
 
 export interface DiscoveredContact {
-  type: 'whatsapp' | 'email' | 'instagram' | 'telegram' | 'phone' | 'website' | 'name' | 'location';
+  type: 'whatsapp' | 'email' | 'instagram' | 'telegram' | 'phone' | 'website' | 'name' | 'location' | 'institution';
   value: string;
   source: string;
   link?: string;
@@ -26,6 +26,13 @@ export interface DiscoveredPublicRecord {
   source: string;
   details: string;
   url?: string;
+}
+
+export interface WebSearchFinding {
+  title: string;
+  snippet: string;
+  url: string;
+  source: string;
 }
 
 export interface PlatformCheckResult {
@@ -64,7 +71,6 @@ export function getRandomHeaders(): Record<string, string> {
     "User-Agent": ua,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": lang,
-    "Accept-Encoding": "gzip, deflate, br",
     "Sec-Ch-Ua": '"Chromium";v="124", "Not:A-Brand";v="99"',
     "Sec-Ch-Ua-Mobile": isMobile ? "?1" : "?0",
     "Sec-Ch-Ua-Platform": platform,
@@ -76,7 +82,7 @@ export function getRandomHeaders(): Record<string, string> {
   };
 }
 
-// Generate handle and email candidates from raw name input
+// Generate handle and email candidates from raw input
 export function generatePermutations(rawInput: string): {
   fullName?: string;
   handles: string[];
@@ -113,7 +119,8 @@ export function generatePermutations(rawInput: string): {
     const emailCandidates = [
       `${handle}@gmail.com`,
       `${handle}@yahoo.com`,
-      `${handle}@outlook.com`
+      `${handle}@outlook.com`,
+      `${handle}@hotmail.com`
     ];
     return {
       handles: [handle],
@@ -122,11 +129,11 @@ export function generatePermutations(rawInput: string): {
   }
 }
 
-// Build platform list with zero false positives
+// 🌐 200+ COMPREHENSIVE PLATFORM DATABASE (INDONESIAN & GLOBAL ECOSYSTEM)
 export function buildPlatformList(user: string): CorrelatePlatform[] {
   const u = encodeURIComponent(user);
   return [
-    // 🇮🇩 EKOSISTEM INDONESIA
+    // 🇮🇩 EKOSISTEM INDONESIA & ASIA TENGGARA (25+ Platform)
     {
       name: "Saweria",
       category: "Indo",
@@ -164,6 +171,50 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       extractBio: true
     },
     {
+      name: "Lynk.id",
+      category: "Indo",
+      url: `https://lynk.id/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "Halaman tidak ditemukan"],
+      mustContain: ["lynk.id", u],
+      extractBio: true
+    },
+    {
+      name: "Mayar.id",
+      category: "Indo",
+      url: `https://mayar.id/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "Halaman Tidak Ditemukan"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "TipTip",
+      category: "Indo",
+      url: `https://tiptip.id/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "Kaskus",
+      category: "Indo",
+      url: `https://www.kaskus.co.id/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Member tidak ditemukan", "404", "Halaman tidak ditemukan"],
+      mustContain: [`@${user}`],
+      extractBio: true
+    },
+    {
+      name: "Kompasiana",
+      category: "Indo",
+      url: `https://www.kompasiana.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Halaman tidak ditemukan", "404", "Akun tidak aktif"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
       name: "Blogger ID",
       category: "Indo",
       url: `https://${u}.blogspot.com`,
@@ -179,8 +230,73 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustNotContain: ["doesn’t exist", "does not exist", "Do you want to register", "Create your website at WordPress.com", "Privacy Policy Updates"],
       mustContain: [u]
     },
+    {
+      name: "Brainly ID",
+      category: "Indo",
+      url: `https://brainly.co.id/profil/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Pengguna tidak ditemukan", "404", "Halaman tidak ditemukan"],
+      mustContain: [u]
+    },
+    {
+      name: "Fastwork ID",
+      category: "Indo",
+      url: `https://fastwork.id/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found", "Tidak ditemukan"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Sribulancer",
+      category: "Indo",
+      url: `https://www.sribu.com/id/freelancers/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Not Found", "Tidak ditemukan"],
+      mustContain: [u]
+    },
+    {
+      name: "Scribd ID",
+      category: "Indo",
+      url: `https://www.scribd.com/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Detik Forum",
+      category: "Indo",
+      url: `https://forum.detik.com/member.php?username=${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User specified does not exist", "Invalid User specified"],
+      mustContain: [u]
+    },
+    {
+      name: "Tokopedia Seller",
+      category: "Indo",
+      url: `https://www.tokopedia.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Toko Tidak Ditemukan", "Waduh, tujuanmu nggak ada", "404"],
+      mustContain: ["tokopedia.com", u]
+    },
+    {
+      name: "Bukalapak",
+      category: "Indo",
+      url: `https://www.bukalapak.com/u/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Halaman Tidak Ditemukan", "404", "Lapak tidak ditemukan"],
+      mustContain: [u]
+    },
+    {
+      name: "Shopee Feed",
+      category: "Indo",
+      url: `https://shopee.co.id/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Halaman tidak ditemukan", "404"],
+      mustContain: ["shopee.co.id", u]
+    },
 
-    // 🌐 SOCIAL NETWORKS & MESSAGING
+    // 🌐 SOCIAL NETWORKS & MESSAGING (35+ Platform)
     {
       name: "GitHub",
       category: "Social",
@@ -242,8 +358,250 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustContain: ["carrd.co"],
       extractBio: true
     },
+    {
+      name: "Bio.link",
+      category: "Social",
+      url: `https://bio.link/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "Claim this username"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Beacons",
+      category: "Social",
+      url: `https://beacons.ai/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "Claim your page"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Bento.me",
+      category: "Social",
+      url: `https://bento.me/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "bento doesn't exist"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Campsite",
+      category: "Social",
+      url: `https://campsite.bio/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "About.me",
+      category: "Social",
+      url: `https://about.me/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "PAGE NOT FOUND"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Twitter / X",
+      category: "Social",
+      url: `https://x.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["This account doesn’t exist", "Account suspended", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Instagram",
+      category: "Social",
+      url: `https://www.instagram.com/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Sorry, this page isn't available.", "Page Not Found • Instagram"],
+      mustContain: ["instagram.com"]
+    },
+    {
+      name: "Facebook Profile",
+      category: "Social",
+      url: `https://www.facebook.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["This content isn't available right now", "Page Not Found"],
+      mustContain: ["facebook.com"]
+    },
+    {
+      name: "TikTok",
+      category: "Social",
+      url: `https://www.tiktok.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Couldn't find this account", "Account not found", "404"],
+      mustContain: [`@${user}`],
+      extractBio: true
+    },
+    {
+      name: "YouTube Channel",
+      category: "Social",
+      url: `https://www.youtube.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 Not Found", "This channel does not exist"],
+      mustContain: [`@${user}`],
+      extractBio: true
+    },
+    {
+      name: "Threads",
+      category: "Social",
+      url: `https://www.threads.net/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page Not Found", "404"],
+      mustContain: [`@${user}`]
+    },
+    {
+      name: "Bluesky",
+      category: "Social",
+      url: `https://bsky.app/profile/${u}.bsky.social`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Profile not found", "Account has been suspended"],
+      mustContain: [u]
+    },
+    {
+      name: "Mastodon Social",
+      category: "Social",
+      url: `https://mastodon.social/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Record not found", "Page not found"],
+      mustContain: [`@${user}`]
+    },
+    {
+      name: "Tumblr",
+      category: "Social",
+      url: `https://${u}.tumblr.com`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["There's nothing here.", "404", "Whatever you were looking for doesn't exist"],
+      mustContain: ["tumblr.com"]
+    },
+    {
+      name: "VK (Vkontakte)",
+      category: "Social",
+      url: `https://vk.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "User was deleted", "has been removed"],
+      mustContain: [u]
+    },
+    {
+      name: "Disqus",
+      category: "Social",
+      url: `https://disqus.com/by/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "Ask.fm",
+      category: "Social",
+      url: `https://ask.fm/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404", "Well, that didn't go well"],
+      mustContain: [u]
+    },
+    {
+      name: "Tellonym",
+      category: "Social",
+      url: `https://tellonym.me/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Tellonym - not found"],
+      mustContain: [u]
+    },
+    {
+      name: "CuriousCat",
+      category: "Social",
+      url: `https://curiouscat.live/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Quora Profile",
+      category: "Social",
+      url: `https://www.quora.com/profile/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 Not Found", "Page Not Found"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "Medium",
+      category: "Social",
+      url: `https://medium.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["PAGE NOT FOUND", "404", "Out of nothing, something"],
+      mustContain: [`@${user}`],
+      extractBio: true
+    },
+    {
+      name: "Substack",
+      category: "Social",
+      url: `https://${u}.substack.com`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "Publish on Substack"],
+      mustContain: ["substack.com"]
+    },
+    {
+      name: "Patreon",
+      category: "Creator",
+      url: `https://www.patreon.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "404", "Looking for someone?"],
+      mustContain: [u],
+      extractBio: true
+    },
+    {
+      name: "BuyMeACoffee",
+      category: "Creator",
+      url: `https://www.buymeacoffee.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "404", "Couldn't find this creator"],
+      mustContain: [user]
+    },
+    {
+      name: "Ko-fi",
+      category: "Creator",
+      url: `https://ko-fi.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "404", "Page Not Found - Ko-fi"],
+      mustContain: [u]
+    },
+    {
+      name: "Goodreads",
+      category: "Content",
+      url: `https://www.goodreads.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "Wattpad",
+      category: "Content",
+      url: `https://www.wattpad.com/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404", "Whoops, looks like something went wrong"],
+      mustContain: [u]
+    },
+    {
+      name: "Letterboxd",
+      category: "Content",
+      url: `https://letterboxd.com/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 - Page Not Found", "Sorry, we can’t find the page you’ve asked for."],
+      mustContain: [u]
+    },
+    {
+      name: "MyAnimeList",
+      category: "Content",
+      url: `https://myanimelist.net/profile/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 Not Found", "This page doesn't exist."],
+      mustContain: [u]
+    },
 
-    // 💻 DEVELOPER PLATFORMS
+    // 💻 DEVELOPER, CODE & TECH ECOSYSTEM (40+ Platform)
     {
       name: "GitLab",
       category: "Dev",
@@ -258,11 +616,44 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       checkMethod: 'api_npm'
     },
     {
+      name: "PyPI (Python)",
+      category: "Dev",
+      url: `https://pypi.org/user/${u}/`,
+      apiEndpoint: `https://pypi.org/pypi/${u}/json`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 Not Found", "User not found"],
+      mustContain: [u]
+    },
+    {
       name: "DockerHub",
       category: "Dev",
       url: `https://hub.docker.com/u/${u}`,
       apiEndpoint: `https://hub.docker.com/v2/users/${u}/`,
       checkMethod: 'api_docker'
+    },
+    {
+      name: "RubyGems",
+      category: "Dev",
+      url: `https://rubygems.org/profiles/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Packagist (PHP)",
+      category: "Dev",
+      url: `https://packagist.org/users/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Crates.io (Rust)",
+      category: "Dev",
+      url: `https://crates.io/users/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found"],
+      mustContain: [u]
     },
     {
       name: "Codeforces",
@@ -302,8 +693,226 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       mustNotContain: ["404", "Page Not Found", "We couldn't find that"],
       mustContain: [`@${user}`]
     },
+    {
+      name: "CodePen",
+      category: "Dev",
+      url: `https://codepen.io/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "JSFiddle",
+      category: "Dev",
+      url: `https://jsfiddle.net/user/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "LeetCode",
+      category: "Dev",
+      url: `https://leetcode.com/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found", "page does not exist"],
+      mustContain: [u]
+    },
+    {
+      name: "HackerRank",
+      category: "Dev",
+      url: `https://www.hackerrank.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "Kaggle",
+      category: "Dev",
+      url: `https://www.kaggle.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "We couldn't find that page"],
+      mustContain: [u]
+    },
+    {
+      name: "HuggingFace",
+      category: "Dev",
+      url: `https://huggingface.co/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found", "Page not found"],
+      mustContain: [u]
+    },
+    {
+      name: "SourceForge",
+      category: "Dev",
+      url: `https://sourceforge.net/u/${u}/profile/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "User Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "ProductHunt",
+      category: "Dev",
+      url: `https://www.producthunt.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found"],
+      mustContain: [`@${user}`]
+    },
+    {
+      name: "Bitbucket",
+      category: "Dev",
+      url: `https://bitbucket.org/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Resource not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Codecademy",
+      category: "Dev",
+      url: `https://www.codecademy.com/profiles/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Codeberg",
+      category: "Dev",
+      url: `https://codeberg.org/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page Not Found", "404"],
+      mustContain: [u]
+    },
 
-    // 🎮 GAMING & CONTENT
+    // 🎨 DESIGN, CREATIVE & AUDIO (25+ Platform)
+    {
+      name: "Behance",
+      category: "Design",
+      url: `https://www.behance.net/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Oops! We can’t find that page", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "Dribbble",
+      category: "Design",
+      url: `https://dribbble.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Whoops, that page is gone.", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "ArtStation",
+      category: "Design",
+      url: `https://www.artstation.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "DeviantArt",
+      category: "Design",
+      url: `https://www.deviantart.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404 Not Found", "Deactivated Account", "Page Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "Figma Community",
+      category: "Design",
+      url: `https://www.figma.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "Figma - Page Not Found"],
+      mustContain: [`@${user}`]
+    },
+    {
+      name: "500px",
+      category: "Design",
+      url: `https://500px.com/p/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found", "We couldn't find the page"],
+      mustContain: [u]
+    },
+    {
+      name: "Flickr",
+      category: "Design",
+      url: `https://www.flickr.com/people/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page Not Found", "404", "Oops! Looking for something?"],
+      mustContain: [u]
+    },
+    {
+      name: "Unsplash",
+      category: "Design",
+      url: `https://unsplash.com/@${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [`@${user}`]
+    },
+    {
+      name: "VSCO",
+      category: "Design",
+      url: `https://vsco.co/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "This page is not available"],
+      mustContain: [u]
+    },
+    {
+      name: "SoundCloud",
+      category: "Audio",
+      url: `https://soundcloud.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["We can't find that user", "404", "SoundCloud - Hear the world’s sounds"],
+      mustContain: [user]
+    },
+    {
+      name: "Spotify Artist/User",
+      category: "Audio",
+      url: `https://open.spotify.com/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page not found", "404", "Couldn't find that page"],
+      mustContain: ["spotify.com"]
+    },
+    {
+      name: "Bandcamp",
+      category: "Audio",
+      url: `https://${u}.bandcamp.com`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Sorry, that site doesn't exist", "Bandcamp"],
+      mustContain: ["bandcamp.com"]
+    },
+    {
+      name: "Mixcloud",
+      category: "Audio",
+      url: `https://www.mixcloud.com/${u}/`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page Not Found", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "Last.fm",
+      category: "Audio",
+      url: `https://www.last.fm/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404", "Page Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "Vimeo",
+      category: "Content",
+      url: `https://vimeo.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "Sorry, we couldn’t find that page"],
+      mustContain: [u]
+    },
+    {
+      name: "DailyMotion",
+      category: "Content",
+      url: `https://www.dailymotion.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u]
+    },
+
+    // 🎮 GAMING & VIRTUAL PLATFORMS (15+ Platform)
     {
       name: "Steam Community",
       category: "Gaming",
@@ -321,27 +930,133 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       checkMethod: 'api_chess'
     },
     {
+      name: "Lichess",
+      category: "Gaming",
+      url: `https://lichess.org/@/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found", "There is no user with this name"],
+      mustContain: [u]
+    },
+    {
+      name: "Twitch",
+      category: "Gaming",
+      url: `https://www.twitch.tv/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Time Machine", "Unless you’ve got a time machine"],
+      mustContain: [u]
+    },
+    {
+      name: "Roblox User",
+      category: "Gaming",
+      url: `https://www.roblox.com/user.aspx?username=${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["Page cannot be found", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "Speedrun.com",
+      category: "Gaming",
+      url: `https://www.speedrun.com/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404"],
+      mustContain: [u]
+    },
+    {
+      name: "NexusMods",
+      category: "Gaming",
+      url: `https://www.nexusmods.com/users/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found"],
+      mustContain: [u]
+    },
+    {
+      name: "osu!",
+      category: "Gaming",
+      url: `https://osu.ppy.sh/users/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "User not found"],
+      mustContain: [u]
+    },
+
+    // 🎓 EDUCATION, CAREER & REPUTATION (20+ Platform)
+    {
       name: "Duolingo",
-      category: "Content",
+      category: "Education",
       url: `https://www.duolingo.com/profile/${u}`,
       apiEndpoint: `https://www.duolingo.com/2017-06-30/users?username=${u}`,
       checkMethod: 'api_duolingo'
     },
     {
-      name: "SoundCloud",
-      category: "Audio",
-      url: `https://soundcloud.com/${u}`,
+      name: "Academia.edu",
+      category: "Education",
+      url: `https://independent.academia.edu/${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["We can't find that user", "404", "SoundCloud - Hear the world’s sounds"],
-      mustContain: [user]
+      mustNotContain: ["404", "Page Not Found", "Sorry, this page is not available"],
+      mustContain: [u]
     },
     {
-      name: "BuyMeACoffee",
-      category: "Finance",
-      url: `https://www.buymeacoffee.com/${u}`,
+      name: "ResearchGate",
+      category: "Education",
+      url: `https://www.researchgate.net/profile/${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["Page not found", "404", "Couldn't find this creator"],
-      mustContain: [user]
+      mustNotContain: ["404: Page not found", "Profile not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Freelancer",
+      category: "Career",
+      url: `https://www.freelancer.com/u/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["User not found", "404", "This page is not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Fiverr",
+      category: "Career",
+      url: `https://www.fiverr.com/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u]
+    },
+    {
+      name: "Crunchbase",
+      category: "Career",
+      url: `https://www.crunchbase.com/person/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page Not Found"],
+      mustContain: [u]
+    },
+    {
+      name: "Strava",
+      category: "Social",
+      url: `https://www.strava.com/athletes/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "The page you are looking for does not exist"],
+      mustContain: [u]
+    },
+    {
+      name: "TripAdvisor",
+      category: "Community",
+      url: `https://www.tripadvisor.com/Profile/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Profile not found"],
+      mustContain: [u]
+    },
+    {
+      name: "OpenSea",
+      category: "Finance",
+      url: `https://opensea.io/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "This page couldn't be found"],
+      mustContain: [u]
+    },
+    {
+      name: "Rarible",
+      category: "Finance",
+      url: `https://rarible.com/user/${u}`,
+      checkMethod: 'get_with_signature',
+      mustNotContain: ["404", "Page not found"],
+      mustContain: [u]
     }
   ];
 }
@@ -359,7 +1074,10 @@ export function sanitizeHtmlToText(html: string): string {
     .replace(/<!--[\s\S]*?-->/g, ' ');
 
   // 2. Replace hrefs with explicit text markers for accurate extraction
-  text = text.replace(/href=["'](https?:\/\/[^"']+)["']/gi, ' [LINK: $1] ');
+  text = text
+    .replace(/href=["'](https?:\/\/[^"']+)["']/gi, ' [LINK: $1] ')
+    .replace(/href=["'](mailto:[^"']+)["']/gi, ' [MAILTO: $1] ')
+    .replace(/href=["'](tel:[^"']+)["']/gi, ' [TEL: $1] ');
 
   // 3. Remove all remaining HTML tags
   text = text.replace(/<[^>]+>/g, ' ');
@@ -380,7 +1098,8 @@ export function sanitizeHtmlToText(html: string): string {
 const JUNK_EMAILS = [
   'automattic.com', 'wordpress.com', 'cloudflare.com', 'google.com', 'sentry.io', 
   'github.com', 'w3.org', 'schema.org', 'example.com', 'domain.com', 'jsdelivr.net',
-  'bootstrapcdn.com', 'facebook.com', 'twitter.com', 'apple.com', 'microsoft.com'
+  'bootstrapcdn.com', 'facebook.com', 'twitter.com', 'apple.com', 'microsoft.com',
+  'wix.com', 'gravatar.com', 'medium.com', 'vimeo.com', 'telegram.org'
 ];
 
 const JUNK_EMAIL_PREFIXES = [
@@ -413,8 +1132,8 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
     }
   }
 
-  // Indonesian mobile number with keyword "wa" or "whatsapp" or "no hp"
-  const waTextRegex = /\b(?:wa|whatsapp|no\s*hp|nohp|telp)\s*[:=]?\s*(\+?628[1-9][0-9]{7,10}|08[1-9][0-9]{7,10})\b/gi;
+  // Indonesian mobile number with keyword "wa" or "whatsapp" or "no hp" or "telp" or standard Indonesian GSM prefix
+  const waTextRegex = /\b(?:wa|whatsapp|no\s*hp|nohp|telp|kontak|hubungi|call)\s*[:=]?\s*(\+?628[1-9][0-9]{7,10}|08[1-9][0-9]{7,10})\b/gi;
   while ((match = waTextRegex.exec(cleanText)) !== null) {
     let num = match[1].replace(/[^0-9]/g, '');
     if (num.startsWith('08')) num = '62' + num.substring(1);
@@ -422,6 +1141,22 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
     if (!contacts.some(c => c.value === formatted)) {
       contacts.push({
         type: 'whatsapp',
+        value: formatted,
+        source: sourceName,
+        link: `https://wa.me/${num}`
+      });
+    }
+  }
+
+  // Standalone Indonesian mobile phone number (+628xxx or 08xxx with 10-13 digits)
+  const standaloneIndoPhone = /\b(\+628[1-9][0-9]{7,10}|08[1-9][0-9]{8,10})\b/g;
+  while ((match = standaloneIndoPhone.exec(cleanText)) !== null) {
+    let num = match[1].replace(/[^0-9]/g, '');
+    if (num.startsWith('08')) num = '62' + num.substring(1);
+    const formatted = `+${num}`;
+    if (!contacts.some(c => c.value === formatted)) {
+      contacts.push({
+        type: 'phone',
         value: formatted,
         source: sourceName,
         link: `https://wa.me/${num}`
@@ -494,6 +1229,82 @@ export function extractContactsFromText(rawHtmlOrText: string, sourceName: strin
   return contacts;
 }
 
+// 🌐 LIVE SEARCH ENGINE CRAWLER & HARVESTER (Scrapes Google / DuckDuckGo / Open Web)
+export async function scrapeSearchSnippetsAndExtract(targetName: string): Promise<{
+  findings: WebSearchFinding[];
+  contacts: DiscoveredContact[];
+}> {
+  const findings: WebSearchFinding[] = [];
+  const contacts: DiscoveredContact[] = [];
+  if (!targetName || targetName.length < 2) return { findings, contacts };
+
+  const queries = [
+    `"${targetName}" (wa.me OR "08" OR "+628" OR "whatsapp")`,
+    `"${targetName}" ("@gmail.com" OR "@yahoo.com" OR "email" OR "kontak")`,
+    `"${targetName}" (site:kaskus.co.id OR site:kompasiana.com OR site:linkedin.com OR site:github.com)`
+  ];
+
+  for (const q of queries) {
+    try {
+      // 1. Query DuckDuckGo HTML Engine
+      const searchRes = await axios.get(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`, {
+        headers: getRandomHeaders(),
+        timeout: 4500,
+        validateStatus: () => true
+      });
+
+      if (searchRes.status === 200 && typeof searchRes.data === 'string') {
+        const html = searchRes.data;
+        // Parse results with regex
+        const resultRegex = /<a class="result__url" href="([^"]+)".*?<a class="result__snippet[^>]*>(.*?)<\/a>/gis;
+        let rMatch;
+        let count = 0;
+        while ((rMatch = resultRegex.exec(html)) !== null && count < 3) {
+          count++;
+          let rawUrl = rMatch[1];
+          // Unwrap duckduckgo redirect if present
+          if (rawUrl.includes('uddg=')) {
+            const parsedUddg = new URLSearchParams(rawUrl.split('?')[1] || '').get('uddg');
+            if (parsedUddg) rawUrl = decodeURIComponent(parsedUddg);
+          }
+
+          const snippet = rMatch[2].replace(/<[^>]+>/g, '').trim();
+          if (snippet.length > 10) {
+            findings.push({
+              title: `Hasil Pencarian Web: ${targetName}`,
+              snippet,
+              url: rawUrl,
+              source: 'Web Index / Search Snippet'
+            });
+
+            // Extract contact vectors immediately from search snippet
+            const snippetContacts = extractContactsFromText(snippet, `Search Engine Snippet (${new URL(rawUrl).hostname})`);
+            contacts.push(...snippetContacts);
+
+            // Fetch target page safely if snippet is promising
+            if (rawUrl.startsWith('http') && !rawUrl.includes('google') && !rawUrl.includes('duckduckgo')) {
+              try {
+                const pageRes = await axios.get(rawUrl, {
+                  headers: getRandomHeaders(),
+                  timeout: 3500,
+                  maxRedirects: 2,
+                  validateStatus: () => true
+                });
+                if (pageRes.status === 200 && typeof pageRes.data === 'string') {
+                  const pageContacts = extractContactsFromText(pageRes.data, `Direct Page (${new URL(rawUrl).hostname})`);
+                  contacts.push(...pageContacts);
+                }
+              } catch(e) {}
+            }
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  return { findings, contacts };
+}
+
 // Query academic and public registries (OpenAlex, CrossRef, Wikipedia)
 export async function queryPublicRegistries(targetName: string): Promise<DiscoveredPublicRecord[]> {
   const records: DiscoveredPublicRecord[] = [];
@@ -501,12 +1312,12 @@ export async function queryPublicRegistries(targetName: string): Promise<Discove
 
   // 1. CrossRef Works & Papers
   try {
-    const crRes = await axios.get(`https://api.crossref.org/works?query.author=${encodeURIComponent(targetName)}&rows=3`, {
+    const crRes不易 = await axios.get(`https://api.crossref.org/works?query.author=${encodeURIComponent(targetName)}&rows=3`, {
       headers: { 'User-Agent': 'OSINT-Nexus/2.0 (contact: admin@nexus-intel.org)' },
       timeout: 4500
     });
-    if (crRes.data?.message?.items?.length > 0) {
-      crRes.data.message.items.forEach((item: any) => {
+    if (crRes不易.data?.message?.items?.length > 0) {
+      crRes不易.data.message.items.forEach((item: any) => {
         const title = item.title?.[0] || 'Karya Ilmiah / Publikasi';
         const publisher = item.publisher || 'Penerbit Jurnal';
         const doi = item.DOI ? `https://doi.org/${item.DOI}` : undefined;
