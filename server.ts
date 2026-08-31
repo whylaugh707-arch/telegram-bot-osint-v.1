@@ -361,6 +361,7 @@ if (botInstance) {
 
     });
 }
+
   const webhookSecret = token ? token.split(':')[0] : null;
   const webhookPath = webhookSecret ? `/telegraf/${webhookSecret}` : null;
   let agreementUsers = new Set<number>();
@@ -1540,6 +1541,19 @@ There are no background services or permissions associated.
 
 
     });
+
+    const getStartMsg = (name: string) => {
+        return `HALO PRIA-PRIA YANG TERSAKITI SELAMAT DATANG DI TERMINAL 🐉 TRIHEXA 🐉\n\nBOT INI MENYEDIAKAN BANYAK FITUR FITUR ADVANCE SECARA GRATIS, SELAMA MASIH ADA OTAK DAN LOGIKA DIBALIKNYA MOHON GUNAKAN DENGAN BIJAK.\n\n"KAMI, TRIHEXA, BUKAN KAPITALIS. KARENA INI GRATIS MOHON GUNAKAN DENGAN OTAK YANG BENAR"\n\nSALAM HORMAT PEMBUAT SAYA\n- JEEMIKKO\n\n<i>Silakan pilih menu di bawah ini:</i>\n<i>Session Active for: ${name}</i>`;
+    };
+    
+    const mainReplyKeyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_basic'), Markup.button.callback('🗣️ Advanced Stealth Log', 'menu_logger')],
+      [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
+      [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
+      [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
+      [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
+    ]);
+
     // ADMIN COMMANDS
     bot.command('off', (ctx) => {
         if (!ctx.from || ctx.from.id !== ADMIN_ID) return;
@@ -1606,50 +1620,19 @@ There are no background services or permissions associated.
         } catch(e) {
             ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(()=>{});
         }
-
-
-    const getStartMsg = (name: string) => {
-        return `HALO PRIA-PRIA YANG TERSAKITI SELAMAT DATANG DI TERMINAL 🐉 TRIHEXA 🐉\n\nBOT INI MENYEDIAKAN BANYAK FITUR FITUR ADVANCE SECARA GRATIS, SELAMA MASIH ADA OTAK DAN LOGIKA DIBALIKNYA MOHON GUNAKAN DENGAN BIJAK.\n\n"KAMI, TRIHEXA, BUKAN KAPITALIS. KARENA INI GRATIS MOHON GUNAKAN DENGAN OTAK YANG BENAR"\n\nSALAM HORMAT PEMBUAT SAYA\n- JEEMIKKO\n\n<i>Silakan pilih menu di bawah ini:</i>\n<i>Session Active for: ${name}</i>`;
-    };
-    
-    const mainReplyKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🕵️ OSINT & Tracker', 'menu_osint_basic'), Markup.button.callback('🗣️ Advanced Stealth Log', 'menu_logger')],
-      [Markup.button.callback('🛠️ Adv Tools', 'menu_tools'), Markup.button.callback('🎮 Mini Games', 'menu_games')],
-      [Markup.button.callback('🎵 Media Downloader', 'menu_media'), Markup.button.callback('⏰ Alarm System', 'menu_alarm')],
-      [Markup.button.callback('📲 WhatsApp Bot', 'menu_wa'), Markup.button.callback('📱 QR Generator', 'menu_qr')],
-      [Markup.button.callback('ℹ️ Bot Info', 'menu_help'), Markup.button.callback('🛒 Buy Bot', 'menu_buy_bot')]
-    ]);
-
     });
     // Global Error Handler for "Anti Bug"
     bot.catch((err, ctx) => {
         console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
-
-
     });
     bot.command('trap_camera', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_camera telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_gps', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_gps telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_ig', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_ig telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_paypal', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_paypal telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_binance', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_binance telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_wallet', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_wallet telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_cloudflare', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_cloudflare telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
-
     bot.command('trap_steam', (ctx) => { ctx.reply('ℹ️ <b>Fitur trap_steam telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
-
 
     bot.start(async (ctx) => {
         console.log(`[BOT] /start called by ${ctx.from?.id}`);
@@ -1680,6 +1663,7 @@ There are no background services or permissions associated.
             console.error(`[BOT] Error sending main menu photo:`, e);
             await ctx.reply(txt, { parse_mode: 'HTML', ...mainReplyKeyboard }).catch(err => console.error(`[BOT] Error sending main menu text:`, err));
         }
+    });
 
 
     bot.action('menu_main', async (ctx) => {
@@ -1701,21 +1685,47 @@ There are no background services or permissions associated.
     });
     bot.action('menu_osint_basic', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
-      const txt = `<b>🇮🇩 Local OSINT (Basic)</b>\n` +
+      const txt = `<b>🇮🇩 Local OSINT & Intelligence (Basic)</b>\n` +
                   `━━━━━━━━━━━━━━━━━━━━\n` +
                   `Perintah Dasar Investigasi & Recon:\n\n` +
+                  `• <b>/correlate [TARGET]</b> - 🧠 <b>Intelligence Correlator</b> (IP/Domain/User/Email)\n` +
+                  `• <b>/intel [TARGET]</b> - 🧠 Ringkasan Analisis Korelasi Intelijen\n` +
                   `• /ip [ɪᴘ_ᴀᴅᴅʀ] - IP Geo & ISP Track\n` +
                   `• /domain [ᴅᴏᴍᴀɪɴ] - WHOIS & DNS Records\n` +
-                  `• /phone_dork [ɴᴏᴍᴏʀ] - Cek Provider\n` +
+                  `• /username [ᴜsᴇʀ] - Digital Footprint Scanner\n` +
+                  `• /phone_dork [ɴᴏᴍᴏʀ] - Cek Provider & Dorking\n` +
                   `• /bininfo [ʙɪɴ_ɴᴜᴍ] - Cek BIN Kartu Kredit\n` +
                   `━━━━━━━━━━━━━━━━━━━━`;
       const kb = Markup.inlineKeyboard([
-        [Markup.button.callback('🔍 OSINT INDO (Adv)', 'menu_osint_indo')],
+        [Markup.button.callback('🧠 Intelligence Correlator', 'menu_correlator_info')],
+        [Markup.button.callback('🔍 OSINT INDO (Adv)', 'menu_osint_indo'), Markup.button.callback('📡 Global Recon', 'menu_osint_adv')],
         [Markup.button.callback('◀️ KEMBALI', 'menu_main')]
       ]);
       ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
 
 
+    });
+    bot.action('menu_correlator_info', (ctx) => {
+      ctx.answerCbQuery().catch(() => {});
+      const txt = `<b>🧠 INTELLIGENCE CORRELATOR (OSINT NEXUS)</b>\n` +
+                  `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `Platform korelasi multi-sumber otomatis untuk memetakan jejak digital target.\n\n` +
+                  `👉 <b>Cara Penggunaan:</b>\n` +
+                  `Ketik perintah:\n` +
+                  `<code>/correlate [IP / Domain / Username / Email]</code>\n` +
+                  `atau\n` +
+                  `<code>/intel [target]</code>\n\n` +
+                  `<b>Contoh:</b>\n` +
+                  `• <code>/correlate 8.8.8.8</code> (Analisis Infrastruktur IP & Port Shodan)\n` +
+                  `• <code>/correlate github.com</code> (DNS DoH, Nameservers & WHOIS)\n` +
+                  `• <code>/correlate mikko_dev</code> (Multi-platform Social Footprint & Score)\n` +
+                  `• <code>/correlate target@gmail.com</code> (MX Routing & Dork Matrix)\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━`;
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('📡 Buka Global OSINT', 'menu_osint_adv')],
+        [Markup.button.callback('◀️ KEMBALI', 'menu_osint_basic')]
+      ]);
+      ctx.editMessageText(txt, { parse_mode: 'HTML', ...kb }).catch(() => {});
     });
     bot.action('menu_wa', (ctx) => {
       ctx.answerCbQuery().catch(() => {});
@@ -2742,8 +2752,169 @@ There are no background services or permissions associated.
     });
     bot.command('leak', async (ctx) => { ctx.reply('ℹ️ <b>Fitur leak telah dinonaktifkan secara permanen karena melanggar etika keamanan (Passive OSINT mode only).</b>', {parse_mode: 'HTML'}); });
 
-    
-    });
+    const handleCorrelate = async (ctx: any) => {
+      const parts = ctx.message.text.split(' ');
+      if (parts.length < 2) {
+        return ctx.reply(
+          "🧠 <b>INTELLIGENCE CORRELATOR</b>\n━━━━━━━━━━━━━━━━━━━━\n" +
+          "⚠️ Masukkan target analisis:\n" +
+          "<code>/correlate [IP / Domain / Username / Email]</code>\n\n" +
+          "<b>Contoh:</b>\n" +
+          "• <code>/correlate 8.8.8.8</code>\n" +
+          "• <code>/correlate github.com</code>\n" +
+          "• <code>/correlate mikko_dev</code>\n" +
+          "• <code>/correlate target@gmail.com</code>",
+          { parse_mode: 'HTML' }
+        );
+      }
+
+      const target = parts.slice(1).join(' ').trim();
+      const statusMsg = await ctx.reply(`🧠 <b>[INTELLIGENCE CORRELATOR]</b>\n⏳ Menginisiasi korelasi multi-sumber untuk: <code>${target}</code>...`, { parse_mode: 'HTML' }).catch(() => null);
+
+      try {
+        const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target);
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target);
+        const cleanDomain = target.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+        const isDomain = !isIp && !isEmail && /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanDomain);
+
+        let report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>TARGET:</b> <code>${target}</code>\n`;
+
+        if (isIp) {
+          let geoData: any = {};
+          let shodanData: any = {};
+          try {
+            const geoRes = await fetch(`http://ip-api.com/json/${target}?fields=status,country,regionName,city,isp,org,as,mobile,proxy,hosting`);
+            geoData = await geoRes.json();
+          } catch(e) {}
+
+          try {
+            const sRes = await axios.get(`https://internetdb.shodan.io/${target}`, { timeout: 4000 });
+            shodanData = sRes.data || {};
+          } catch(e) {}
+
+          const confidence = geoData.status === 'success' ? 95 : 60;
+          report += `🏷️ <b>TYPE:</b> <code>IPv4 Infrastructure Target</code>\n` +
+                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b> (High Reliability)\n\n` +
+                    `🌐 <b>NETWORK & GEOLOCATION:</b>\n` +
+                    `├ <b>Country / City:</b> ${geoData.country || '-'} / ${geoData.city || '-'}\n` +
+                    `├ <b>ISP:</b> ${geoData.isp || '-'}\n` +
+                    `├ <b>ASN / Org:</b> ${geoData.as || '-'} (${geoData.org || '-'})\n` +
+                    `└ <b>Hosting / Proxy:</b> ${geoData.hosting ? '⚠️ Datacenter' : '✅ Residential'} | ${geoData.proxy ? '⚠️ Proxy/VPN' : '✅ Direct IP'}\n\n` +
+                    `🛡️ <b>SHODAN SURFACE MAPPING:</b>\n` +
+                    `├ <b>Open Ports:</b> ${shodanData.ports?.length ? shodanData.ports.join(', ') : 'None detected'}\n` +
+                    `├ <b>Hostnames:</b> ${shodanData.hostnames?.length ? shodanData.hostnames.join(', ') : 'None detected'}\n` +
+                    `└ <b>CVEs:</b> ${shodanData.vulns?.length ? shodanData.vulns.slice(0, 5).join(', ') : '0 known public CVEs'}\n\n` +
+                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                    `• <code>[Target IP]</code> ➔ <code>[ASN: ${geoData.as || 'N/A'}]</code> ➔ <code>[ISP: ${geoData.isp || 'N/A'}]</code>\n`;
+
+        } else if (isEmail) {
+          const [userPart, domainPart] = target.split('@');
+          let mxRecords: any[] = [];
+          try {
+            mxRecords = await dns.promises.resolveMx(domainPart).catch(() => []);
+          } catch(e) {}
+
+          const dorkGoogle = encodeURIComponent(`"${target}" OR "${userPart}" site:github.com OR site:pastebin.com`);
+          const confidence = mxRecords.length > 0 ? 88 : 45;
+
+          report += `🏷️ <b>TYPE:</b> <code>Electronic Mail (Entity Identifier)</code>\n` +
+                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
+                    `📬 <b>IDENTITY PARSING:</b>\n` +
+                    `├ <b>Username Alias:</b> <code>${userPart}</code>\n` +
+                    `└ <b>Mail Server Domain:</b> <code>${domainPart}</code>\n\n` +
+                    `📡 <b>MX ROUTING INFRASTRUCTURE:</b>\n` +
+                    (mxRecords.length ? mxRecords.slice(0, 3).map(m => `├ <code>${m.exchange}</code> (Pri: ${m.priority})`).join('\n') : '└ ❌ Domain tidak memiliki MX aktif') + '\n\n' +
+                    `🔎 <b>CROSS-CORRELATION LINKS:</b>\n` +
+                    `• <a href="https://www.google.com/search?q=${dorkGoogle}">Lacak Jejak Publik / Repositori / Dorking</a>\n` +
+                    `• Lacak Profil Username: <code>/username ${userPart}</code>\n` +
+                    `• Lacak Domain Mail: <code>/domain ${domainPart}</code>\n\n` +
+                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                    `• <code>[${target}]</code> ➔ <code>[Domain: ${domainPart}]</code> ➔ <code>[Identity: ${userPart}]</code>\n`;
+
+        } else if (isDomain) {
+          let aRecords: any[] = [];
+          let nsRecords: any[] = [];
+          let whoisData: any = null;
+
+          try {
+            aRecords = await dns.promises.resolve4(cleanDomain).catch(() => []);
+          } catch(e) {}
+          try {
+            nsRecords = await dns.promises.resolveNs(cleanDomain).catch(() => []);
+          } catch(e) {}
+          try {
+            const wRes = await fetch(`https://networkcalc.com/api/dns/whois/${cleanDomain}`);
+            const wJson = await wRes.json();
+            if (wJson.status === 'OK') whoisData = wJson.whois;
+          } catch(e) {}
+
+          const confidence = (aRecords.length > 0 || whoisData) ? 92 : 50;
+
+          report += `🏷️ <b>TYPE:</b> <code>Internet Domain Asset</code>\n` +
+                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
+                    `🌐 <b>DNS RESOLUTION:</b>\n` +
+                    `├ <b>A Records (IPv4):</b> ${aRecords.length ? aRecords.join(', ') : 'None'}\n` +
+                    `└ <b>Nameservers:</b> ${nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'None'}\n\n` +
+                    `📝 <b>REGISTRAR AUDIT:</b>\n` +
+                    `├ <b>Registrar:</b> ${whoisData?.registrar || 'Hidden / Protected'}\n` +
+                    `├ <b>Created:</b> ${whoisData?.creation_date || '-'}\n` +
+                    `└ <b>Expires:</b> ${whoisData?.expiration_date || '-'}\n\n` +
+                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                    (aRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[IP: ${aRecords[0]}]</code> (Gunakan <code>/ip ${aRecords[0]}</code>)\n` : '') +
+                    (nsRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[NS: ${nsRecords[0]}]</code>\n` : '');
+
+        } else {
+          const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
+          const samplePlatforms = [
+            { name: "GitHub", url: `https://github.com/${cleanUser}` },
+            { name: "Twitter/X", url: `https://twitter.com/${cleanUser}` },
+            { name: "Instagram", url: `https://www.instagram.com/${cleanUser}/` },
+            { name: "Reddit", url: `https://www.reddit.com/user/${cleanUser}` },
+            { name: "Telegram", url: `https://t.me/${cleanUser}` },
+            { name: "Steam", url: `https://steamcommunity.com/id/${cleanUser}` },
+            { name: "TikTok", url: `https://www.tiktok.com/@${cleanUser}` },
+            { name: "Pinterest", url: `https://www.pinterest.com/${cleanUser}` }
+          ];
+
+          const checks = await Promise.all(samplePlatforms.map(async p => {
+            try {
+              const res = await fetchWithTimeout(p.url, { method: 'HEAD', headers: { 'User-Agent': 'Mozilla/5.0' } }, 3500);
+              return { name: p.name, url: p.url, found: res.status === 200 || res.status === 301 || res.status === 302 };
+            } catch {
+              return { name: p.name, url: p.url, found: false };
+            }
+          }));
+
+          const confirmed = checks.filter(c => c.found);
+          const confidence = Math.min(95, Math.max(30, confirmed.length * 15 + 20));
+
+          report += `🏷️ <b>TYPE:</b> <code>Digital Persona / Handle</code>\n` +
+                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
+                    `🕵️ <b>CROSS-PLATFORM CORRELATIONS:</b>\n` +
+                    (confirmed.length > 0 
+                      ? confirmed.map(c => `├ 🟢 <a href="${c.url}">${c.name}</a>`).join('\n') + '\n'
+                      : '├ ⚠️ Tidak ada profil instan langsung di platform utama.\n') +
+                    `└ <i>Gunakan <code>/username ${cleanUser}</code> untuk pemindaian lengkap 100+ platform.</i>\n\n` +
+                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                    `• <code>[Persona: ${cleanUser}]</code> ➔ <code>[Identities: ${confirmed.length} Connected]</code>\n`;
+        }
+
+        report += `━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 <i>Laporan dikompilasi secara dinamis oleh Intelijen Korelator OSINT.</i>`;
+
+        if (statusMsg) {
+          await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+        } else {
+          ctx.reply(report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+        }
+      } catch(err: any) {
+        ctx.reply(`❌ <b>Gagal menjalankan Intelijen Korelator:</b> ${err.message}`, { parse_mode: 'HTML' });
+      }
+    };
+
+    bot.command('correlate', handleCorrelate);
+    bot.command('intel', handleCorrelate);
+
     bot.command('shodan', async (ctx) => {
       const args = ctx.message.text.split(' ');
       if (args.length < 2) return ctx.reply("⚠️ Format salah. Contoh: /shodan 8.8.8.8");
