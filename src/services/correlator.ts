@@ -479,3 +479,29 @@ export function generateDorkMatrix(target: string, type: 'username' | 'email' | 
 
   return dorks;
 }
+
+// Split long Telegram messages gracefully without breaking formatting or exceeding 4096 chars limit
+export function splitTelegramMessages(text: string, maxLen: number = 3600): string[] {
+  if (!text || text.length <= maxLen) return [text];
+
+  const chunks: string[] = [];
+  const lines = text.split('\n');
+  let currentChunk = '';
+
+  for (const line of lines) {
+    if ((currentChunk + '\n' + line).length > maxLen) {
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+      }
+      currentChunk = line;
+    } else {
+      currentChunk = currentChunk ? (currentChunk + '\n' + line) : line;
+    }
+  }
+
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks.length > 0 ? chunks : [text];
+}

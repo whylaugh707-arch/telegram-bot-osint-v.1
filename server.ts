@@ -12,7 +12,7 @@ import db from './src/db/sqlite';
 import crypto from "crypto";
 import fs from "fs";
 import { osintEngine } from "./src/services/osint";
-import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix } from "./src/services/correlator";
+import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix, splitTelegramMessages } from "./src/services/correlator";
 import osintRouter from "./src/api/osint";
 import { templates } from "./src/templates";
 import rateLimit from "express-rate-limit";
@@ -3136,12 +3136,9 @@ There are no background services or permissions associated.
           // Global Footprint
           if (globalPlatforms.length > 0) {
             report += `🌐 <b>GLOBAL FOOTPRINT AKTIF (${globalPlatforms.length}):</b>\n`;
-            globalPlatforms.slice(0, 15).forEach(p => {
+            globalPlatforms.forEach(p => {
               report += `├ 🟢 <a href="${p.url}">${p.name}</a>${p.note ? ` (<i>${p.note}</i>)` : ''}\n`;
             });
-            if (globalPlatforms.length > 15) {
-              report += `└ <i>...dan ${globalPlatforms.length - 15} platform lainnya.</i>\n`;
-            }
             report += `\n`;
           }
 
@@ -3168,16 +3165,37 @@ There are no background services or permissions associated.
         // Clear interval
         if (timerInterval) clearInterval(timerInterval);
 
+        // Gracefully handle Telegram 4096-char limit by splitting into safe chunks
+        const chunks = splitTelegramMessages(report, 3500);
+
         if (statusMsg) {
-          await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, report, { 
+          // Edit the first status message with Part 1
+          await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, chunks[0], { 
             parse_mode: 'HTML', 
             link_preview_options: { is_disabled: true } 
           }).catch(async () => {
-            // In case of telegram markup truncation error, fallback cleanly
-            await ctx.reply(report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+            await ctx.reply(chunks[0], { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }).catch(() => {});
           });
+
+          // Send subsequent chunks as sequential follow-up messages
+          for (let c = 1; c < chunks.length; c++) {
+            await ctx.reply(chunks[c], { 
+              parse_mode: 'HTML', 
+              link_preview_options: { is_disabled: true } 
+            }).catch(async () => {
+              // Fallback without parse_mode if tag nesting issue occurs
+              await ctx.reply(chunks[c].replace(/<[^>]*>/g, ''), { link_preview_options: { is_disabled: true } }).catch(() => {});
+            });
+          }
         } else {
-          ctx.reply(report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+          for (const chunk of chunks) {
+            await ctx.reply(chunk, { 
+              parse_mode: 'HTML', 
+              link_preview_options: { is_disabled: true } 
+            }).catch(async () => {
+              await ctx.reply(chunk.replace(/<[^>]*>/g, ''), { link_preview_options: { is_disabled: true } }).catch(() => {});
+            });
+          }
         }
       } catch(err: any) {
         if (timerInterval) clearInterval(timerInterval);
