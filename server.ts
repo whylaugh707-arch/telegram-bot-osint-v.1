@@ -12,6 +12,7 @@ import db from './src/db/sqlite';
 import crypto from "crypto";
 import fs from "fs";
 import { osintEngine } from "./src/services/osint";
+import { evidenceEngine } from "./src/services/evidenceEngine";
 import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix, splitTelegramMessages, generatePermutations, queryPublicRegistries, scrapeSearchSnippetsAndExtract } from "./src/services/correlator";
 import osintRouter from "./src/api/osint";
 import { templates } from "./src/templates";
@@ -2758,9 +2759,9 @@ There are no background services or permissions associated.
       const parts = ctx.message.text.split(' ');
       if (parts.length < 2) {
         return ctx.reply(
-          "🧠 <b>INTELLIGENCE CORRELATOR (OSINT NEXUS PRO)</b>\n━━━━━━━━━━━━━━━━━━━━\n" +
+          "🧠 <b>EVIDENCE-DRIVEN OSINT CORRELATION ENGINE</b>\n━━━━━━━━━━━━━━━━━━━━\n" +
           "⚠️ Masukkan target analisis:\n" +
-          "<code>/correlate [IP / Domain / Username / Email]</code>\n" +
+          "<code>/correlate [IP / Domain / Username / Email / Name]</code>\n" +
           "atau\n" +
           "<code>/intel [target]</code>\n\n" +
           "<b>Contoh:</b>\n" +
@@ -2774,586 +2775,33 @@ There are no background services or permissions associated.
 
       const target = parts.slice(1).join(' ').trim();
       const startTime = Date.now();
-      let elapsedSeconds = 0;
       let timerInterval: any = null;
 
       const statusMsg = await ctx.reply(
-        `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
+        `🚀 <b>Investigasi Real-Time Berjalan 🚀</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `🎯 <b>TARGET INVESTIGASI:</b> <code>${target}</code>\n` +
-        `📡 <b>STATUS:</b> Menginisiasi korelasi multi-sumber (210+ Platform & Dork Matrix)...\n` +
-        `⏱️ <b>WAKTU PENCARIAN:</b> 0 detik\n` +
+        `🎯 <b>TARGET:</b> <code>${target}</code>\n` +
+        `📡 <b>STATUS:</b> Mengumpulkan Evidence Multi-Source & Resolusi Entitas...\n` +
+        `⏱️ <b>WAKTU:</b> 0 detik\n` +
         `━━━━━━━━━━━━━━━━━━━━`,
         { parse_mode: 'HTML' }
       ).catch(() => null);
 
       if (statusMsg) {
         timerInterval = setInterval(() => {
-          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          // Timer active
         }, 1000);
       }
 
       try {
-        const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target);
-        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target);
-        const cleanDomain = target.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-        const isDomain = !isIp && !isEmail && /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanDomain);
+        const reportData = await evidenceEngine.investigate(target);
+        const report = evidenceEngine.formatTelegramDossier(reportData);
 
-        let report = "";
-
-        if (isIp) {
-          let geoData: any = {};
-          let shodanData: any = {};
-          try {
-            const geoRes = await fetch(`http://ip-api.com/json/${target}?fields=status,country,regionName,city,isp,org,as,mobile,proxy,hosting,lat,lon,timezone`);
-            geoData = await geoRes.json();
-          } catch(e) {}
-
-          try {
-            const sRes = await axios.get(`https://internetdb.shodan.io/${target}`, { timeout: 4000 });
-            shodanData = sRes.data || {};
-          } catch(e) {}
-
-          const dorks = generateDorkMatrix(target, 'ip');
-          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          const confidence = geoData.status === 'success' ? 95 : 60;
-          const risk = (geoData.proxy ? 40 : 0) + (geoData.hosting ? 30 : 10) + ((shodanData.vulns?.length || 0) * 10);
-
-          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
-                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                   `🎯 <b>TARGET:</b> <code>${target}</code>\n` +
-                   `🏷️ <b>TYPE:</b> <code>IPv4 Infrastructure Target</code>\n` +
-                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
-                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (High Reliability)\n` +
-                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${Math.min(95, risk)}%</b>\n\n` +
-                   `🌐 <b>NETWORK & GEOLOCATION:</b>\n` +
-                   `├ <b>Negara / Kota:</b> ${geoData.country || '-'} / ${geoData.city || '-'}\n` +
-                   `├ <b>ISP Provider:</b> ${geoData.isp || '-'}\n` +
-                   `├ <b>ASN / Org:</b> ${geoData.as || '-'} (${geoData.org || '-'})\n` +
-                   `├ <b>Zona Waktu:</b> ${geoData.timezone || '-'}\n` +
-                   `└ <b>Hosting / Proxy:</b> ${geoData.hosting ? '⚠️ Datacenter / Cloud' : '✅ Residential / ISP Direct'} | ${geoData.proxy ? '⚠️ Proxy/VPN Active' : '✅ Direct IP'}\n\n` +
-                   `🛡️ <b>SHODAN SURFACE MAPPING:</b>\n` +
-                   `├ <b>Open Ports:</b> ${shodanData.ports?.length ? shodanData.ports.join(', ') : 'None detected'}\n` +
-                   `├ <b>Hostnames:</b> ${shodanData.hostnames?.length ? shodanData.hostnames.join(', ') : 'None detected'}\n` +
-                   `└ <b>CVE Vulnerabilities:</b> ${shodanData.vulns?.length ? shodanData.vulns.slice(0, 5).join(', ') : '0 known public CVEs'}\n\n` +
-                   `🔎 <b>ADVANCED DORKING MATRIX:</b>\n` +
-                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
-                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                   `• <code>[Target IP: ${target}]</code> ➔ <code>[ASN: ${geoData.as || 'N/A'}]</code> ➔ <code>[ISP: ${geoData.isp || 'N/A'}]</code>\n`;
-
-        } else if (isEmail) {
-          const [userPart, domainPart] = target.split('@');
-          let mxRecords: any[] = [];
-          let gravatarData: any = null;
-          let discoveredContacts: any[] = [];
-
-          try {
-            mxRecords = await dns.promises.resolveMx(domainPart).catch(() => []);
-          } catch(e) {}
-
-          const hash = crypto.createHash('md5').update(target.trim().toLowerCase()).digest('hex');
-          try {
-            const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { 
-              headers: getRandomHeaders(),
-              timeout: 4000, 
-              validateStatus: () => true 
-            });
-            if (gRes.status === 200 && gRes.data?.entry?.[0]) {
-              gravatarData = gRes.data.entry[0];
-              if (gravatarData.displayName) {
-                discoveredContacts.push({ type: 'name', value: gravatarData.displayName, source: 'Gravatar' });
-              }
-              if (gravatarData.profileUrl) {
-                discoveredContacts.push({ type: 'website', value: gravatarData.profileUrl, source: 'Gravatar', link: gravatarData.profileUrl });
-              }
-            }
-          } catch(e) {}
-
-          const dorks = generateDorkMatrix(target, 'email');
-          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          const confidence = (mxRecords.length > 0 ? 50 : 20) + (gravatarData ? 45 : 20);
-
-          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
-                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                   `🎯 <b>TARGET:</b> <code>${target}</code>\n` +
-                   `🏷️ <b>TYPE:</b> <code>Electronic Mail (Entity Identifier)</code>\n` +
-                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
-                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b>\n` +
-                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${gravatarData ? 75 : 45}%</b>\n\n` +
-                   `📬 <b>IDENTITY PARSING:</b>\n` +
-                   `├ <b>Username Alias:</b> <code>${userPart}</code>\n` +
-                   `├ <b>Mail Domain:</b> <code>${domainPart}</code>\n` +
-                   (gravatarData ? `├ <b>Nama Profil (Gravatar):</b> <code>${gravatarData.displayName || '-'}</code>\n` : '') +
-                   `└ <b>MX Active Status:</b> ${mxRecords.length > 0 ? '✅ Aktif Menerima Email' : '❌ Domain tidak memiliki MX aktif'}\n\n` +
-                   `📡 <b>MX ROUTING INFRASTRUCTURE:</b>\n` +
-                   (mxRecords.length ? mxRecords.slice(0, 3).map(m => `├ <code>${m.exchange}</code> (Pri: ${m.priority})`).join('\n') : '└ ❌ Tidak ada record MX') + '\n\n' +
-                   `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n` +
-                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
-                   `🔗 <b>CORRELATION SHORTCUTS:</b>\n` +
-                   `• Lacak Profil Username: <code>/correlate ${userPart}</code>\n` +
-                   `• Lacak Domain Mail Server: <code>/correlate ${domainPart}</code>\n\n` +
-                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                   `• <code>[${target}]</code> ➔ <code>[Domain: ${domainPart}]</code> ➔ <code>[Alias: ${userPart}]</code>\n`;
-
-        } else if (isDomain) {
-          let aRecords: any[] = [];
-          let nsRecords: any[] = [];
-          let mxRecords: any[] = [];
-          let whoisData: any = null;
-
-          try {
-            aRecords = await dns.promises.resolve4(cleanDomain).catch(() => []);
-          } catch(e) {}
-          try {
-            nsRecords = await dns.promises.resolveNs(cleanDomain).catch(() => []);
-          } catch(e) {}
-          try {
-            mxRecords = await dns.promises.resolveMx(cleanDomain).catch(() => []);
-          } catch(e) {}
-          try {
-            const wRes = await fetch(`https://networkcalc.com/api/dns/whois/${cleanDomain}`);
-            const wJson = await wRes.json();
-            if (wJson.status === 'OK') whoisData = wJson.whois;
-          } catch(e) {}
-
-          const dorks = generateDorkMatrix(cleanDomain, 'domain');
-          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-          const confidence = (aRecords.length > 0 ? 40 : 0) + (nsRecords.length > 0 ? 30 : 0) + (whoisData ? 25 : 10);
-
-          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
-                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                   `🎯 <b>TARGET:</b> <code>${cleanDomain}</code>\n` +
-                   `🏷️ <b>TYPE:</b> <code>Internet Domain Asset</code>\n` +
-                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
-                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b>\n` +
-                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${aRecords.length > 0 ? 65 : 30}%</b>\n\n` +
-                   `🌐 <b>DNS INFRASTRUCTURE:</b>\n` +
-                   `├ <b>A Records (IPv4):</b> ${aRecords.length ? aRecords.join(', ') : 'None'}\n` +
-                   `├ <b>Nameservers:</b> ${nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'None'}\n` +
-                   `└ <b>Mail Servers (MX):</b> ${mxRecords.length ? mxRecords[0].exchange : 'None'}\n\n` +
-                   `📝 <b>REGISTRAR AUDIT:</b>\n` +
-                   `├ <b>Registrar:</b> ${whoisData?.registrar || 'Hidden / Protected'}\n` +
-                   `├ <b>Created:</b> ${whoisData?.creation_date || '-'}\n` +
-                   `└ <b>Expires:</b> ${whoisData?.expiration_date || '-'}\n\n` +
-                   `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n` +
-                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
-                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                   (aRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[IP: ${aRecords[0]}]</code> (Gunakan <code>/correlate ${aRecords[0]}</code>)\n` : '') +
-                   (nsRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[NS: ${nsRecords[0]}]</code>\n` : '');
-
-        } else {
-          // 🚀 DIGITAL PERSONA & FULL NAME MULTI-VECTOR OSINT ENGINE
-          const perm = generatePermutations(target);
-          const primaryHandle = perm.handles[0] || target.replace(/[^a-zA-Z0-9_.-]/g, '');
-          const isFullName = Boolean(perm.fullName);
-
-          let confirmedList: { name: string; category: string; url: string; note?: string }[] = [];
-          let discoveredContacts: any[] = [];
-          let publicRecords: any[] = [];
-          let searchHarvestResults: { url: string; title: string; snippet: string }[] = [];
-
-          // 1. Live Public Search Engine Harvesting & Scraping (DuckDuckGo + Page Scraping)
-          const searchPromise = (async () => {
-            try {
-              const harvest = await scrapeSearchSnippetsAndExtract(perm.fullName || target);
-              discoveredContacts.push(...harvest.contacts);
-              searchHarvestResults = harvest.results;
-            } catch (e) {}
-          })();
-
-          // 2. Query Public Academic & Institution Registries in parallel (CrossRef, OpenAlex, Wikipedia)
-          const registryPromise = (async () => {
-            if (isFullName || target.length >= 4) {
-              try {
-                const recs = await queryPublicRegistries(perm.fullName || target);
-                publicRecords.push(...recs);
-              } catch(e) {}
-            }
-          })();
-
-          // 3. Gravatar Hash Permutations for email candidates
-          const gravatarPromise = (async () => {
-            if (perm.emailCandidates && perm.emailCandidates.length > 0) {
-              await Promise.all(perm.emailCandidates.slice(0, 5).map(async (em) => {
-                const hash = crypto.createHash('md5').update(em).digest('hex');
-                try {
-                  const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { timeout: 3500, validateStatus: () => true });
-                  if (gRes.status === 200 && gRes.data?.entry?.[0]) {
-                    const entry = gRes.data.entry[0];
-                    if (entry.displayName) discoveredContacts.push({ type: 'name', value: entry.displayName, source: `Gravatar (${em})` });
-                    if (entry.currentLocation) discoveredContacts.push({ type: 'location', value: entry.currentLocation, source: 'Gravatar' });
-                    if (entry.aboutMe) discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
-                    confirmedList.push({ name: `Gravatar Profile (${em})`, category: 'Social', url: entry.profileUrl, note: entry.displayName });
-                  }
-                } catch(e) {}
-              }));
-            }
-          })();
-
-          // 4. Scan 215+ Verified Platforms across handles
-          const platformsPromise = (async () => {
-            const handlesToScan = perm.handles.slice(0, 3);
-            for (const h of handlesToScan) {
-              const platforms = buildPlatformList(h);
-              const totalPlatforms = platforms.length;
-
-              for (let i = 0; i < totalPlatforms; i += 18) {
-                const batch = platforms.slice(i, i + 18);
-                const currentSeconds = Math.floor((Date.now() - startTime) / 1000);
-
-                if (statusMsg && i === 0 && h === handlesToScan[0]) {
-                  const progressTxt = 
-                    `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
-                    `━━━━━━━━━━━━━━━━━━━━\n` +
-                    `🎯 <b>TARGET INVESTIGASI:</b> <code>${perm.fullName || h}</code>\n` +
-                    `📡 <b>PROSES:</b> Memindai ${totalPlatforms} platform publik & database...\n` +
-                    `⏱️ <b>WAKTU PENCARIAN:</b> ${currentSeconds} detik\n` +
-                    `🔎 <b>TERDETEKSI:</b> ${confirmedList.length + publicRecords.length} jejak aktif\n` +
-                    `━━━━━━━━━━━━━━━━━━━━`;
-                  await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, progressTxt, { parse_mode: 'HTML' }).catch(() => {});
-                }
-
-                const batchResults = await Promise.all(batch.map(async (p) => {
-                  const headers = getRandomHeaders();
-                  try {
-                    // 1. GitHub API
-                    if (p.checkMethod === 'api_github') {
-                      const ghRes = await axios.get(`https://api.github.com/users/${h}`, {
-                        headers: { ...headers, 'User-Agent': 'Mozilla/5.0' },
-                        timeout: 4000,
-                        validateStatus: () => true
-                      });
-                      if (ghRes.status === 200 && ghRes.data?.login) {
-                        const data = ghRes.data;
-                        if (data.email) {
-                          discoveredContacts.push({ type: 'email', value: data.email, source: 'GitHub Profile', link: `mailto:${data.email}` });
-                        }
-                        if (data.blog) {
-                          discoveredContacts.push(...extractContactsFromText(data.blog, 'GitHub Website'));
-                        }
-                        if (data.bio) {
-                          discoveredContacts.push(...extractContactsFromText(data.bio, 'GitHub Bio'));
-                        }
-                        return { name: `${p.name} (@${h})`, category: p.category, url: data.html_url || p.url, found: true, note: data.name ? `Nama: ${data.name}` : undefined };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 2. Gravatar API
-                    if (p.checkMethod === 'api_gravatar') {
-                      const gravRes = await axios.get(`https://en.gravatar.com/${h}.json`, {
-                        headers,
-                        timeout: 3500,
-                        validateStatus: () => true
-                      });
-                      if (gravRes.status === 200 && gravRes.data?.entry?.[0]) {
-                        const entry = gravRes.data.entry[0];
-                        if (entry.displayName) {
-                          discoveredContacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
-                        }
-                        if (entry.aboutMe) {
-                          discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
-                        }
-                        return { name: `${p.name} (@${h})`, category: p.category, url: entry.profileUrl || p.url, found: true, note: entry.displayName ? `Nama: ${entry.displayName}` : undefined };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 3. Reddit JSON API
-                    if (p.checkMethod === 'api_reddit') {
-                      const rRes = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${h}/about.json`, {
-                        headers: { 'User-Agent': 'Mozilla/5.0' },
-                        timeout: 3500,
-                        validateStatus: () => true
-                      });
-                      if (rRes.status === 200 && rRes.data?.data?.name) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: `Karma: ${rRes.data.data.total_karma || 0}` };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 4. NPM Registry API
-                    if (p.checkMethod === 'api_npm') {
-                      const npmRes = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${h}`, {
-                        headers,
-                        timeout: 3000,
-                        validateStatus: () => true
-                      });
-                      if (npmRes.status === 200 && npmRes.data?.name) {
-                        if (npmRes.data.email) {
-                          discoveredContacts.push({ type: 'email', value: npmRes.data.email, source: 'NPM Registry', link: `mailto:${npmRes.data.email}` });
-                        }
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: 'Registered Developer' };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 5. GitLab API
-                    if (p.checkMethod === 'api_gitlab') {
-                      const glRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (glRes.status === 200 && Array.isArray(glRes.data) && glRes.data.length > 0) {
-                        const user = glRes.data[0];
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: user.name ? `Nama: ${user.name}` : undefined };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 6. DockerHub API
-                    if (p.checkMethod === 'api_docker') {
-                      const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (dRes.status === 200 && dRes.data?.username) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 7. Keybase API
-                    if (p.checkMethod === 'api_keybase') {
-                      const kRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (kRes.status === 200 && kRes.data?.them?.[0]?.basics?.username) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 8. Chess.com API
-                    if (p.checkMethod === 'api_chess') {
-                      const cRes = await axios.get(p.apiEndpoint!, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500, validateStatus: () => true });
-                      if (cRes.status === 200 && cRes.data?.username) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: cRes.data.title || 'Player' };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 9. Duolingo API
-                    if (p.checkMethod === 'api_duolingo') {
-                      const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (dRes.status === 200 && dRes.data?.users?.length > 0) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 10. HackerNews API
-                    if (p.checkMethod === 'api_hackernews') {
-                      const hnRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (hnRes.status === 200 && hnRes.data?.id) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: `Karma: ${hnRes.data.karma || 0}` };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 11. Codeforces API
-                    if (p.checkMethod === 'api_codeforces') {
-                      const cfRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
-                      if (cfRes.status === 200 && cfRes.data?.status === 'OK' && cfRes.data?.result?.length > 0) {
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true, note: cfRes.data.result[0].rank };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    // 12. GET with Strict Signature & Body Check (Zero false positive)
-                    if (p.checkMethod === 'get_with_signature') {
-                      const res = await axios.get(p.url, {
-                        headers,
-                        timeout: 4000,
-                        validateStatus: () => true,
-                        maxRedirects: 3
-                      });
-
-                      if (res.status === 200) {
-                        const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-                        
-                        // Check mustNotContain
-                        if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) {
-                          return { name: p.name, category: p.category, url: p.url, found: false };
-                        }
-
-                        // Check mustContain
-                        if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) {
-                          return { name: p.name, category: p.category, url: p.url, found: false };
-                        }
-
-                        // If extractBio is enabled, extract real contacts safely
-                        if (p.extractBio) {
-                          const contactsFromPage = extractContactsFromText(text, p.name);
-                          discoveredContacts.push(...contactsFromPage);
-                        }
-
-                        return { name: `${p.name} (@${h})`, category: p.category, url: p.url, found: true };
-                      }
-                      return { name: p.name, category: p.category, url: p.url, found: false };
-                    }
-
-                    return { name: p.name, category: p.category, url: p.url, found: false };
-                  } catch (e) {
-                    return { name: p.name, category: p.category, url: p.url, found: false };
-                  }
-                }));
-
-                for (const r of batchResults) {
-                  if (r.found) {
-                    confirmedList.push(r);
-                  }
-                }
-              }
-            }
-          })();
-
-          // Wait for all multi-vector parallel investigations to complete
-          await Promise.all([searchPromise, registryPromise, gravatarPromise, platformsPromise]);
-
-          // Deduplicate contacts
-          const uniqueContacts: any[] = [];
-          for (const c of discoveredContacts) {
-            if (!uniqueContacts.some(u => u.type === c.type && u.value.toLowerCase() === c.value.toLowerCase())) {
-              uniqueContacts.push(c);
-            }
-          }
-
-          const dorks = generateDorkMatrix(perm.fullName ? `"${perm.fullName}"` : primaryHandle, 'username');
-          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-
-          const whatsappContacts = uniqueContacts.filter(c => c.type === 'whatsapp');
-          const emailContacts = uniqueContacts.filter(c => c.type === 'email');
-          const instagramContacts = uniqueContacts.filter(c => c.type === 'instagram');
-          const telegramContacts = uniqueContacts.filter(c => c.type === 'telegram');
-          const locationContacts = uniqueContacts.filter(c => c.type === 'location');
-          const nameContacts = uniqueContacts.filter(c => c.type === 'name');
-
-          const indoPlatforms = confirmedList.filter(c => c.category === 'Indo');
-          const globalPlatforms = confirmedList.filter(c => c.category !== 'Indo');
-          const totalFindings = confirmedList.length + publicRecords.length + uniqueContacts.length + searchHarvestResults.length;
-          const confidence = Math.min(98, Math.max(35, confirmedList.length * 8 + (uniqueContacts.length * 15) + (publicRecords.length * 15) + (searchHarvestResults.length * 5) + 15));
-          const riskScore = Math.min(95, confirmedList.length * 6 + (uniqueContacts.length * 12) + (indoPlatforms.length * 10) + (publicRecords.length * 10) + 10);
-
-          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
-                   `━━━━━━━━━━━━━━━━━━━━\n` +
-                   `🎯 <b>TARGET INVESTIGASI:</b> <code>${perm.fullName || '@' + primaryHandle}</code>\n` +
-                   `🏷️ <b>TYPE:</b> <code>${isFullName ? 'Nama Lengkap / Identitas Publik' : 'Digital Persona / Handle'}</code>\n` +
-                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
-                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (${confidence >= 75 ? 'Tinggi / Verified Match' : 'Moderat'})\n` +
-                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${riskScore}%</b>\n\n`;
-
-          // Section 1: Explicit Contact Extraction Status
-          report += `📱 <b>VEKTOR INTELIJEN & KONTAK RIIL:</b>\n`;
-
-          // WhatsApp / Phone
-          if (whatsappContacts.length > 0) {
-            whatsappContacts.forEach(w => {
-              report += `├ 📞 <b>WhatsApp / HP:</b> <code>${w.value}</code> (<a href="${w.link}">Hubungi Langsung</a>) [${w.source}]\n`;
-            });
-          } else {
-            report += `├ 📞 <b>WhatsApp / HP:</b> <i>❌ Tidak ditemukan di rekaman publik terbuka</i>\n`;
-          }
-
-          // Email
-          if (emailContacts.length > 0) {
-            emailContacts.forEach(em => {
-              report += `├ 📧 <b>Alamat Email:</b> <code>${em.value}</code> [${em.source}]\n`;
-            });
-          } else {
-            report += `├ 📧 <b>Alamat Email:</b> <i>❌ Tidak ditemukan di profil publik terbuka</i>\n`;
-          }
-
-          // Instagram
-          if (instagramContacts.length > 0) {
-            instagramContacts.forEach(ig => {
-              report += `├ 📸 <b>Instagram:</b> <a href="${ig.link}">${ig.value}</a> [${ig.source}]\n`;
-            });
-          }
-
-          // Telegram
-          if (telegramContacts.length > 0) {
-            telegramContacts.forEach(tg => {
-              report += `├ ✈️ <b>Telegram:</b> <a href="${tg.link}">${tg.value}</a> [${tg.source}]\n`;
-            });
-          }
-
-          // Detected Names / Aliases
-          if (nameContacts.length > 0) {
-            nameContacts.forEach(nm => {
-              report += `├ 👤 <b>Nama Terdeteksi:</b> <code>${nm.value}</code> [${nm.source}]\n`;
-            });
-          }
-
-          // Locations
-          if (locationContacts.length > 0) {
-            locationContacts.forEach(loc => {
-              report += `├ 📍 <b>Lokasi / Domisili:</b> <code>${loc.value}</code> [${loc.source}]\n`;
-            });
-          } else {
-            report += `└ 📍 <b>Lokasi / Domisili:</b> <i>❌ Tidak dicantumkan di metadata profil publik</i>\n`;
-          }
-          report += `\n`;
-
-          // Section 2: Public Academic & Institution Records (CrossRef, OpenAlex, Wikipedia)
-          if (publicRecords.length > 0) {
-            report += `📄 <b>REKAM JEJAK PUBLIK & AKADEMIK / INSTITUSI (${publicRecords.length}):</b>\n`;
-            publicRecords.forEach(rec => {
-              report += `├ 🏛️ <b>${rec.title}</b>\n` +
-                        `│  └ <i>${rec.details}</i> [${rec.source}]` +
-                        (rec.url ? ` (<a href="${rec.url}">Akses Dokumen</a>)\n` : '\n');
-            });
-            report += `\n`;
-          }
-
-          // Section 3: Live Public Search & Web Scraping Harvest
-          if (searchHarvestResults.length > 0) {
-            report += `🌐 <b>HASIL PENCARIAN WEB PUBLIK & DOKUMEN (${searchHarvestResults.length}):</b>\n`;
-            searchHarvestResults.slice(0, 8).forEach(res => {
-              report += `├ 🔗 <a href="${res.url}"><b>${res.title || res.url}</b></a>\n` +
-                        `│  └ <i>${res.snippet.slice(0, 160)}...</i>\n`;
-            });
-            report += `\n`;
-          }
-
-          // Section 4: Indonesian Ecosystem Platforms
-          if (indoPlatforms.length > 0) {
-            report += `🇮🇩 <b>PLATFORM INDONESIA AKTIF (${indoPlatforms.length}):</b>\n`;
-            indoPlatforms.forEach(p => {
-              report += `├ 🟢 <a href="${p.url}">${p.name}</a>${p.note ? ` (<i>${p.note}</i>)` : ''}\n`;
-            });
-            report += `\n`;
-          }
-
-          // Section 5: Global Footprint Platforms
-          if (globalPlatforms.length > 0) {
-            report += `🌐 <b>GLOBAL FOOTPRINT AKTIF (${globalPlatforms.length}):</b>\n`;
-            globalPlatforms.forEach(p => {
-              report += `├ 🟢 <a href="${p.url}">${p.name}</a>${p.note ? ` (<i>${p.note}</i>)` : ''}\n`;
-            });
-            report += `\n`;
-          }
-
-          if (totalFindings === 0) {
-            report += `⚠️ <b>HASIL PEMINDAIAN LANGSUNG:</b>\n` +
-                      `└ <i>Tidak ditemukan profil instan terbuka tanpa otentikasi. Gunakan matriks Google Dorking di bawah untuk mencari jejak tersembunyi.</i>\n\n`;
-          }
-
-          // Section 6: Advanced Dorking Matrix
-          report += `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n`;
-          dorks.forEach(d => {
-            report += `• <a href="${d.url}">${d.title}</a>\n`;
-          });
-          report += `\n`;
-
-          // Section 7: Relation Graph Nodes
-          report += `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    `• <code>[Target: ${perm.fullName || primaryHandle}]</code> ➔ <code>[Web/Dokumen: ${searchHarvestResults.length}]</code> ➔ <code>[Publikasi: ${publicRecords.length}]</code> ➔ <code>[Platform Terverifikasi: ${confirmedList.length}]</code> ➔ <code>[Vektor Kontak: ${uniqueContacts.length}]</code>\n`;
-        }
-
-        report += `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `💡 <i>Intelijen disintesis secara real-time dengan multi-header anti-bot rotating engine (Zero Simulation).</i>`;
-
-        // Clear interval
         if (timerInterval) clearInterval(timerInterval);
 
-        // Gracefully handle Telegram 4096-char limit by splitting into safe chunks
         const chunks = splitTelegramMessages(report, 3500);
 
         if (statusMsg) {
-          // Edit the first status message with Part 1
           await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, chunks[0], { 
             parse_mode: 'HTML', 
             link_preview_options: { is_disabled: true } 
@@ -3361,13 +2809,11 @@ There are no background services or permissions associated.
             await ctx.reply(chunks[0], { parse_mode: 'HTML', link_preview_options: { is_disabled: true } }).catch(() => {});
           });
 
-          // Send subsequent chunks as sequential follow-up messages
           for (let c = 1; c < chunks.length; c++) {
             await ctx.reply(chunks[c], { 
               parse_mode: 'HTML', 
               link_preview_options: { is_disabled: true } 
             }).catch(async () => {
-              // Fallback without parse_mode if tag nesting issue occurs
               await ctx.reply(chunks[c].replace(/<[^>]*>/g, ''), { link_preview_options: { is_disabled: true } }).catch(() => {});
             });
           }
@@ -3383,7 +2829,7 @@ There are no background services or permissions associated.
         }
       } catch(err: any) {
         if (timerInterval) clearInterval(timerInterval);
-        ctx.reply(`❌ <b>Gagal menjalankan Intelijen Korelator:</b> ${err.message}`, { parse_mode: 'HTML' });
+        ctx.reply(`❌ <b>Gagal menjalankan Intelijen Engine:</b> ${err.message}`, { parse_mode: 'HTML' });
       }
     };
 
