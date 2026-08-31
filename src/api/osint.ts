@@ -1,7 +1,119 @@
 import { Router } from 'express';
 import { osintEngine } from '../services/osint';
+import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix } from '../services/correlator';
+import axios from 'axios';
+import dns from 'dns/promises';
+import crypto from 'crypto';
 
 const router = Router();
+
+router.get('/correlate', async (req, res) => {
+    try {
+        const target = String(req.query.target || req.query.q || '').trim();
+        if (!target) return res.status(400).json({ error: 'Target query parameter required' });
+
+        const startTime = Date.now();
+        const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target);
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target);
+        const cleanDomain = target.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+        const isDomain = !isIp && !isEmail && /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanDomain);
+
+        if (isIp) {
+            let geoData: any = {};
+            let shodanData: any = {};
+            try {
+                const geoRes = await fetch(`http://ip-api.com/json/${target}?fields=status,country,regionName,city,isp,org,as,mobile,proxy,hosting,lat,lon,timezone`);
+                geoData = await geoRes.json();
+            } catch(e) {}
+            try {
+                const sRes = await axios.get(`https://internetdb.shodan.io/${target}`, { timeout: 4000 });
+                shodanData = sRes.data || {};
+            } catch(e) {}
+
+            return res.json({
+                target,
+                type: 'ip',
+                elapsedMs: Date.now() - startTime,
+                geo: geoData,
+                shodan: shodanData,
+                dorks: generateDorkMatrix(target, 'ip')
+            });
+        }
+
+        if (isEmail) {
+            const [userPart, domainPart] = target.split('@');
+            let mxRecords: any[] = [];
+            let gravatarData: any = null;
+            try {
+                mxRecords = await dns.resolveMx(domainPart).catch(() => []);
+            } catch(e) {}
+            const hash = crypto.createHash('md5').update(target.trim().toLowerCase()).digest('hex');
+            try {
+                const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { headers: getRandomHeaders(), timeout: 4000, validateStatus: () => true });
+                if (gRes.status === 200) gravatarData = gRes.data?.entry?.[0];
+            } catch(e) {}
+
+            return res.json({
+                target,
+                type: 'email',
+                userPart,
+                domainPart,
+                mxRecords,
+                gravatar: gravatarData,
+                dorks: generateDorkMatrix(target, 'email'),
+                elapsedMs: Date.now() - startTime
+            });
+        }
+
+        // Persona scan (210+ Platforms)
+        const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
+        const platforms = buildPlatformList(cleanUser);
+        const confirmed: any[] = [];
+        const contacts: any[] = [];
+
+        // Check platforms in batches of 20
+        for (let i = 0; i < platforms.length; i += 20) {
+            const batch = platforms.slice(i, i + 20);
+            await Promise.all(batch.map(async (p) => {
+                const headers = getRandomHeaders();
+                try {
+                    if (p.checkType === 'api_github') {
+                        const gh = await axios.get(`https://api.github.com/users/${cleanUser}`, { headers: { ...headers, 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
+                        if (gh.status === 200 && gh.data?.login) {
+                            if (gh.data.email) contacts.push({ type: 'email', value: gh.data.email, source: 'GitHub' });
+                            confirmed.push({ name: p.name, category: p.category, url: gh.data.html_url, note: gh.data.name });
+                        }
+                    } else if (p.checkType === 'get') {
+                        const res = await axios.get(p.url, { headers, timeout: 3500, validateStatus: () => true, maxRedirects: 3 });
+                        if (res.status === 200) {
+                            const parsed = extractContactsFromText(typeof res.data === 'string' ? res.data : JSON.stringify(res.data), p.name);
+                            contacts.push(...parsed);
+                            confirmed.push({ name: p.name, category: p.category, url: p.url });
+                        }
+                    } else {
+                        const res = await fetch(p.url, { method: 'HEAD', headers, signal: AbortSignal.timeout(3500) });
+                        if (res.status === 200 || res.status === 301 || res.status === 302) {
+                            confirmed.push({ name: p.name, category: p.category, url: p.url });
+                        }
+                    }
+                } catch(e) {}
+            }));
+        }
+
+        return res.json({
+            target: cleanUser,
+            type: 'username',
+            totalScanned: platforms.length,
+            confirmed,
+            contacts,
+            dorks: generateDorkMatrix(cleanUser, 'username'),
+            elapsedMs: Date.now() - startTime
+        });
+
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 router.get('/analyze', async (req, res) => {
     try {

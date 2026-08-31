@@ -12,6 +12,7 @@ import db from './src/db/sqlite';
 import crypto from "crypto";
 import fs from "fs";
 import { osintEngine } from "./src/services/osint";
+import { buildPlatformList, getRandomHeaders, extractContactsFromText, generateDorkMatrix } from "./src/services/correlator";
 import osintRouter from "./src/api/osint";
 import { templates } from "./src/templates";
 import rateLimit from "express-rate-limit";
@@ -2756,9 +2757,11 @@ There are no background services or permissions associated.
       const parts = ctx.message.text.split(' ');
       if (parts.length < 2) {
         return ctx.reply(
-          "🧠 <b>INTELLIGENCE CORRELATOR</b>\n━━━━━━━━━━━━━━━━━━━━\n" +
+          "🧠 <b>INTELLIGENCE CORRELATOR (OSINT NEXUS PRO)</b>\n━━━━━━━━━━━━━━━━━━━━\n" +
           "⚠️ Masukkan target analisis:\n" +
-          "<code>/correlate [IP / Domain / Username / Email]</code>\n\n" +
+          "<code>/correlate [IP / Domain / Username / Email]</code>\n" +
+          "atau\n" +
+          "<code>/intel [target]</code>\n\n" +
           "<b>Contoh:</b>\n" +
           "• <code>/correlate 8.8.8.8</code>\n" +
           "• <code>/correlate github.com</code>\n" +
@@ -2769,7 +2772,25 @@ There are no background services or permissions associated.
       }
 
       const target = parts.slice(1).join(' ').trim();
-      const statusMsg = await ctx.reply(`🧠 <b>[INTELLIGENCE CORRELATOR]</b>\n⏳ Menginisiasi korelasi multi-sumber untuk: <code>${target}</code>...`, { parse_mode: 'HTML' }).catch(() => null);
+      const startTime = Date.now();
+      let elapsedSeconds = 0;
+      let timerInterval: any = null;
+
+      const statusMsg = await ctx.reply(
+        `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🎯 <b>TARGET INVESTIGASI:</b> <code>${target}</code>\n` +
+        `📡 <b>STATUS:</b> Menginisiasi korelasi multi-sumber (210+ Platform & Dork Matrix)...\n` +
+        `⏱️ <b>WAKTU PENCARIAN:</b> 0 detik\n` +
+        `━━━━━━━━━━━━━━━━━━━━`,
+        { parse_mode: 'HTML' }
+      ).catch(() => null);
+
+      if (statusMsg) {
+        timerInterval = setInterval(() => {
+          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        }, 1000);
+      }
 
       try {
         const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target);
@@ -2777,13 +2798,13 @@ There are no background services or permissions associated.
         const cleanDomain = target.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
         const isDomain = !isIp && !isEmail && /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanDomain);
 
-        let report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n━━━━━━━━━━━━━━━━━━━━\n🎯 <b>TARGET:</b> <code>${target}</code>\n`;
+        let report = "";
 
         if (isIp) {
           let geoData: any = {};
           let shodanData: any = {};
           try {
-            const geoRes = await fetch(`http://ip-api.com/json/${target}?fields=status,country,regionName,city,isp,org,as,mobile,proxy,hosting`);
+            const geoRes = await fetch(`http://ip-api.com/json/${target}?fields=status,country,regionName,city,isp,org,as,mobile,proxy,hosting,lat,lon,timezone`);
             geoData = await geoRes.json();
           } catch(e) {}
 
@@ -2792,48 +2813,91 @@ There are no background services or permissions associated.
             shodanData = sRes.data || {};
           } catch(e) {}
 
+          const dorks = generateDorkMatrix(target, 'ip');
+          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
           const confidence = geoData.status === 'success' ? 95 : 60;
-          report += `🏷️ <b>TYPE:</b> <code>IPv4 Infrastructure Target</code>\n` +
-                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b> (High Reliability)\n\n` +
-                    `🌐 <b>NETWORK & GEOLOCATION:</b>\n` +
-                    `├ <b>Country / City:</b> ${geoData.country || '-'} / ${geoData.city || '-'}\n` +
-                    `├ <b>ISP:</b> ${geoData.isp || '-'}\n` +
-                    `├ <b>ASN / Org:</b> ${geoData.as || '-'} (${geoData.org || '-'})\n` +
-                    `└ <b>Hosting / Proxy:</b> ${geoData.hosting ? '⚠️ Datacenter' : '✅ Residential'} | ${geoData.proxy ? '⚠️ Proxy/VPN' : '✅ Direct IP'}\n\n` +
-                    `🛡️ <b>SHODAN SURFACE MAPPING:</b>\n` +
-                    `├ <b>Open Ports:</b> ${shodanData.ports?.length ? shodanData.ports.join(', ') : 'None detected'}\n` +
-                    `├ <b>Hostnames:</b> ${shodanData.hostnames?.length ? shodanData.hostnames.join(', ') : 'None detected'}\n` +
-                    `└ <b>CVEs:</b> ${shodanData.vulns?.length ? shodanData.vulns.slice(0, 5).join(', ') : '0 known public CVEs'}\n\n` +
-                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    `• <code>[Target IP]</code> ➔ <code>[ASN: ${geoData.as || 'N/A'}]</code> ➔ <code>[ISP: ${geoData.isp || 'N/A'}]</code>\n`;
+          const risk = (geoData.proxy ? 40 : 0) + (geoData.hosting ? 30 : 10) + ((shodanData.vulns?.length || 0) * 10);
+
+          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━━━\n` +
+                   `🎯 <b>TARGET:</b> <code>${target}</code>\n` +
+                   `🏷️ <b>TYPE:</b> <code>IPv4 Infrastructure Target</code>\n` +
+                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
+                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (High Reliability)\n` +
+                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${Math.min(95, risk)}%</b>\n\n` +
+                   `🌐 <b>NETWORK & GEOLOCATION:</b>\n` +
+                   `├ <b>Negara / Kota:</b> ${geoData.country || '-'} / ${geoData.city || '-'}\n` +
+                   `├ <b>ISP Provider:</b> ${geoData.isp || '-'}\n` +
+                   `├ <b>ASN / Org:</b> ${geoData.as || '-'} (${geoData.org || '-'})\n` +
+                   `├ <b>Zona Waktu:</b> ${geoData.timezone || '-'}\n` +
+                   `└ <b>Hosting / Proxy:</b> ${geoData.hosting ? '⚠️ Datacenter / Cloud' : '✅ Residential / ISP Direct'} | ${geoData.proxy ? '⚠️ Proxy/VPN Active' : '✅ Direct IP'}\n\n` +
+                   `🛡️ <b>SHODAN SURFACE MAPPING:</b>\n` +
+                   `├ <b>Open Ports:</b> ${shodanData.ports?.length ? shodanData.ports.join(', ') : 'None detected'}\n` +
+                   `├ <b>Hostnames:</b> ${shodanData.hostnames?.length ? shodanData.hostnames.join(', ') : 'None detected'}\n` +
+                   `└ <b>CVE Vulnerabilities:</b> ${shodanData.vulns?.length ? shodanData.vulns.slice(0, 5).join(', ') : '0 known public CVEs'}\n\n` +
+                   `🔎 <b>ADVANCED DORKING MATRIX:</b>\n` +
+                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
+                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                   `• <code>[Target IP: ${target}]</code> ➔ <code>[ASN: ${geoData.as || 'N/A'}]</code> ➔ <code>[ISP: ${geoData.isp || 'N/A'}]</code>\n`;
 
         } else if (isEmail) {
           const [userPart, domainPart] = target.split('@');
           let mxRecords: any[] = [];
+          let gravatarData: any = null;
+          let discoveredContacts: any[] = [];
+
           try {
             mxRecords = await dns.promises.resolveMx(domainPart).catch(() => []);
           } catch(e) {}
 
-          const dorkGoogle = encodeURIComponent(`"${target}" OR "${userPart}" site:github.com OR site:pastebin.com`);
-          const confidence = mxRecords.length > 0 ? 88 : 45;
+          const hash = crypto.createHash('md5').update(target.trim().toLowerCase()).digest('hex');
+          try {
+            const gRes = await axios.get(`https://en.gravatar.com/${hash}.json`, { 
+              headers: getRandomHeaders(),
+              timeout: 4000, 
+              validateStatus: () => true 
+            });
+            if (gRes.status === 200 && gRes.data?.entry?.[0]) {
+              gravatarData = gRes.data.entry[0];
+              if (gravatarData.displayName) {
+                discoveredContacts.push({ type: 'name', value: gravatarData.displayName, source: 'Gravatar' });
+              }
+              if (gravatarData.profileUrl) {
+                discoveredContacts.push({ type: 'website', value: gravatarData.profileUrl, source: 'Gravatar', link: gravatarData.profileUrl });
+              }
+            }
+          } catch(e) {}
 
-          report += `🏷️ <b>TYPE:</b> <code>Electronic Mail (Entity Identifier)</code>\n` +
-                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
-                    `📬 <b>IDENTITY PARSING:</b>\n` +
-                    `├ <b>Username Alias:</b> <code>${userPart}</code>\n` +
-                    `└ <b>Mail Server Domain:</b> <code>${domainPart}</code>\n\n` +
-                    `📡 <b>MX ROUTING INFRASTRUCTURE:</b>\n` +
-                    (mxRecords.length ? mxRecords.slice(0, 3).map(m => `├ <code>${m.exchange}</code> (Pri: ${m.priority})`).join('\n') : '└ ❌ Domain tidak memiliki MX aktif') + '\n\n' +
-                    `🔎 <b>CROSS-CORRELATION LINKS:</b>\n` +
-                    `• <a href="https://www.google.com/search?q=${dorkGoogle}">Lacak Jejak Publik / Repositori / Dorking</a>\n` +
-                    `• Lacak Profil Username: <code>/username ${userPart}</code>\n` +
-                    `• Lacak Domain Mail: <code>/domain ${domainPart}</code>\n\n` +
-                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    `• <code>[${target}]</code> ➔ <code>[Domain: ${domainPart}]</code> ➔ <code>[Identity: ${userPart}]</code>\n`;
+          const dorks = generateDorkMatrix(target, 'email');
+          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const confidence = (mxRecords.length > 0 ? 50 : 20) + (gravatarData ? 45 : 20);
+
+          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━━━\n` +
+                   `🎯 <b>TARGET:</b> <code>${target}</code>\n` +
+                   `🏷️ <b>TYPE:</b> <code>Electronic Mail (Entity Identifier)</code>\n` +
+                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
+                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b>\n` +
+                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${gravatarData ? 75 : 45}%</b>\n\n` +
+                   `📬 <b>IDENTITY PARSING:</b>\n` +
+                   `├ <b>Username Alias:</b> <code>${userPart}</code>\n` +
+                   `├ <b>Mail Domain:</b> <code>${domainPart}</code>\n` +
+                   (gravatarData ? `├ <b>Nama Profil (Gravatar):</b> <code>${gravatarData.displayName || '-'}</code>\n` : '') +
+                   `└ <b>MX Active Status:</b> ${mxRecords.length > 0 ? '✅ Aktif Menerima Email' : '❌ Domain tidak memiliki MX aktif'}\n\n` +
+                   `📡 <b>MX ROUTING INFRASTRUCTURE:</b>\n` +
+                   (mxRecords.length ? mxRecords.slice(0, 3).map(m => `├ <code>${m.exchange}</code> (Pri: ${m.priority})`).join('\n') : '└ ❌ Tidak ada record MX') + '\n\n' +
+                   `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n` +
+                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
+                   `🔗 <b>CORRELATION SHORTCUTS:</b>\n` +
+                   `• Lacak Profil Username: <code>/correlate ${userPart}</code>\n` +
+                   `• Lacak Domain Mail Server: <code>/correlate ${domainPart}</code>\n\n` +
+                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                   `• <code>[${target}]</code> ➔ <code>[Domain: ${domainPart}]</code> ➔ <code>[Alias: ${userPart}]</code>\n`;
 
         } else if (isDomain) {
           let aRecords: any[] = [];
           let nsRecords: any[] = [];
+          let mxRecords: any[] = [];
           let whoisData: any = null;
 
           try {
@@ -2843,71 +2907,280 @@ There are no background services or permissions associated.
             nsRecords = await dns.promises.resolveNs(cleanDomain).catch(() => []);
           } catch(e) {}
           try {
+            mxRecords = await dns.promises.resolveMx(cleanDomain).catch(() => []);
+          } catch(e) {}
+          try {
             const wRes = await fetch(`https://networkcalc.com/api/dns/whois/${cleanDomain}`);
             const wJson = await wRes.json();
             if (wJson.status === 'OK') whoisData = wJson.whois;
           } catch(e) {}
 
-          const confidence = (aRecords.length > 0 || whoisData) ? 92 : 50;
+          const dorks = generateDorkMatrix(cleanDomain, 'domain');
+          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const confidence = (aRecords.length > 0 ? 40 : 0) + (nsRecords.length > 0 ? 30 : 0) + (whoisData ? 25 : 10);
 
-          report += `🏷️ <b>TYPE:</b> <code>Internet Domain Asset</code>\n` +
-                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
-                    `🌐 <b>DNS RESOLUTION:</b>\n` +
-                    `├ <b>A Records (IPv4):</b> ${aRecords.length ? aRecords.join(', ') : 'None'}\n` +
-                    `└ <b>Nameservers:</b> ${nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'None'}\n\n` +
-                    `📝 <b>REGISTRAR AUDIT:</b>\n` +
-                    `├ <b>Registrar:</b> ${whoisData?.registrar || 'Hidden / Protected'}\n` +
-                    `├ <b>Created:</b> ${whoisData?.creation_date || '-'}\n` +
-                    `└ <b>Expires:</b> ${whoisData?.expiration_date || '-'}\n\n` +
-                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    (aRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[IP: ${aRecords[0]}]</code> (Gunakan <code>/ip ${aRecords[0]}</code>)\n` : '') +
-                    (nsRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[NS: ${nsRecords[0]}]</code>\n` : '');
+          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━━━\n` +
+                   `🎯 <b>TARGET:</b> <code>${cleanDomain}</code>\n` +
+                   `🏷️ <b>TYPE:</b> <code>Internet Domain Asset</code>\n` +
+                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
+                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b>\n` +
+                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${aRecords.length > 0 ? 65 : 30}%</b>\n\n` +
+                   `🌐 <b>DNS INFRASTRUCTURE:</b>\n` +
+                   `├ <b>A Records (IPv4):</b> ${aRecords.length ? aRecords.join(', ') : 'None'}\n` +
+                   `├ <b>Nameservers:</b> ${nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'None'}\n` +
+                   `└ <b>Mail Servers (MX):</b> ${mxRecords.length ? mxRecords[0].exchange : 'None'}\n\n` +
+                   `📝 <b>REGISTRAR AUDIT:</b>\n` +
+                   `├ <b>Registrar:</b> ${whoisData?.registrar || 'Hidden / Protected'}\n` +
+                   `├ <b>Created:</b> ${whoisData?.creation_date || '-'}\n` +
+                   `└ <b>Expires:</b> ${whoisData?.expiration_date || '-'}\n\n` +
+                   `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n` +
+                   dorks.map(d => `• <a href="${d.url}">${d.title}</a>`).join('\n') + '\n\n' +
+                   `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                   (aRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[IP: ${aRecords[0]}]</code> (Gunakan <code>/correlate ${aRecords[0]}</code>)\n` : '') +
+                   (nsRecords.length ? `• <code>[${cleanDomain}]</code> ➔ <code>[NS: ${nsRecords[0]}]</code>\n` : '');
 
         } else {
+          // 🚀 DIGITAL PERSONA / USERNAME ANALYSIS (210+ Platforms & Multi-Headers)
           const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
-          const samplePlatforms = [
-            { name: "GitHub", url: `https://github.com/${cleanUser}` },
-            { name: "Twitter/X", url: `https://twitter.com/${cleanUser}` },
-            { name: "Instagram", url: `https://www.instagram.com/${cleanUser}/` },
-            { name: "Reddit", url: `https://www.reddit.com/user/${cleanUser}` },
-            { name: "Telegram", url: `https://t.me/${cleanUser}` },
-            { name: "Steam", url: `https://steamcommunity.com/id/${cleanUser}` },
-            { name: "TikTok", url: `https://www.tiktok.com/@${cleanUser}` },
-            { name: "Pinterest", url: `https://www.pinterest.com/${cleanUser}` }
-          ];
+          const platforms = buildPlatformList(cleanUser);
+          const totalPlatforms = platforms.length;
+          
+          let confirmedList: { name: string; category: string; url: string; note?: string }[] = [];
+          let discoveredContacts: any[] = [];
+          let githubDetails: any = null;
 
-          const checks = await Promise.all(samplePlatforms.map(async p => {
-            try {
-              const res = await fetchWithTimeout(p.url, { method: 'HEAD', headers: { 'User-Agent': 'Mozilla/5.0' } }, 3500);
-              return { name: p.name, url: p.url, found: res.status === 200 || res.status === 301 || res.status === 302 };
-            } catch {
-              return { name: p.name, url: p.url, found: false };
+          // Process in concurrent batches of 18 with live status updates
+          const batchSize = 18;
+          for (let i = 0; i < totalPlatforms; i += batchSize) {
+            const batch = platforms.slice(i, i + batchSize);
+            const currentSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+            // Edit progress message every batch
+            if (statusMsg && i > 0 && i % (batchSize * 2) === 0) {
+              const progressTxt = 
+                `🚀 <b>Sedang Mengudara Tuan 🚀</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `🎯 <b>TARGET INVESTIGASI:</b> <code>${cleanUser}</code>\n` +
+                `📡 <b>PROSES:</b> Memindai ${i} / ${totalPlatforms} platform (Batch ${Math.floor(i/batchSize)+1}/${Math.ceil(totalPlatforms/batchSize)})...\n` +
+                `⏱️ <b>WAKTU PENCARIAN:</b> ${currentSeconds} detik\n` +
+                `🔎 <b>TERDETEKSI:</b> ${confirmedList.length} akun aktif\n` +
+                `━━━━━━━━━━━━━━━━━━━━`;
+              await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, progressTxt, { parse_mode: 'HTML' }).catch(() => {});
             }
-          }));
 
-          const confirmed = checks.filter(c => c.found);
-          const confidence = Math.min(95, Math.max(30, confirmed.length * 15 + 20));
+            const batchResults = await Promise.all(batch.map(async (p) => {
+              const headers = getRandomHeaders();
+              try {
+                // Special Rich API Handler for GitHub
+                if (p.checkType === 'api_github') {
+                  const ghRes = await axios.get(`https://api.github.com/users/${cleanUser}`, {
+                    headers: { ...headers, 'User-Agent': 'Mozilla/5.0' },
+                    timeout: 4500,
+                    validateStatus: () => true
+                  });
+                  if (ghRes.status === 200 && ghRes.data?.login) {
+                    const data = ghRes.data;
+                    githubDetails = data;
+                    if (data.email) {
+                      discoveredContacts.push({ type: 'email', value: data.email, source: 'GitHub Profile', link: `mailto:${data.email}` });
+                    }
+                    if (data.twitter_username) {
+                      discoveredContacts.push({ type: 'twitter', value: `@${data.twitter_username}`, source: 'GitHub Bio', link: `https://twitter.com/${data.twitter_username}` });
+                    }
+                    if (data.blog) {
+                      const contactsFromBlog = extractContactsFromText(data.blog, 'GitHub Blog Link');
+                      discoveredContacts.push(...contactsFromBlog);
+                    }
+                    if (data.bio) {
+                      const contactsFromBio = extractContactsFromText(data.bio, 'GitHub Bio');
+                      discoveredContacts.push(...contactsFromBio);
+                    }
+                    return { name: p.name, category: p.category, url: data.html_url || p.url, found: true, note: data.name ? `Nama: ${data.name}` : undefined };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
 
-          report += `🏷️ <b>TYPE:</b> <code>Digital Persona / Handle</code>\n` +
-                    `📊 <b>CONFIDENCE SCORE:</b> <b>${confidence}%</b>\n\n` +
-                    `🕵️ <b>CROSS-PLATFORM CORRELATIONS:</b>\n` +
-                    (confirmed.length > 0 
-                      ? confirmed.map(c => `├ 🟢 <a href="${c.url}">${c.name}</a>`).join('\n') + '\n'
-                      : '├ ⚠️ Tidak ada profil instan langsung di platform utama.\n') +
-                    `└ <i>Gunakan <code>/username ${cleanUser}</code> untuk pemindaian lengkap 100+ platform.</i>\n\n` +
-                    `🔗 <b>RELATION GRAPH NODES:</b>\n` +
-                    `• <code>[Persona: ${cleanUser}]</code> ➔ <code>[Identities: ${confirmed.length} Connected]</code>\n`;
+                // Special Rich API Handler for Gravatar
+                if (p.checkType === 'api_gravatar') {
+                  const gravRes = await axios.get(`https://en.gravatar.com/${cleanUser}.json`, {
+                    headers,
+                    timeout: 4000,
+                    validateStatus: () => true
+                  });
+                  if (gravRes.status === 200 && gravRes.data?.entry?.[0]) {
+                    const entry = gravRes.data.entry[0];
+                    if (entry.displayName) {
+                      discoveredContacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
+                    }
+                    return { name: p.name, category: p.category, url: entry.profileUrl || p.url, found: true, note: entry.displayName ? `Nama: ${entry.displayName}` : undefined };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // Special Rich API Handler for NPM
+                if (p.checkType === 'api_npm') {
+                  const npmRes = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${cleanUser}`, {
+                    headers,
+                    timeout: 3500,
+                    validateStatus: () => true
+                  });
+                  if (npmRes.status === 200 && npmRes.data?.name) {
+                    if (npmRes.data.email) {
+                      discoveredContacts.push({ type: 'email', value: npmRes.data.email, source: 'NPM Registry', link: `mailto:${npmRes.data.email}` });
+                    }
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: 'Registered Developer' };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // Standard Web Fetch with Random Browser Header
+                if (p.checkType === 'get') {
+                  const res = await axios.get(p.url, {
+                    headers,
+                    timeout: 4000,
+                    validateStatus: () => true,
+                    maxRedirects: 3
+                  });
+                  if (res.status === 200) {
+                    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+                    // Extract WhatsApp, email, instagram, telegram from page content
+                    const contactsFromPage = extractContactsFromText(text, p.name);
+                    discoveredContacts.push(...contactsFromPage);
+                    return { name: p.name, category: p.category, url: p.url, found: true };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // Fast HEAD check with random headers
+                const headRes = await fetchWithTimeout(p.url, { 
+                  method: 'HEAD', 
+                  headers 
+                }, 3800);
+                
+                const soft404s = ['Instagram', 'TikTok', 'Twitter / X', 'YouTube Channel', 'Facebook Profile', 'Threads', 'Spotify User'];
+                if (headRes.status === 200 || headRes.status === 301 || headRes.status === 302) {
+                  if (soft404s.includes(p.name)) {
+                    // Soft 404 platforms return 200 even for non-existent profiles on HEAD
+                    return { name: p.name, category: p.category, url: p.url, found: false };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: true };
+                }
+                return { name: p.name, category: p.category, url: p.url, found: false };
+              } catch (e) {
+                return { name: p.name, category: p.category, url: p.url, found: false };
+              }
+            }));
+
+            for (const r of batchResults) {
+              if (r.found) {
+                confirmedList.push(r);
+              }
+            }
+          }
+
+          // Deduplicate contacts
+          const uniqueContacts: any[] = [];
+          for (const c of discoveredContacts) {
+            if (!uniqueContacts.some(u => u.type === c.type && u.value === c.value)) {
+              uniqueContacts.push(c);
+            }
+          }
+
+          const dorks = generateDorkMatrix(cleanUser, 'username');
+          elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+          const indoPlatforms = confirmedList.filter(c => c.category === 'Indo');
+          const globalPlatforms = confirmedList.filter(c => c.category !== 'Indo');
+          const confidence = Math.min(98, Math.max(35, confirmedList.length * 8 + (uniqueContacts.length * 10) + 15));
+          const riskScore = Math.min(95, confirmedList.length * 6 + (uniqueContacts.length * 12) + (indoPlatforms.length * 10) + 10);
+
+          report = `🧠 <b>INTELLIGENCE CORRELATION DOSSIER</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━━━\n` +
+                   `🎯 <b>TARGET PERSONA:</b> <code>@${cleanUser}</code>\n` +
+                   `🏷️ <b>TYPE:</b> <code>Digital Persona / Handle (${totalPlatforms} Platforms Scanned)</code>\n` +
+                   `⏱️ <b>WAKTU PENCARIAN:</b> <b>${elapsedSeconds} detik</b>\n` +
+                   `📊 <b>CONFIDENCE MATRIX:</b> <b>${confidence}%</b> (${confidence >= 80 ? 'Tinggi / Verified Match' : 'Moderat'})\n` +
+                   `🛡️ <b>RISK EXPOSURE SCORE:</b> <b>${riskScore}%</b>\n\n`;
+
+          // Discovered Contact Vectors
+          if (uniqueContacts.length > 0) {
+            report += `📱 <b>KONTAK & IDENTITAS TERKONFIRMASI:</b>\n`;
+            for (const c of uniqueContacts) {
+              if (c.type === 'whatsapp') {
+                report += `├ 📞 <b>WhatsApp:</b> <code>${c.value}</code> (<a href="${c.link}">Hubungi Langsung</a>) [${c.source}]\n`;
+              } else if (c.type === 'email') {
+                report += `├ 📧 <b>Email:</b> <code>${c.value}</code> [${c.source}]\n`;
+              } else if (c.type === 'instagram') {
+                report += `├ 📸 <b>Instagram:</b> <a href="${c.link}">${c.value}</a> [${c.source}]\n`;
+              } else if (c.type === 'telegram') {
+                report += `├ ✈️ <b>Telegram:</b> <a href="${c.link}">${c.value}</a> [${c.source}]\n`;
+              } else if (c.type === 'name') {
+                report += `├ 👤 <b>Nama Terdeteksi:</b> <code>${c.value}</code> [${c.source}]\n`;
+              } else {
+                report += `├ 🌐 <b>Link:</b> <a href="${c.link || c.value}">${c.value}</a> [${c.source}]\n`;
+              }
+            }
+            report += `\n`;
+          }
+
+          // Indonesian Ecosystem
+          if (indoPlatforms.length > 0) {
+            report += `🇮🇩 <b>PLATFORM INDONESIA AKTIF (${indoPlatforms.length}):</b>\n`;
+            indoPlatforms.forEach(p => {
+              report += `├ 🟢 <a href="${p.url}">${p.name}</a>${p.note ? ` (<i>${p.note}</i>)` : ''}\n`;
+            });
+            report += `\n`;
+          }
+
+          // Global Footprint
+          if (globalPlatforms.length > 0) {
+            report += `🌐 <b>GLOBAL FOOTPRINT AKTIF (${globalPlatforms.length}):</b>\n`;
+            globalPlatforms.slice(0, 15).forEach(p => {
+              report += `├ 🟢 <a href="${p.url}">${p.name}</a>${p.note ? ` (<i>${p.note}</i>)` : ''}\n`;
+            });
+            if (globalPlatforms.length > 15) {
+              report += `└ <i>...dan ${globalPlatforms.length - 15} platform lainnya.</i>\n`;
+            }
+            report += `\n`;
+          }
+
+          if (confirmedList.length === 0) {
+            report += `⚠️ <b>HASIL PEMINDAIAN LANGSUNG:</b>\n` +
+                      `└ <i>Tidak ditemukan profil instan terbuka di platform publik tanpa otentikasi. Gunakan matriks Google Dorking di bawah untuk mencari jejak tersembunyi.</i>\n\n`;
+          }
+
+          // Dork Matrix
+          report += `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n`;
+          dorks.forEach(d => {
+            report += `• <a href="${d.url}">${d.title}</a>\n`;
+          });
+          report += `\n`;
+
+          // Relation Graph Nodes
+          report += `🔗 <b>RELATION GRAPH NODES:</b>\n` +
+                    `• <code>[Persona: ${cleanUser}]</code> ➔ <code>[Platform Terhubung: ${confirmedList.length}]</code> ➔ <code>[Vektor Kontak: ${uniqueContacts.length}]</code>\n`;
         }
 
         report += `━━━━━━━━━━━━━━━━━━━━\n` +
-                  `💡 <i>Laporan dikompilasi secara dinamis oleh Intelijen Korelator OSINT.</i>`;
+                  `💡 <i>Intelijen disintesis secara real-time dengan multi-header anti-bot rotating engine (Zero Simulation).</i>`;
+
+        // Clear interval
+        if (timerInterval) clearInterval(timerInterval);
 
         if (statusMsg) {
-          await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+          await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, report, { 
+            parse_mode: 'HTML', 
+            link_preview_options: { is_disabled: true } 
+          }).catch(async () => {
+            // In case of telegram markup truncation error, fallback cleanly
+            await ctx.reply(report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
+          });
         } else {
           ctx.reply(report, { parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
         }
       } catch(err: any) {
+        if (timerInterval) clearInterval(timerInterval);
         ctx.reply(`❌ <b>Gagal menjalankan Intelijen Korelator:</b> ${err.message}`, { parse_mode: 'HTML' });
       }
     };
