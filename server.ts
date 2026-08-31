@@ -2972,8 +2972,8 @@ There are no background services or permissions associated.
             const batchResults = await Promise.all(batch.map(async (p) => {
               const headers = getRandomHeaders();
               try {
-                // Special Rich API Handler for GitHub
-                if (p.checkType === 'api_github') {
+                // 1. GitHub API
+                if (p.checkMethod === 'api_github') {
                   const ghRes = await axios.get(`https://api.github.com/users/${cleanUser}`, {
                     headers: { ...headers, 'User-Agent': 'Mozilla/5.0' },
                     timeout: 4500,
@@ -2985,24 +2985,19 @@ There are no background services or permissions associated.
                     if (data.email) {
                       discoveredContacts.push({ type: 'email', value: data.email, source: 'GitHub Profile', link: `mailto:${data.email}` });
                     }
-                    if (data.twitter_username) {
-                      discoveredContacts.push({ type: 'twitter', value: `@${data.twitter_username}`, source: 'GitHub Bio', link: `https://twitter.com/${data.twitter_username}` });
-                    }
                     if (data.blog) {
-                      const contactsFromBlog = extractContactsFromText(data.blog, 'GitHub Blog Link');
-                      discoveredContacts.push(...contactsFromBlog);
+                      discoveredContacts.push(...extractContactsFromText(data.blog, 'GitHub Website'));
                     }
                     if (data.bio) {
-                      const contactsFromBio = extractContactsFromText(data.bio, 'GitHub Bio');
-                      discoveredContacts.push(...contactsFromBio);
+                      discoveredContacts.push(...extractContactsFromText(data.bio, 'GitHub Bio'));
                     }
                     return { name: p.name, category: p.category, url: data.html_url || p.url, found: true, note: data.name ? `Nama: ${data.name}` : undefined };
                   }
                   return { name: p.name, category: p.category, url: p.url, found: false };
                 }
 
-                // Special Rich API Handler for Gravatar
-                if (p.checkType === 'api_gravatar') {
+                // 2. Gravatar API
+                if (p.checkMethod === 'api_gravatar') {
                   const gravRes = await axios.get(`https://en.gravatar.com/${cleanUser}.json`, {
                     headers,
                     timeout: 4000,
@@ -3013,13 +3008,29 @@ There are no background services or permissions associated.
                     if (entry.displayName) {
                       discoveredContacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
                     }
+                    if (entry.aboutMe) {
+                      discoveredContacts.push(...extractContactsFromText(entry.aboutMe, 'Gravatar Bio'));
+                    }
                     return { name: p.name, category: p.category, url: entry.profileUrl || p.url, found: true, note: entry.displayName ? `Nama: ${entry.displayName}` : undefined };
                   }
                   return { name: p.name, category: p.category, url: p.url, found: false };
                 }
 
-                // Special Rich API Handler for NPM
-                if (p.checkType === 'api_npm') {
+                // 3. Reddit JSON API
+                if (p.checkMethod === 'api_reddit') {
+                  const rRes = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${cleanUser}/about.json`, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' },
+                    timeout: 4000,
+                    validateStatus: () => true
+                  });
+                  if (rRes.status === 200 && rRes.data?.data?.name) {
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: `Karma: ${rRes.data.data.total_karma || 0}` };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 4. NPM Registry API
+                if (p.checkMethod === 'api_npm') {
                   const npmRes = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${cleanUser}`, {
                     headers,
                     timeout: 3500,
@@ -3034,38 +3045,103 @@ There are no background services or permissions associated.
                   return { name: p.name, category: p.category, url: p.url, found: false };
                 }
 
-                // Standard Web Fetch with Random Browser Header
-                if (p.checkType === 'get') {
-                  const res = await axios.get(p.url, {
-                    headers,
-                    timeout: 4000,
-                    validateStatus: () => true,
-                    maxRedirects: 3
-                  });
-                  if (res.status === 200) {
-                    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-                    // Extract WhatsApp, email, instagram, telegram from page content
-                    const contactsFromPage = extractContactsFromText(text, p.name);
-                    discoveredContacts.push(...contactsFromPage);
+                // 5. GitLab API
+                if (p.checkMethod === 'api_gitlab') {
+                  const glRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (glRes.status === 200 && Array.isArray(glRes.data) && glRes.data.length > 0) {
+                    const user = glRes.data[0];
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: user.name ? `Nama: ${user.name}` : undefined };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 6. DockerHub API
+                if (p.checkMethod === 'api_docker') {
+                  const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (dRes.status === 200 && dRes.data?.username) {
                     return { name: p.name, category: p.category, url: p.url, found: true };
                   }
                   return { name: p.name, category: p.category, url: p.url, found: false };
                 }
 
-                // Fast HEAD check with random headers
-                const headRes = await fetchWithTimeout(p.url, { 
-                  method: 'HEAD', 
-                  headers 
-                }, 3800);
-                
-                const soft404s = ['Instagram', 'TikTok', 'Twitter / X', 'YouTube Channel', 'Facebook Profile', 'Threads', 'Spotify User'];
-                if (headRes.status === 200 || headRes.status === 301 || headRes.status === 302) {
-                  if (soft404s.includes(p.name)) {
-                    // Soft 404 platforms return 200 even for non-existent profiles on HEAD
-                    return { name: p.name, category: p.category, url: p.url, found: false };
+                // 7. Keybase API
+                if (p.checkMethod === 'api_keybase') {
+                  const kRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (kRes.status === 200 && kRes.data?.them?.[0]?.basics?.username) {
+                    return { name: p.name, category: p.category, url: p.url, found: true };
                   }
-                  return { name: p.name, category: p.category, url: p.url, found: true };
+                  return { name: p.name, category: p.category, url: p.url, found: false };
                 }
+
+                // 8. Chess.com API
+                if (p.checkMethod === 'api_chess') {
+                  const cRes = await axios.get(p.apiEndpoint!, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 3500, validateStatus: () => true });
+                  if (cRes.status === 200 && cRes.data?.username) {
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: cRes.data.title || 'Player' };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 9. Duolingo API
+                if (p.checkMethod === 'api_duolingo') {
+                  const dRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (dRes.status === 200 && dRes.data?.users?.length > 0) {
+                    return { name: p.name, category: p.category, url: p.url, found: true };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 10. HackerNews API
+                if (p.checkMethod === 'api_hackernews') {
+                  const hnRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (hnRes.status === 200 && hnRes.data?.id) {
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: `Karma: ${hnRes.data.karma || 0}` };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 11. Codeforces API
+                if (p.checkMethod === 'api_codeforces') {
+                  const cfRes = await axios.get(p.apiEndpoint!, { headers, timeout: 3500, validateStatus: () => true });
+                  if (cfRes.status === 200 && cfRes.data?.status === 'OK' && cfRes.data?.result?.length > 0) {
+                    return { name: p.name, category: p.category, url: p.url, found: true, note: cfRes.data.result[0].rank };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
+                // 12. GET with Strict Signature & Body Check (Zero false positive)
+                if (p.checkMethod === 'get_with_signature') {
+                  const res = await axios.get(p.url, {
+                    headers,
+                    timeout: 4500,
+                    validateStatus: () => true,
+                    maxRedirects: 3
+                  });
+
+                  if (res.status === 200) {
+                    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+                    
+                    // Check mustNotContain
+                    if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) {
+                      return { name: p.name, category: p.category, url: p.url, found: false };
+                    }
+
+                    // Check mustContain
+                    if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) {
+                      return { name: p.name, category: p.category, url: p.url, found: false };
+                    }
+
+                    // If extractBio is enabled, extract real contacts safely
+                    if (p.extractBio) {
+                      const contactsFromPage = extractContactsFromText(text, p.name);
+                      discoveredContacts.push(...contactsFromPage);
+                    }
+
+                    return { name: p.name, category: p.category, url: p.url, found: true };
+                  }
+                  return { name: p.name, category: p.category, url: p.url, found: false };
+                }
+
                 return { name: p.name, category: p.category, url: p.url, found: false };
               } catch (e) {
                 return { name: p.name, category: p.category, url: p.url, found: false };

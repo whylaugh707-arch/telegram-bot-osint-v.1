@@ -65,34 +65,52 @@ router.get('/correlate', async (req, res) => {
             });
         }
 
-        // Persona scan (210+ Platforms)
+        // Persona scan
         const cleanUser = target.replace(/[^a-zA-Z0-9_.-]/g, '');
         const platforms = buildPlatformList(cleanUser);
         const confirmed: any[] = [];
         const contacts: any[] = [];
 
-        // Check platforms in batches of 20
-        for (let i = 0; i < platforms.length; i += 20) {
-            const batch = platforms.slice(i, i + 20);
+        // Check platforms in batches of 15
+        for (let i = 0; i < platforms.length; i += 15) {
+            const batch = platforms.slice(i, i + 15);
             await Promise.all(batch.map(async (p) => {
                 const headers = getRandomHeaders();
                 try {
-                    if (p.checkType === 'api_github') {
+                    if (p.checkMethod === 'api_github') {
                         const gh = await axios.get(`https://api.github.com/users/${cleanUser}`, { headers: { ...headers, 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
                         if (gh.status === 200 && gh.data?.login) {
                             if (gh.data.email) contacts.push({ type: 'email', value: gh.data.email, source: 'GitHub' });
+                            if (gh.data.bio) contacts.push(...extractContactsFromText(gh.data.bio, 'GitHub Bio'));
                             confirmed.push({ name: p.name, category: p.category, url: gh.data.html_url, note: gh.data.name });
                         }
-                    } else if (p.checkType === 'get') {
-                        const res = await axios.get(p.url, { headers, timeout: 3500, validateStatus: () => true, maxRedirects: 3 });
-                        if (res.status === 200) {
-                            const parsed = extractContactsFromText(typeof res.data === 'string' ? res.data : JSON.stringify(res.data), p.name);
-                            contacts.push(...parsed);
+                    } else if (p.checkMethod === 'api_gravatar') {
+                        const grav = await axios.get(`https://en.gravatar.com/${cleanUser}.json`, { headers, timeout: 4000, validateStatus: () => true });
+                        if (grav.status === 200 && grav.data?.entry?.[0]) {
+                            const entry = grav.data.entry[0];
+                            if (entry.displayName) contacts.push({ type: 'name', value: entry.displayName, source: 'Gravatar' });
+                            confirmed.push({ name: p.name, category: p.category, url: entry.profileUrl || p.url, note: entry.displayName });
+                        }
+                    } else if (p.checkMethod === 'api_reddit') {
+                        const r = await axios.get(p.apiEndpoint || `https://www.reddit.com/user/${cleanUser}/about.json`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000, validateStatus: () => true });
+                        if (r.status === 200 && r.data?.data?.name) {
+                            confirmed.push({ name: p.name, category: p.category, url: p.url, note: `Karma: ${r.data.data.total_karma || 0}` });
+                        }
+                    } else if (p.checkMethod === 'api_npm') {
+                        const npm = await axios.get(`https://registry.npmjs.org/-/user/org.couchdb.user:${cleanUser}`, { headers, timeout: 3500, validateStatus: () => true });
+                        if (npm.status === 200 && npm.data?.name) {
+                            if (npm.data.email) contacts.push({ type: 'email', value: npm.data.email, source: 'NPM' });
                             confirmed.push({ name: p.name, category: p.category, url: p.url });
                         }
-                    } else {
-                        const res = await fetch(p.url, { method: 'HEAD', headers, signal: AbortSignal.timeout(3500) });
-                        if (res.status === 200 || res.status === 301 || res.status === 302) {
+                    } else if (p.checkMethod === 'get_with_signature') {
+                        const res = await axios.get(p.url, { headers, timeout: 4000, validateStatus: () => true, maxRedirects: 3 });
+                        if (res.status === 200) {
+                            const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+                            if (p.mustNotContain && p.mustNotContain.some(kw => text.includes(kw))) return;
+                            if (p.mustContain && !p.mustContain.every(kw => text.toLowerCase().includes(kw.toLowerCase()))) return;
+                            if (p.extractBio) {
+                                contacts.push(...extractContactsFromText(text, p.name));
+                            }
                             confirmed.push({ name: p.name, category: p.category, url: p.url });
                         }
                     }
