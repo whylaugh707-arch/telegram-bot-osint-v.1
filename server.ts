@@ -466,6 +466,7 @@ if (botInstance) {
   });
 
   // OSINT API ENDPOINTS FOR FRONTEND UI Are handled by the /api/osint router
+  app.use('/api/osint', osintRouter);
 
   app.get('/api/osint/nik', (req, res) => {
     const nik = String(req.query.nik || '');

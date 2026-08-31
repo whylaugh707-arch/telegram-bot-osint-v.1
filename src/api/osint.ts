@@ -65,6 +65,35 @@ router.get('/correlate', async (req, res) => {
             });
         }
 
+        if (isDomain) {
+            let aRecords: string[] = [];
+            let mxRecords: any[] = [];
+            let txtRecords: string[][] = [];
+            let nsRecords: string[] = [];
+            let shodanData: any = {};
+
+            try { aRecords = await dns.resolve4(cleanDomain).catch(() => []); } catch(e) {}
+            try { mxRecords = await dns.resolveMx(cleanDomain).catch(() => []); } catch(e) {}
+            try { txtRecords = await dns.resolveTxt(cleanDomain).catch(() => []); } catch(e) {}
+            try { nsRecords = await dns.resolveNs(cleanDomain).catch(() => []); } catch(e) {}
+
+            if (aRecords.length > 0) {
+                try {
+                    const sRes = await axios.get(`https://internetdb.shodan.io/${aRecords[0]}`, { timeout: 3500 });
+                    shodanData = sRes.data || {};
+                } catch(e) {}
+            }
+
+            return res.json({
+                target: cleanDomain,
+                type: 'domain',
+                dns: { aRecords, mxRecords, txtRecords, nsRecords },
+                shodan: shodanData,
+                dorks: generateDorkMatrix(cleanDomain, 'domain'),
+                elapsedMs: Date.now() - startTime
+            });
+        }
+
         // Persona & Multi-Handle / Name Scan
         const perm = generatePermutations(target);
         const primaryHandle = perm.handles[0] || target.replace(/[^a-zA-Z0-9_.-]/g, '');
