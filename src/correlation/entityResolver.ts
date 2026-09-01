@@ -81,22 +81,44 @@ export class EntityResolver {
     }
 
     // 2. Safe Merging (Identity Resolution)
-    // We only merge candidates if they share a STRONG cryptographic or authoritative anchor
+    // We merge candidates if they share a STRONG cryptographic anchor (email/phone),
+    // OR if they share a unique identifier (username),
+    // OR if they share an exact name and have NO conflicting attributes (org/location).
     let mergedEntities: EntityCandidate[] = [];
     for (const entity of entities) {
       let merged = false;
       const emails = entity.attributes.filter(a => a.type === 'email').map(a => a.normalized);
       const phones = entity.attributes.filter(a => a.type === 'phone').map(a => a.normalized);
+      const usernames = entity.attributes.filter(a => a.type === 'username').map(a => a.normalized);
+      const names = entity.attributes.filter(a => a.type === 'name').map(a => a.normalized);
+      const organizations = entity.attributes.filter(a => a.type === 'organization').map(a => a.normalized);
+      const locations = entity.attributes.filter(a => a.type === 'location').map(a => a.normalized);
 
       for (const existing of mergedEntities) {
         const existingEmails = existing.attributes.filter(a => a.type === 'email').map(a => a.normalized);
         const existingPhones = existing.attributes.filter(a => a.type === 'phone').map(a => a.normalized);
+        const existingUsernames = existing.attributes.filter(a => a.type === 'username').map(a => a.normalized);
+        const existingNames = existing.attributes.filter(a => a.type === 'name').map(a => a.normalized);
+        const existingOrganizations = existing.attributes.filter(a => a.type === 'organization').map(a => a.normalized);
+        const existingLocations = existing.attributes.filter(a => a.type === 'location').map(a => a.normalized);
 
         const sharesEmail = emails.length > 0 && emails.some(e => existingEmails.includes(e));
         const sharesPhone = phones.length > 0 && phones.some(p => existingPhones.includes(p));
+        const sharesUsername = usernames.length > 0 && usernames.some(u => existingUsernames.includes(u));
+        const sharesName = names.length > 0 && names.some(n => existingNames.includes(n));
+        
+        const hasOrgConflict = organizations.length > 0 && existingOrganizations.length > 0 && !organizations.some(o => existingOrganizations.includes(o));
+        const hasLocConflict = locations.length > 0 && existingLocations.length > 0 && !locations.some(l => existingLocations.includes(l));
 
-        if (sharesEmail || sharesPhone) {
+        if (sharesEmail || sharesPhone || sharesUsername || (sharesName && !hasOrgConflict && !hasLocConflict)) {
           this.mergeCandidates(existing, entity);
+          
+          if (sharesUsername && target.classification === 'username') {
+             existing.label = `Correlated Footprint: ${usernames[0]}`;
+          } else if (sharesName && target.classification === 'person_name') {
+             existing.label = `Correlated Identity: ${names[0]}`;
+          }
+
           merged = true;
           break;
         }

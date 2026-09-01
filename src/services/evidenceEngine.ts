@@ -195,6 +195,12 @@ export class EvidenceOSINTEngine {
         if (orgs.length > 0) {
           orgs.forEach(o => txt += `├ 🏢 <b>Org:</b> <code>${o.raw}</code>\n`);
         }
+
+        // Show associated platform accounts
+        const accounts = ent.supportingEvidence.map(id => evidences.find(e => e.id === id)).filter(e => e?.type === 'account');
+        if (accounts.length > 0) {
+           txt += `├ 🌐 <b>Akun Platform Terkait:</b> ${accounts.map(a => a?.normalizedValue?.platform || a?.source).join(', ')}\n`;
+        }
       });
       txt += `\n`;
     }
@@ -209,13 +215,16 @@ export class EvidenceOSINTEngine {
     }
 
     // 4. Observed Profiles (Verified Accounts)
-    const highConfAccounts = evidences.filter(e => (e.status === 'VERIFIED' || e.status === 'CORROBORATED') && e.type === 'account');
+    const highConfAccounts = evidences.filter(e => (e.status === 'VERIFIED' || e.status === 'CORROBORATED' || e.status === 'SUPPORTED') && e.type === 'account');
     if (highConfAccounts.length > 0) {
-      txt += `🌐 <b>PROFIL PUBLIK TERVERIFIKASI (${highConfAccounts.length}):</b>\n`;
-      highConfAccounts.slice(0, 15).forEach(acc => {
+      txt += `🌐 <b>JEJAK PROFIL PUBLIK & SOSMED (${highConfAccounts.length}):</b>\n`;
+      highConfAccounts.slice(0, 30).forEach(acc => {
         const val = acc.normalizedValue as any;
-        txt += `├ 🔗 <a href="${val.url || acc.sourceUrl || '#'}"><b>${val.platform || acc.source}</b></a>\n`;
+        txt += `├ 🔗 <a href="${val.url || acc.sourceUrl || '#'}"><b>${val.platform || acc.source}</b></a> [${acc.status}]\n`;
       });
+      if (highConfAccounts.length > 30) {
+        txt += `├ <i>...dan ${highConfAccounts.length - 30} profil lainnya (lihat JSON)</i>\n`;
+      }
       txt += `\n`;
     }
 
