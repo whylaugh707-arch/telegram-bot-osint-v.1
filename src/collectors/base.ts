@@ -32,7 +32,19 @@ export class SafeRequester {
   private static circuitBreakers = new Map<string, CircuitBreakerState>();
   private static sourceReliabilityRegistry = new Map<string, SourceReliability>();
 
+  private static readonly USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/122.0.0.0 Safari/537.36'
+  ];
+
   public static readonly STANDARD_USER_AGENT = 'OSINT-Nexus-Intelligence-Engine/2.5 (+https://nexus-osint.local; ethical-recon)';
+
+  private static getRandomUserAgent(): string {
+    return this.USER_AGENTS[Math.floor(Math.random() * this.USER_AGENTS.length)];
+  }
 
   static {
     // Seed standard source reliability heuristics
@@ -146,9 +158,15 @@ export class SafeRequester {
     }
 
     const headers = {
-      'User-Agent': this.STANDARD_USER_AGENT,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8',
+      'User-Agent': this.getRandomUserAgent(),
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
       'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+      'Cache-Control': 'max-age=0',
       ...config.headers
     };
 

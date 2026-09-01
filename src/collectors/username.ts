@@ -150,20 +150,35 @@ export class UsernameCollector implements Collector {
               confidenceScore = 75;
               
               // Extract additional contact vectors from HTML body
-              const extractedEmails = body.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
-              const extractedWa = body.match(/wa\.me\/(?:\+)?(\d{8,15})/g) || [];
-              const extractedPhones = body.match(/(?:\+62|62|08)[0-9]{8,11}/g) || [];
+              const plainText = body.replace(/<[^>]*>?/gm, ' '); // Strip HTML tags for clean text matching
+              
+              const extractedEmails = plainText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              const extractedWa = body.match(/wa\.me\/(?:\+)?(\d{8,15})/g) || []; // wa.me is usually in hrefs, so use raw body
+              const extractedPhones = plainText.match(/\b(08\d{8,11}|628\d{8,12}|\+628\d{8,12})\b/g) || [];
               
               const uniqueEmails = Array.from(new Set(extractedEmails)).filter(e => !e.toLowerCase().includes('sentry.io') && !e.toLowerCase().includes('w3.org') && !e.toLowerCase().includes('example.com'));
-              const uniqueWa = Array.from(new Set(extractedWa.map(w => w.replace('wa.me/', ''))));
+              const uniqueWa = Array.from(new Set(extractedWa.map(w => w.replace('wa.me/', '').replace('+',''))));
               const uniquePhones = Array.from(new Set(extractedPhones));
               
+              const locMatches = plainText.match(/\b(Jakarta|Bandung|Surabaya|Yogyakarta|Jogja|Semarang|Medan|Makassar|Bali|Indonesia|Jawa|Sumatera|Kalimantan|Sulawesi|Papua)\b/gi) || [];
+              const eduMatches = plainText.match(/\b(SMA|SMK|SMP|SD|Universitas|Institut|Politeknik|Akademi|Sekolah Tinggi) [A-Za-z0-9 ]{3,30}\b/gi) || [];
+              
+              const uniqueLocs = Array.from(new Set(locMatches.map(l => l.toUpperCase())));
+              const uniqueEdu = Array.from(new Set(eduMatches));
+
               if (uniqueEmails.length > 0) metadata.extractedEmails = uniqueEmails;
               if (uniqueWa.length > 0) metadata.extractedWhatsApp = uniqueWa;
               if (uniquePhones.length > 0) metadata.extractedPhones = uniquePhones;
+              if (uniqueLocs.length > 0) metadata.extractedLocations = uniqueLocs;
+              if (uniqueEdu.length > 0) metadata.extractedEducation = uniqueEdu;
               
-              if (uniqueEmails.length > 0 || uniqueWa.length > 0) {
-                 note = `Extracted Contacts: ${uniqueEmails.join(', ')} ${uniqueWa.map(w => 'WA:'+w).join(', ')}`;
+              const notesParts = [];
+              if (uniqueEmails.length > 0) notesParts.push(`Emails: ${uniqueEmails.length}`);
+              if (uniqueWa.length > 0 || uniquePhones.length > 0) notesParts.push(`Phones: ${uniqueWa.length + uniquePhones.length}`);
+              if (uniqueLocs.length > 0) notesParts.push(`Location: ${uniqueLocs.join(', ')}`);
+              
+              if (notesParts.length > 0) {
+                 note = `Extracted: ${notesParts.join(' | ')}`;
               }
 
             } else {

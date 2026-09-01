@@ -182,18 +182,33 @@ export class EvidenceOSINTEngine {
         const emails = ent.attributes.filter(p => p.type === 'email');
         const names = ent.attributes.filter(p => p.type === 'name');
         const orgs = ent.attributes.filter(p => p.type === 'organization');
+        const locs = ent.attributes.filter(p => p.type === 'location');
+
+        const getSourceStr = (attr: any) => {
+           if (!attr.evidenceIds || attr.evidenceIds.length === 0) return '';
+           const ev = evidences.find(e => e.id === attr.evidenceIds[0]);
+           if (ev) {
+              const url = (ev.normalizedValue as any)?.url || ev.sourceUrl;
+              if (url) return ` <i>(Source: <a href="${url}">${ev.source}</a>)</i>`;
+              return ` <i>(Source: ${ev.source})</i>`;
+           }
+           return '';
+        };
 
         if (phones.length > 0) {
-          phones.forEach(ph => txt += `├ 📞 <b>Phone:</b> <code>${ph.raw}</code>\n`);
+          phones.forEach(ph => txt += `├ 📞 <b>Phone:</b> <code>${ph.raw}</code>${getSourceStr(ph)}\n`);
         }
         if (emails.length > 0) {
-          emails.forEach(em => txt += `├ 📧 <b>Email:</b> <code>${em.raw}</code>\n`);
+          emails.forEach(em => txt += `├ 📧 <b>Email:</b> <code>${em.raw}</code>${getSourceStr(em)}\n`);
         }
         if (names.length > 0) {
-          names.forEach(nm => txt += `├ 👤 <b>Name:</b> <code>${nm.raw}</code>\n`);
+          names.forEach(nm => txt += `├ 👤 <b>Name:</b> <code>${nm.raw}</code>${getSourceStr(nm)}\n`);
         }
         if (orgs.length > 0) {
-          orgs.forEach(o => txt += `├ 🏢 <b>Org:</b> <code>${o.raw}</code>\n`);
+          orgs.forEach(o => txt += `├ 🏢 <b>Education/Org:</b> <code>${o.raw}</code>${getSourceStr(o)}\n`);
+        }
+        if (locs.length > 0) {
+          locs.forEach(l => txt += `├ 📍 <b>Location:</b> <code>${l.raw}</code>${getSourceStr(l)}\n`);
         }
 
         // Show associated platform accounts

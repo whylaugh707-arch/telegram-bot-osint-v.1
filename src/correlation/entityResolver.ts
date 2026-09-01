@@ -46,6 +46,12 @@ export class EntityResolver {
             if (Array.isArray(ev.metadata?.extractedPhones)) {
               ev.metadata.extractedPhones.forEach(p => this.addAttribute(candidate!, 'phone', String(p), ev.id, ev.confidence - 10));
             }
+            if (Array.isArray(ev.metadata?.extractedLocations)) {
+              ev.metadata.extractedLocations.forEach(l => this.addAttribute(candidate!, 'location', String(l), ev.id, ev.confidence - 10));
+            }
+            if (Array.isArray(ev.metadata?.extractedEducation)) {
+              ev.metadata.extractedEducation.forEach(e => this.addAttribute(candidate!, 'organization', String(e), ev.id, ev.confidence - 10));
+            }
           }
         } 
         else if (ev.type === 'email_hash' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
