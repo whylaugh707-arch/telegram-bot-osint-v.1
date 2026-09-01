@@ -218,12 +218,12 @@ export class EvidenceOSINTEngine {
     const highConfAccounts = evidences.filter(e => (e.status === 'VERIFIED' || e.status === 'CORROBORATED' || e.status === 'SUPPORTED') && e.type === 'account');
     if (highConfAccounts.length > 0) {
       txt += `🌐 <b>JEJAK PROFIL PUBLIK & SOSMED (${highConfAccounts.length}):</b>\n`;
-      highConfAccounts.slice(0, 30).forEach(acc => {
+      highConfAccounts.slice(0, 80).forEach(acc => {
         const val = acc.normalizedValue as any;
-        txt += `├ 🔗 <a href="${val.url || acc.sourceUrl || '#'}"><b>${val.platform || acc.source}</b></a> [${acc.status}]\n`;
+        txt += `├ 🔗 <a href="${val.url || acc.sourceUrl || '#'}"><b>${val.platform || acc.source}</b></a>\n`;
       });
-      if (highConfAccounts.length > 30) {
-        txt += `├ <i>...dan ${highConfAccounts.length - 30} profil lainnya (lihat JSON)</i>\n`;
+      if (highConfAccounts.length > 80) {
+        txt += `├ <i>...dan ${highConfAccounts.length - 80} profil lainnya. Limit teks tercapai.</i>\n`;
       }
       txt += `\n`;
     }
@@ -243,15 +243,6 @@ export class EvidenceOSINTEngine {
           const val = net.normalizedValue as any;
           txt += `├ ✉️ <b>Mail Exchangers:</b> ${(val.mx || []).map((m: any) => m.host).join(', ')}\n`;
         }
-      });
-      txt += `\n`;
-    }
-
-    // 6. Advanced Google Dorking Matrix
-    if (dorkMatrix && dorkMatrix.length > 0) {
-      txt += `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n`;
-      dorkMatrix.slice(0, 4).forEach(d => {
-        txt += `• <a href="${d.url}">${d.title}</a>\n`;
       });
       txt += `\n`;
     }

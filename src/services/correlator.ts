@@ -432,8 +432,7 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       category: "Social",
       url: `https://www.tiktok.com/@${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["Couldn't find this account", "Account not found", "404"],
-      mustContain: [`@${user}`],
+      mustNotContain: ["Couldn't find this account", "Account not found", "404", "couldn't find"],
       extractBio: true
     },
     {
@@ -441,8 +440,7 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       category: "Social",
       url: `https://www.youtube.com/@${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["404 Not Found", "This channel does not exist"],
-      mustContain: [`@${user}`],
+      mustNotContain: ["404 Not Found", "This channel does not exist", "Not Found"],
       extractBio: true
     },
     {

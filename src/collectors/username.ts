@@ -148,6 +148,24 @@ export class UsernameCollector implements Collector {
               evidenceStatus = 'SUPPORTED';
               verificationScope = 'ACCOUNT_EXISTENCE';
               confidenceScore = 75;
+              
+              // Extract additional contact vectors from HTML body
+              const extractedEmails = body.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              const extractedWa = body.match(/wa\.me\/(?:\+)?(\d{8,15})/g) || [];
+              const extractedPhones = body.match(/(?:\+62|62|08)[0-9]{8,11}/g) || [];
+              
+              const uniqueEmails = Array.from(new Set(extractedEmails)).filter(e => !e.toLowerCase().includes('sentry.io') && !e.toLowerCase().includes('w3.org') && !e.toLowerCase().includes('example.com'));
+              const uniqueWa = Array.from(new Set(extractedWa.map(w => w.replace('wa.me/', ''))));
+              const uniquePhones = Array.from(new Set(extractedPhones));
+              
+              if (uniqueEmails.length > 0) metadata.extractedEmails = uniqueEmails;
+              if (uniqueWa.length > 0) metadata.extractedWhatsApp = uniqueWa;
+              if (uniquePhones.length > 0) metadata.extractedPhones = uniquePhones;
+              
+              if (uniqueEmails.length > 0 || uniqueWa.length > 0) {
+                 note = `Extracted Contacts: ${uniqueEmails.join(', ')} ${uniqueWa.map(w => 'WA:'+w).join(', ')}`;
+              }
+
             } else {
               obsStatus = 'NOT_FOUND';
             }

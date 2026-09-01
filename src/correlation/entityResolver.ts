@@ -36,6 +36,16 @@ export class EntityResolver {
             if (ev.metadata?.email) this.addAttribute(candidate, 'email', String(ev.metadata.email), ev.id, ev.confidence);
             if (ev.metadata?.company) this.addAttribute(candidate, 'organization', String(ev.metadata.company), ev.id, ev.confidence);
             if (ev.metadata?.location) this.addAttribute(candidate, 'location', String(ev.metadata.location), ev.id, ev.confidence);
+            
+            if (Array.isArray(ev.metadata?.extractedEmails)) {
+              ev.metadata.extractedEmails.forEach(e => this.addAttribute(candidate!, 'email', String(e), ev.id, ev.confidence - 10));
+            }
+            if (Array.isArray(ev.metadata?.extractedWhatsApp)) {
+              ev.metadata.extractedWhatsApp.forEach(p => this.addAttribute(candidate!, 'phone', String(p), ev.id, ev.confidence - 10));
+            }
+            if (Array.isArray(ev.metadata?.extractedPhones)) {
+              ev.metadata.extractedPhones.forEach(p => this.addAttribute(candidate!, 'phone', String(p), ev.id, ev.confidence - 10));
+            }
           }
         } 
         else if (ev.type === 'email_hash' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
