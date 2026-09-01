@@ -768,7 +768,7 @@ export function buildPlatformList(user: string): CorrelatePlatform[] {
       category: "Dev",
       url: `https://www.codecademy.com/profiles/${u}`,
       checkMethod: 'get_with_signature',
-      mustNotContain: ["404", "Page not found"],
+      mustNotContain: ["404", "Page not found", "This profile could not be found"],
       mustContain: [u]
     },
     {

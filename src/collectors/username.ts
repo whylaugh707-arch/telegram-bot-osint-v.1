@@ -80,6 +80,14 @@ export class UsernameCollector implements Collector {
                 company: res.data.company,
                 location: res.data.location
               };
+              if (res.data.location) metadata.extractedLocations = [res.data.location];
+              if (res.data.company) metadata.extractedEducation = [res.data.company];
+              if (res.data.email) metadata.extractedEmails = [res.data.email];
+              
+              const bioMatches = (res.data.bio || '').match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              if (bioMatches.length > 0) {
+                 metadata.extractedEmails = [...(metadata.extractedEmails as string[] || []), ...bioMatches];
+              }
             } else {
               obsStatus = 'NOT_FOUND';
             }
@@ -123,12 +131,28 @@ export class UsernameCollector implements Collector {
           }
           // 5. GitLab API
           else if (p.checkMethod === 'api_gitlab') {
-            if (Array.isArray(res.data) && res.data.some((u: any) => u.username?.toLowerCase() === handle.toLowerCase())) {
+            const user = Array.isArray(res.data) ? res.data.find((u: any) => u.username?.toLowerCase() === handle.toLowerCase()) : null;
+            if (user) {
               obsStatus = 'FOUND';
               evidenceStatus = 'VERIFIED';
               verificationScope = 'ACCOUNT_EXISTENCE';
               confidenceScore = 90;
-              note = 'GitLab User';
+              note = user.name || 'GitLab User';
+              metadata = {
+                displayName: user.name,
+                bio: user.bio,
+                location: user.location,
+                twitter: user.twitter,
+                website: user.website_url,
+                organization: user.organization
+              };
+              
+              if (user.location) metadata.extractedLocations = [user.location];
+              if (user.organization) metadata.extractedEducation = [user.organization];
+              
+              const bioMatches = (user.bio || '').match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              if (bioMatches.length > 0) metadata.extractedEmails = bioMatches;
+              
             } else {
               obsStatus = 'NOT_FOUND';
             }
@@ -150,18 +174,36 @@ export class UsernameCollector implements Collector {
               confidenceScore = 75;
               
               // Extract additional contact vectors from HTML body
-              const plainText = body.replace(/<[^>]*>?/gm, ' '); // Strip HTML tags for clean text matching
+              // We must first clean the HTML to avoid scraping javascript, css, and boilerplate tags.
+              let cleanHtml = body.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ');
+              cleanHtml = cleanHtml.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
               
-              const extractedEmails = plainText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
-              const extractedWa = body.match(/wa\.me\/(?:\+)?(\d{8,15})/g) || []; // wa.me is usually in hrefs, so use raw body
-              const extractedPhones = plainText.match(/\b(08\d{8,11}|628\d{8,12}|\+628\d{8,12})\b/g) || [];
+              // Extract explicit BIO from title and meta descriptions for OSINT context
+              const titleMatch = body.match(/<title>([^<]+)<\/title>/i);
+              const descMatch = body.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+              const ogDescMatch = body.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
               
-              const uniqueEmails = Array.from(new Set(extractedEmails)).filter(e => !e.toLowerCase().includes('sentry.io') && !e.toLowerCase().includes('w3.org') && !e.toLowerCase().includes('example.com'));
+              const bioParts = [];
+              if (titleMatch && titleMatch[1]) bioParts.push(titleMatch[1].trim());
+              if (descMatch && descMatch[1]) bioParts.push(descMatch[1].trim());
+              if (ogDescMatch && ogDescMatch[1]) bioParts.push(ogDescMatch[1].trim());
+              const bioText = bioParts.join(' | ');
+
+              const plainText = cleanHtml.replace(/<[^>]*>?/gm, ' '); // Strip remaining HTML tags
+              
+              // Run strict regex on the cleaned plain text & bio text
+              const extractedEmails = (plainText + ' ' + bioText).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              const extractedWa = body.match(/wa\.me\/(?:\+)?(\d{9,14})/g) || []; // wa.me usually in hrefs, use raw body. Max 14 digits.
+              // Strict Indonesian phone bounds: 08 followed by 8-11 digits, or 628 followed by 8-11 digits
+              const extractedPhones = (plainText + ' ' + bioText).match(/\b(08\d{8,11}|628\d{8,11}|\+628\d{8,11})\b/g) || [];
+              
+              const uniqueEmails = Array.from(new Set(extractedEmails)).filter(e => !e.toLowerCase().includes('sentry.io') && !e.toLowerCase().includes('w3.org') && !e.toLowerCase().includes('example.com') && !e.toLowerCase().includes('domain.com'));
               const uniqueWa = Array.from(new Set(extractedWa.map(w => w.replace('wa.me/', '').replace('+',''))));
               const uniquePhones = Array.from(new Set(extractedPhones));
               
-              const locMatches = plainText.match(/\b(Jakarta|Bandung|Surabaya|Yogyakarta|Jogja|Semarang|Medan|Makassar|Bali|Indonesia|Jawa|Sumatera|Kalimantan|Sulawesi|Papua)\b/gi) || [];
-              const eduMatches = plainText.match(/\b(SMA|SMK|SMP|SD|Universitas|Institut|Politeknik|Akademi|Sekolah Tinggi) [A-Za-z0-9 ]{3,30}\b/gi) || [];
+              // Only extract locations and education from the BIO metadata (to prevent UI boilerplate false positives)
+              const locMatches = bioText.match(/\b(Jakarta|Bandung|Surabaya|Yogyakarta|Jogja|Semarang|Medan|Makassar|Bali|Indonesia|Jawa|Sumatera|Kalimantan|Sulawesi|Papua|Sinjai|Makassar)\b/gi) || [];
+              const eduMatches = bioText.match(/\b(SMA|SMK|SMP|SD|Universitas|Institut|Politeknik|Akademi|Sekolah Tinggi) [A-Za-z0-9 ]{3,30}\b/gi) || [];
               
               const uniqueLocs = Array.from(new Set(locMatches.map(l => l.toUpperCase())));
               const uniqueEdu = Array.from(new Set(eduMatches));
@@ -171,11 +213,12 @@ export class UsernameCollector implements Collector {
               if (uniquePhones.length > 0) metadata.extractedPhones = uniquePhones;
               if (uniqueLocs.length > 0) metadata.extractedLocations = uniqueLocs;
               if (uniqueEdu.length > 0) metadata.extractedEducation = uniqueEdu;
+              if (bioText) metadata.extractedBio = bioText.substring(0, 500); // Limit bio size
               
               const notesParts = [];
               if (uniqueEmails.length > 0) notesParts.push(`Emails: ${uniqueEmails.length}`);
               if (uniqueWa.length > 0 || uniquePhones.length > 0) notesParts.push(`Phones: ${uniqueWa.length + uniquePhones.length}`);
-              if (uniqueLocs.length > 0) notesParts.push(`Location: ${uniqueLocs.join(', ')}`);
+              if (uniqueLocs.length > 0) notesParts.push(`Loc: ${uniqueLocs.join(', ')}`);
               
               if (notesParts.length > 0) {
                  note = `Extracted: ${notesParts.join(' | ')}`;

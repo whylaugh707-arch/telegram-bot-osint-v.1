@@ -210,6 +210,16 @@ export class EvidenceOSINTEngine {
         if (locs.length > 0) {
           locs.forEach(l => txt += `├ 📍 <b>Location:</b> <code>${l.raw}</code>${getSourceStr(l)}\n`);
         }
+        
+        const bios = ent.attributes.filter(p => p.type === 'bio');
+        if (bios.length > 0) {
+          bios.forEach(b => {
+             const cleanBio = b.raw.replace(/\n/g, ' ').trim();
+             if (cleanBio.length > 0) {
+                txt += `├ 📝 <b>Bio/Desc:</b> <i>"${cleanBio.substring(0, 150)}${cleanBio.length > 150 ? '...' : ''}"</i>${getSourceStr(b)}\n`;
+             }
+          });
+        }
 
         // Show associated platform accounts
         const accounts = ent.supportingEvidence.map(id => evidences.find(e => e.id === id)).filter(e => e?.type === 'account');

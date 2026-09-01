@@ -52,6 +52,9 @@ export class EntityResolver {
             if (Array.isArray(ev.metadata?.extractedEducation)) {
               ev.metadata.extractedEducation.forEach(e => this.addAttribute(candidate!, 'organization', String(e), ev.id, ev.confidence - 10));
             }
+            if (ev.metadata?.extractedBio || ev.metadata?.bio) {
+              this.addAttribute(candidate!, 'bio', String(ev.metadata.extractedBio || ev.metadata.bio), ev.id, ev.confidence - 10);
+            }
           }
         } 
         else if (ev.type === 'email_hash' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
