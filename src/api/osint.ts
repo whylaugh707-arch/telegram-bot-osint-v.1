@@ -55,7 +55,7 @@ router.get('/ip', async (req, res) => {
     return res.status(400).json({ error: 'Invalid IP address format' });
   }
 
-  const report = await evidenceEngine.investigate(normalized.normalized);
+  const report = await evidenceEngine.investigate(normalized.normalized.ip);
   return res.json(report);
 });
 

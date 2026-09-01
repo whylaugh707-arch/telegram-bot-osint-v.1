@@ -237,7 +237,7 @@ export class UsernameCollector implements Collector {
         } else if (reqRes.status === 'RATE_LIMITED') {
           obsStatus = 'RATE_LIMITED';
         } else if (reqRes.status === 'TIMEOUT') {
-          obsStatus = 'TIMEOUT';
+          obsStatus = 'ERROR';
         }
 
         // Record provenance log

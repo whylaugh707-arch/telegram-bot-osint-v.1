@@ -42,7 +42,7 @@ export class EvidenceOSINTEngine {
     if (classification === 'domain') normalized = Normalizer.normalizeDomain(cleanTarget).normalized;
     else if (classification === 'email') normalized = Normalizer.normalizeEmail(cleanTarget).normalized.address;
     else if (classification === 'username') normalized = Normalizer.normalizeUsername(cleanTarget).normalized.standard;
-    else if (classification === 'ipv4' || classification === 'ipv6') normalized = Normalizer.normalizeIP(cleanTarget)?.normalized || cleanTarget;
+    else if (classification === 'ipv4' || classification === 'ipv6') normalized = Normalizer.normalizeIP(cleanTarget)?.normalized?.ip || cleanTarget;
 
     const targetInput: TargetInput = {
       raw: cleanTarget,
@@ -130,8 +130,11 @@ export class EvidenceOSINTEngine {
       entities,
       relationships,
       contradictions,
-      evidences: allEvidences,
+      observations: allEvidences,
+      evidence: allEvidences,
+      sources: allLogs,
       logs: allLogs,
+      assessment: confidenceAssessment,
       graph,
       confidence: {
         score: confidenceAssessment.score,
@@ -144,18 +147,20 @@ export class EvidenceOSINTEngine {
         sourcesFound,
         sourcesFailed,
         highConfidenceEvidences,
-        directContactsFound
+        directContactsFound,
+        independentSourceGroups: new Set(allEvidences.filter(e => e.status === 'VERIFIED' || e.status === 'CORROBORATED').map(e => e.independenceGroup).filter(Boolean)).size,
+        contradictionsCount: contradictions.length
       },
       limitations: allLimitations,
       dorkMatrix: dorks
-    };
+    } as any;
   }
 
   /**
    * Format Investigation Report into an Evidence-Driven Telegram Dossier
    */
-  public formatTelegramDossier(report: InvestigationReport): string {
-    const { target, confidence, entities, contradictions, evidences, summary, timing, dorkMatrix } = report;
+  public formatTelegramDossier(report: InvestigationReport | any): string {
+    const { target, confidence, entities, contradictions, evidence, summary, timing, dorkMatrix } = report;
     const durationSec = Math.max(1, Math.round(timing.durationMs / 1000));
 
     let txt = `🧠 <b>EVIDENCE-DRIVEN INTELLIGENCE DOSSIER</b>\n` +
@@ -186,7 +191,7 @@ export class EvidenceOSINTEngine {
 
         const getSourceStr = (attr: any) => {
            if (!attr.evidenceIds || attr.evidenceIds.length === 0) return '';
-           const ev = evidences.find(e => e.id === attr.evidenceIds[0]);
+           const ev = evidence.find((e: any) => e.id === attr.evidenceIds[0]);
            if (ev) {
               const url = (ev.normalizedValue as any)?.url || ev.sourceUrl;
               if (url) return ` <i>(Source: <a href="${url}">${ev.source}</a>)</i>`;
@@ -222,7 +227,7 @@ export class EvidenceOSINTEngine {
         }
 
         // Show associated platform accounts
-        const accounts = ent.supportingEvidence.map(id => evidences.find(e => e.id === id)).filter(e => e?.type === 'account');
+        const accounts = ent.supportingEvidence.map((id: string) => evidence.find((e: any) => e.id === id)).filter((e: any) => e?.type === 'account');
         if (accounts.length > 0) {
            txt += `├ 🌐 <b>Akun Platform Terkait:</b> ${accounts.map(a => a?.normalizedValue?.platform || a?.source).join(', ')}\n`;
         }
@@ -240,7 +245,7 @@ export class EvidenceOSINTEngine {
     }
 
     // 4. Observed Profiles (Verified Accounts)
-    const highConfAccounts = evidences.filter(e => (e.status === 'VERIFIED' || e.status === 'CORROBORATED' || e.status === 'SUPPORTED') && e.type === 'account');
+    const highConfAccounts = evidence.filter((e: any) => (e.status === 'VERIFIED' || e.status === 'CORROBORATED' || e.status === 'SUPPORTED') && e.type === 'account');
     if (highConfAccounts.length > 0) {
       txt += `🌐 <b>JEJAK PROFIL PUBLIK & SOSMED (${highConfAccounts.length}):</b>\n`;
       highConfAccounts.slice(0, 80).forEach(acc => {
@@ -254,7 +259,7 @@ export class EvidenceOSINTEngine {
     }
 
     // 5. Network / DNS Infrastructure
-    const dnsEvidences = evidences.filter(e => e.type === 'dns_record' || e.type === 'mx_server' || e.type === 'ip_geo');
+    const dnsEvidences = evidence.filter((e: any) => e.type === 'dns_record' || e.type === 'mx_server' || e.type === 'ip_geo');
     if (dnsEvidences.length > 0) {
       txt += `📡 <b>INFRASTRUKTUR JARINGAN & DNS:</b>\n`;
       dnsEvidences.slice(0, 5).forEach(net => {
