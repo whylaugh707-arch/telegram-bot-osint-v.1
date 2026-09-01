@@ -9,7 +9,7 @@ import { DNSCollector } from '../collectors/dns';
 import { EmailCollector } from '../collectors/email';
 import { UsernameCollector } from '../collectors/username';
 import { RegistryCollector } from '../collectors/registry';
-import { SearchDiscoveryCollector } from '../collectors/search';
+import { SearchCollector } from '../collectors/search';
 import { Evidence, InvestigationReport, TargetInput } from '../models/types';
 import { Normalizer } from '../normalization';
 import { EntityResolver } from '../correlation/entityResolver';
@@ -24,7 +24,7 @@ export class EvidenceOSINTEngine {
     new EmailCollector(),
     new UsernameCollector(),
     new RegistryCollector(),
-    new SearchDiscoveryCollector()
+    new SearchCollector()
   ];
 
   /**
@@ -91,7 +91,7 @@ export class EvidenceOSINTEngine {
 
     for (const output of collectorOutputs) {
       for (const ev of output.evidences) {
-        const canonicalKey = `${ev.type}:${ev.key}:${typeof ev.value === 'object' ? JSON.stringify(ev.value) : ev.value}`;
+        const canonicalKey = `${ev.type}:${ev.independenceGroup}:${typeof ev.normalizedValue === 'object' ? JSON.stringify(ev.normalizedValue) : ev.normalizedValue}`;
         if (!evidenceMap.has(canonicalKey)) {
           evidenceMap.set(canonicalKey, ev);
           allEvidences.push(ev);
@@ -100,17 +100,10 @@ export class EvidenceOSINTEngine {
     }
 
     // 5. Entity Resolution Layer
-    const { entities, relationships } = EntityResolver.resolve(targetInput, allEvidences);
+    const { entities, relationships, contradictions } = EntityResolver.resolve(targetInput, allEvidences);
 
     // 6. Multi-Factor Confidence & Risk Scoring
-    const confidenceAssessment = ConfidenceScorer.calculate(targetInput, allEvidences, entities);
-    if (entities[0]) {
-      entities[0].confidence = {
-        score: confidenceAssessment.score,
-        level: confidenceAssessment.level,
-        reasons: confidenceAssessment.reasons
-      };
-    }
+    const confidenceAssessment = ConfidenceScorer.calculate(targetInput, allEvidences, entities, contradictions, relationships);
     allLimitations.push(...confidenceAssessment.limitations);
 
     // 7. Evidence Graph Builder
@@ -124,8 +117,8 @@ export class EvidenceOSINTEngine {
 
     const sourcesFound = allLogs.filter(l => l.status === 'FOUND').length;
     const sourcesFailed = allLogs.filter(l => l.status !== 'FOUND' && l.status !== 'NOT_FOUND').length;
-    const highConfidenceEvidences = allEvidences.filter(e => e.confidenceScore >= 80).length;
-    const directContactsFound = entities[0]?.properties.filter(p => p.type === 'phone' || p.type === 'email').length || 0;
+    const highConfidenceEvidences = allEvidences.filter(e => e.confidence >= 80).length;
+    const directContactsFound = entities.reduce((acc, ent) => acc + ent.attributes.filter(a => a.type === 'phone' || a.type === 'email').length, 0);
 
     return {
       target: targetInput,
@@ -136,6 +129,7 @@ export class EvidenceOSINTEngine {
       },
       entities,
       relationships,
+      contradictions,
       evidences: allEvidences,
       logs: allLogs,
       graph,
@@ -161,8 +155,7 @@ export class EvidenceOSINTEngine {
    * Format Investigation Report into an Evidence-Driven Telegram Dossier
    */
   public formatTelegramDossier(report: InvestigationReport): string {
-    const { target, confidence, entities, evidences, summary, timing, dorkMatrix } = report;
-    const primary = entities[0];
+    const { target, confidence, entities, contradictions, evidences, summary, timing, dorkMatrix } = report;
     const durationSec = Math.max(1, Math.round(timing.durationMs / 1000));
 
     let txt = `🧠 <b>EVIDENCE-DRIVEN INTELLIGENCE DOSSIER</b>\n` +
@@ -181,68 +174,47 @@ export class EvidenceOSINTEngine {
     txt += `\n`;
 
     // 2. Discovered Identity Properties (Direct Contact Vectors)
-    if (primary && primary.properties.length > 0) {
-      txt += `📱 <b>VEKTOR ENTITAS & KONTAK TERVERIFIKASI:</b>\n`;
-      const phones = primary.properties.filter(p => p.type === 'phone');
-      const emails = primary.properties.filter(p => p.type === 'email');
-      const names = primary.properties.filter(p => p.type === 'name');
-      const orgs = primary.properties.filter(p => p.type === 'organization');
-      const locations = primary.properties.filter(p => p.type === 'location');
+    if (entities.length > 0) {
+      txt += `📱 <b>VEKTOR ENTITAS KANDIDAT (${entities.length} Ditemukan):</b>\n`;
+      entities.forEach((ent, idx) => {
+        txt += `\n🔸 <b>Kandidat ${idx + 1}: ${ent.label}</b> [Status: ${ent.status}]\n`;
+        const phones = ent.attributes.filter(p => p.type === 'phone');
+        const emails = ent.attributes.filter(p => p.type === 'email');
+        const names = ent.attributes.filter(p => p.type === 'name');
+        const orgs = ent.attributes.filter(p => p.type === 'organization');
 
-      if (phones.length > 0) {
-        phones.forEach(ph => {
-          txt += `├ 📞 <b>WhatsApp / HP:</b> <code>${ph.value}</code> (<a href="https://wa.me/${ph.value.replace(/[^0-9]/g, '')}">Hubungi Langsung</a>) [Confidence: ${ph.confidence}%]\n`;
-        });
-      } else {
-        txt += `├ 📞 <b>WhatsApp / HP:</b> <i>❌ Tidak teridentifikasi di rekaman publik</i>\n`;
-      }
-
-      if (emails.length > 0) {
-        emails.forEach(em => {
-          txt += `├ 📧 <b>Email:</b> <code>${em.value}</code> [Confidence: ${em.confidence}%]\n`;
-        });
-      } else {
-        txt += `├ 📧 <b>Email:</b> <i>❌ Tidak teridentifikasi di profil publik terbuka</i>\n`;
-      }
-
-      if (names.length > 0) {
-        names.forEach(nm => {
-          txt += `├ 👤 <b>Nama Terdeteksi:</b> <code>${nm.value}</code> [Confidence: ${nm.confidence}%]\n`;
-        });
-      }
-
-      if (orgs.length > 0) {
-        orgs.forEach(o => {
-          txt += `├ 🏢 <b>Afiliasi / Organisasi:</b> <code>${o.value}</code>\n`;
-        });
-      }
-
-      if (locations.length > 0) {
-        locations.forEach(loc => {
-          txt += `├ 📍 <b>Lokasi / Domisili:</b> <code>${loc.value}</code>\n`;
-        });
-      }
-      txt += `\n`;
-    }
-
-    // 3. Observed Profiles (Verified Accounts)
-    const observedAccounts = evidences.filter(e => e.tier === 'OBSERVED_PROFILE' && e.verified);
-    if (observedAccounts.length > 0) {
-      txt += `🌐 <b>PROFIL PUBLIK TERVERIFIKASI (${observedAccounts.length}):</b>\n`;
-      observedAccounts.slice(0, 15).forEach(acc => {
-        const val = acc.value as any;
-        txt += `├ 🔗 <a href="${val.url}"><b>${val.platform}</b></a>${val.note ? ` - <i>${val.note}</i>` : ''}\n`;
+        if (phones.length > 0) {
+          phones.forEach(ph => txt += `├ 📞 <b>Phone:</b> <code>${ph.raw}</code>\n`);
+        }
+        if (emails.length > 0) {
+          emails.forEach(em => txt += `├ 📧 <b>Email:</b> <code>${em.raw}</code>\n`);
+        }
+        if (names.length > 0) {
+          names.forEach(nm => txt += `├ 👤 <b>Name:</b> <code>${nm.raw}</code>\n`);
+        }
+        if (orgs.length > 0) {
+          orgs.forEach(o => txt += `├ 🏢 <b>Org:</b> <code>${o.raw}</code>\n`);
+        }
       });
       txt += `\n`;
     }
 
-    // 4. Scholarly & Academic Records
-    const academicPubs = evidences.filter(e => e.tier === 'REGISTRY_RECORD' && e.type === 'academic_pub');
-    if (academicPubs.length > 0) {
-      txt += `📄 <b>REKAM JEJAK AKADEMIK & INSTITUSI (${academicPubs.length}):</b>\n`;
-      academicPubs.slice(0, 5).forEach(pub => {
-        const val = pub.value as any;
-        txt += `├ 📚 <a href="${val.url || '#'}"><b>${val.title || val.name}</b></a>${val.publisher ? ` [${val.publisher}]` : ''}\n`;
+    // 3. Contradictions
+    if (contradictions && contradictions.length > 0) {
+      txt += `⚠️ <b>ANOMALI / KONTRADIKSI (${contradictions.length}):</b>\n`;
+      contradictions.forEach(c => {
+        txt += `├ 🔴 <b>${c.attribute.toUpperCase()}:</b> ${c.explanation}\n`;
+      });
+      txt += `\n`;
+    }
+
+    // 4. Observed Profiles (Verified Accounts)
+    const highConfAccounts = evidences.filter(e => (e.status === 'VERIFIED' || e.status === 'CORROBORATED') && e.type === 'account');
+    if (highConfAccounts.length > 0) {
+      txt += `🌐 <b>PROFIL PUBLIK TERVERIFIKASI (${highConfAccounts.length}):</b>\n`;
+      highConfAccounts.slice(0, 15).forEach(acc => {
+        const val = acc.normalizedValue as any;
+        txt += `├ 🔗 <a href="${val.url || acc.sourceUrl || '#'}"><b>${val.platform || acc.source}</b></a>\n`;
       });
       txt += `\n`;
     }
@@ -252,22 +224,22 @@ export class EvidenceOSINTEngine {
     if (dnsEvidences.length > 0) {
       txt += `📡 <b>INFRASTRUKTUR JARINGAN & DNS:</b>\n`;
       dnsEvidences.slice(0, 5).forEach(net => {
-        if (net.key === 'IP_NETWORK_METADATA') {
-          const val = net.value as any;
+        if (net.method === 'ip_geolocation' && net.normalizedValue) {
+          const val = net.normalizedValue as any;
           txt += `├ 🌐 <b>IP Geolocation:</b> ${val.city}, ${val.country} [ISP: ${val.isp || val.org} | AS: ${val.as}]\n`;
-        } else if (net.key === 'DNS_ADDRESS_RECORDS') {
-          const val = net.value as any;
-          txt += `├ 🌐 <b>IP Addresses:</b> ${val.ipv4.join(', ')}\n`;
-        } else if (net.key === 'DNS_MAIL_EXCHANGERS') {
-          const val = net.value as any;
-          txt += `├ ✉️ <b>Mail Exchangers:</b> ${val.mx.map((m: any) => m.host).join(', ')}\n`;
+        } else if (net.method === 'dns_a_record_lookup' && net.normalizedValue) {
+          const val = net.normalizedValue as any;
+          txt += `├ 🌐 <b>IP Addresses:</b> ${(val.ipv4 || []).join(', ')}\n`;
+        } else if (net.method === 'dns_mx_record_lookup' && net.normalizedValue) {
+          const val = net.normalizedValue as any;
+          txt += `├ ✉️ <b>Mail Exchangers:</b> ${(val.mx || []).map((m: any) => m.host).join(', ')}\n`;
         }
       });
       txt += `\n`;
     }
 
     // 6. Advanced Google Dorking Matrix
-    if (dorkMatrix.length > 0) {
+    if (dorkMatrix && dorkMatrix.length > 0) {
       txt += `🔎 <b>ADVANCED GOOGLE DORKING MATRIX:</b>\n`;
       dorkMatrix.slice(0, 4).forEach(d => {
         txt += `• <a href="${d.url}">${d.title}</a>\n`;
@@ -277,7 +249,7 @@ export class EvidenceOSINTEngine {
 
     // 7. Graph Summary
     txt += `🔗 <b>PROVENANCE & GRAPH RELATION:</b>\n` +
-           `• <code>[Target: ${target.raw}]</code> ➔ <code>[Entitas: ${entities.length}]</code> ➔ <code>[Evidence Tervalidasi: ${summary.highConfidenceEvidences}]</code> ➔ <code>[Sumber Query: ${summary.totalSourcesQueried}]</code>\n` +
+           `• <code>[Target: ${target.raw}]</code> ➔ <code>[Kandidat Entitas: ${entities.length}]</code> ➔ <code>[Evidence Tervalidasi: ${summary.highConfidenceEvidences}]</code> ➔ <code>[Sumber Query: ${summary.totalSourcesQueried}]</code>\n` +
            `━━━━━━━━━━━━━━━━━━━━\n` +
            `💡 <i>Catatan Investigasi: Hasil dianalisis secara non-invasif dari sumber publik terbuka dengan model verifikasi bukti bertingkat.</i>`;
 

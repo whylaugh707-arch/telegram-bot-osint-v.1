@@ -1,192 +1,255 @@
 /**
- * OSINT Nexus - Entity Resolution & Correlation Engine
- * Clusters evidences across platforms, emails, and networks into structured entities and relationships.
+ * OSINT Nexus - Entity Resolution & Correlation Engine (Phase 2 Refactor)
+ * Clusters evidences logically, avoids forced merging, and generates explicit relationships and contradictions.
  */
 
-import { Entity, EntityProperty, EntityRelationship, Evidence, TargetInput } from '../models/types';
+import { Evidence, EntityCandidate, TargetInput, EntityAttribute, Relationship, Contradiction } from '../models/types';
 import { Normalizer } from '../normalization';
 
 export class EntityResolver {
 
   /**
-   * Resolve Entities and Relationships from normalized target and collected evidence
+   * Resolve Entities, Relationships, and Contradictions from normalized target and collected evidence
    */
-  public static resolve(target: TargetInput, evidences: Evidence[]): { entities: Entity[]; relationships: EntityRelationship[] } {
-    const entities: Entity[] = [];
-    const relationships: EntityRelationship[] = [];
+  public static resolve(target: TargetInput, evidences: Evidence[]): { 
+    entities: EntityCandidate[], 
+    relationships: Relationship[], 
+    contradictions: Contradiction[] 
+  } {
+    let entities: EntityCandidate[] = [];
+    const relationships: Relationship[] = [];
+    const contradictions: Contradiction[] = [];
+    let candidateCounter = 1;
 
-    // Primary Target Entity
-    const primaryEntityId = `entity_target_${target.classification}_${target.normalized.replace(/[^a-zA-Z0-9_]/g, '_')}`;
-    const primaryType = 
-      target.classification === 'person_name' ? 'Person' :
-      target.classification === 'username' || target.classification === 'email' ? 'DigitalIdentity' :
-      target.classification === 'domain' ? 'DomainInfrastructure' :
-      target.classification === 'ipv4' || target.classification === 'ipv6' ? 'NetworkHost' : 'DigitalIdentity';
-
-    const primaryProperties: EntityProperty[] = [];
-    const observedPlatforms = new Set<string>();
-
-    // Add initial target vector property
-    if (target.classification === 'username') {
-      primaryProperties.push({
-        type: 'username',
-        value: target.raw,
-        normalizedValue: target.normalized,
-        confidence: 100,
-        evidenceIds: ['target_input']
-      });
-    } else if (target.classification === 'email') {
-      primaryProperties.push({
-        type: 'email',
-        value: target.raw,
-        normalizedValue: target.normalized,
-        confidence: 100,
-        evidenceIds: ['target_input']
-      });
-    } else if (target.classification === 'person_name') {
-      primaryProperties.push({
-        type: 'name',
-        value: target.raw,
-        normalizedValue: target.normalized,
-        confidence: 100,
-        evidenceIds: ['target_input']
-      });
-    }
-
-    // Process all evidences
+    // 1. Create Initial Candidates from Evidence
     for (const ev of evidences) {
-      // 1. Account Presences
-      if (ev.type === 'account' && typeof ev.value === 'object' && ev.value !== null) {
-        const val = ev.value as any;
-        if (val.platform) observedPlatforms.add(val.platform);
+      if (ev.status === 'OBSERVED' || ev.status === 'SUPPORTED' || ev.status === 'CORROBORATED' || ev.status === 'VERIFIED') {
+        
+        let candidate: EntityCandidate | null = null;
 
-        if (val.handle) {
-          primaryProperties.push({
-            type: 'username',
-            value: val.handle,
-            normalizedValue: Normalizer.normalizeUsername(val.handle).normalized.canonicalKey,
-            confidence: ev.confidenceScore,
-            evidenceIds: [ev.id]
-          });
+        if (ev.type === 'account' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          if (val.handle || val.platform) {
+            candidate = this.createCandidate(candidateCounter++, 'DigitalIdentity', `${val.platform || 'Platform'} User: ${val.handle || target.raw}`, ev);
+            if (val.handle) this.addAttribute(candidate, 'username', val.handle, ev.id, ev.confidence);
+            if (ev.metadata?.name) this.addAttribute(candidate, 'name', String(ev.metadata.name), ev.id, ev.confidence);
+            if (ev.metadata?.email) this.addAttribute(candidate, 'email', String(ev.metadata.email), ev.id, ev.confidence);
+            if (ev.metadata?.company) this.addAttribute(candidate, 'organization', String(ev.metadata.company), ev.id, ev.confidence);
+            if (ev.metadata?.location) this.addAttribute(candidate, 'location', String(ev.metadata.location), ev.id, ev.confidence);
+          }
+        } 
+        else if (ev.type === 'email_hash' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          candidate = this.createCandidate(candidateCounter++, 'DigitalIdentity', `Gravatar Profile: ${val.email}`, ev);
+          this.addAttribute(candidate, 'email', val.email, ev.id, ev.confidence);
+          if (val.displayName) this.addAttribute(candidate, 'name', val.displayName, ev.id, ev.confidence);
+          if (val.currentLocation) this.addAttribute(candidate, 'location', val.currentLocation, ev.id, ev.confidence);
         }
-        if (ev.metadata?.name) {
-          primaryProperties.push({
-            type: 'name',
-            value: String(ev.metadata.name),
-            normalizedValue: Normalizer.normalizeName(String(ev.metadata.name)).normalized.standard,
-            confidence: 85,
-            evidenceIds: [ev.id]
-          });
+        else if (ev.type === 'academic_pub' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          const name = val.matchedAuthor || val.name || target.raw;
+          candidate = this.createCandidate(candidateCounter++, 'Person', `Scholar: ${name}`, ev);
+          this.addAttribute(candidate, 'name', name, ev.id, ev.confidence);
+          if (val.affiliation || val.institution) this.addAttribute(candidate, 'organization', val.affiliation || val.institution, ev.id, ev.confidence);
         }
-        if (ev.metadata?.email) {
-          primaryProperties.push({
-            type: 'email',
-            value: String(ev.metadata.email),
-            normalizedValue: Normalizer.normalizeEmail(String(ev.metadata.email)).normalized.address,
-            confidence: 90,
-            evidenceIds: [ev.id]
+        else if (ev.type === 'phone_ref' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          if (val.value) {
+            candidate = this.createCandidate(candidateCounter++, 'DigitalIdentity', `Phone Entity: ${val.value}`, ev);
+            this.addAttribute(candidate, 'phone', val.value, ev.id, ev.confidence);
+          }
+        }
+        else if (ev.type === 'contact_vector' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          if (val.value) {
+            candidate = this.createCandidate(candidateCounter++, 'DigitalIdentity', `Contact: ${val.value}`, ev);
+            if (val.type === 'EMAIL') this.addAttribute(candidate, 'email', val.value, ev.id, ev.confidence);
+          }
+        }
+        else if (ev.type === 'dns_record' && typeof ev.normalizedValue === 'object' && ev.normalizedValue !== null) {
+          const val = ev.normalizedValue as any;
+          if (val.domain) {
+            candidate = this.createCandidate(candidateCounter++, 'DomainInfrastructure', `Domain: ${val.domain}`, ev);
+            this.addAttribute(candidate, 'domain', val.domain, ev.id, ev.confidence);
+          }
+        }
+
+        if (candidate && candidate.attributes.length > 0) {
+          entities.push(candidate);
+        }
+      }
+    }
+
+    // 2. Safe Merging (Identity Resolution)
+    // We only merge candidates if they share a STRONG cryptographic or authoritative anchor
+    let mergedEntities: EntityCandidate[] = [];
+    for (const entity of entities) {
+      let merged = false;
+      const emails = entity.attributes.filter(a => a.type === 'email').map(a => a.normalized);
+      const phones = entity.attributes.filter(a => a.type === 'phone').map(a => a.normalized);
+
+      for (const existing of mergedEntities) {
+        const existingEmails = existing.attributes.filter(a => a.type === 'email').map(a => a.normalized);
+        const existingPhones = existing.attributes.filter(a => a.type === 'phone').map(a => a.normalized);
+
+        const sharesEmail = emails.length > 0 && emails.some(e => existingEmails.includes(e));
+        const sharesPhone = phones.length > 0 && phones.some(p => existingPhones.includes(p));
+
+        if (sharesEmail || sharesPhone) {
+          this.mergeCandidates(existing, entity);
+          merged = true;
+          break;
+        }
+      }
+      if (!merged) {
+        mergedEntities.push(entity);
+      }
+    }
+
+    // 3. Contradiction Detection
+    for (const entity of mergedEntities) {
+      const orgs = entity.attributes.filter(a => a.type === 'organization');
+      if (orgs.length > 1) {
+        const uniqueOrgs = Array.from(new Set(orgs.map(o => o.normalized)));
+        if (uniqueOrgs.length > 1) {
+          contradictions.push({
+            id: `contra_org_${entity.id}`,
+            attribute: 'organization',
+            evidenceA: orgs[0].evidenceIds[0],
+            evidenceB: orgs[1].evidenceIds[0],
+            severity: 'LOW',
+            explanation: `Multiple distinct organizations associated with the same entity: ${uniqueOrgs.join(' vs ')}. This may be a temporal change (job history) or different people.`,
+            isTemporalResolution: true
           });
         }
       }
 
-      // 2. Gravatar Profile
-      if (ev.type === 'email_hash' && typeof ev.value === 'object' && ev.value !== null) {
-        const val = ev.value as any;
-        if (val.displayName) {
-          primaryProperties.push({
-            type: 'name',
-            value: val.displayName,
-            normalizedValue: Normalizer.normalizeName(val.displayName).normalized.standard,
-            confidence: 90,
-            evidenceIds: [ev.id]
-          });
-        }
-        if (val.currentLocation) {
-          primaryProperties.push({
-            type: 'location',
-            value: val.currentLocation,
-            normalizedValue: val.currentLocation.toLowerCase(),
-            confidence: 85,
-            evidenceIds: [ev.id]
-          });
-        }
-      }
-
-      // 3. Phone Discovery
-      if (ev.type === 'phone_ref' && typeof ev.value === 'object' && ev.value !== null) {
-        const val = ev.value as any;
-        if (val.phone) {
-          primaryProperties.push({
-            type: 'phone',
-            value: val.phone,
-            normalizedValue: val.phone,
-            confidence: ev.confidenceScore,
-            evidenceIds: [ev.id]
-          });
-        }
-      }
-
-      // 4. Academic Publication & Affiliations
-      if (ev.type === 'academic_pub' && typeof ev.value === 'object' && ev.value !== null) {
-        const val = ev.value as any;
-        if (val.institution) {
-          primaryProperties.push({
-            type: 'organization',
-            value: val.institution,
-            normalizedValue: val.institution.toLowerCase(),
-            confidence: 80,
-            evidenceIds: [ev.id]
-          });
-        }
-      }
-
-      // 5. DNS / Infrastructure
-      if (ev.type === 'dns_record' && ev.key === 'DNS_ADDRESS_RECORDS' && typeof ev.value === 'object' && ev.value !== null) {
-        const val = ev.value as any;
-        if (val.ipv4 && Array.isArray(val.ipv4)) {
-          val.ipv4.forEach((ip: string) => {
-            const ipEntityId = `entity_ip_${ip.replace(/\./g, '_')}`;
-            // Add relation
-            relationships.push({
-              id: `rel_${primaryEntityId}_hosted_${ipEntityId}`,
-              sourceEntityId: primaryEntityId,
-              targetEntityId: ipEntityId,
-              relation: 'HOSTED_ON_IP',
-              confidence: 95,
-              evidenceIds: [ev.id],
-              description: `Domain resolved to IPv4 address ${ip}`
-            });
+      const locations = entity.attributes.filter(a => a.type === 'location');
+      if (locations.length > 1) {
+        const uniqueLocs = Array.from(new Set(locations.map(o => o.normalized)));
+        if (uniqueLocs.length > 1) {
+          contradictions.push({
+            id: `contra_loc_${entity.id}`,
+            attribute: 'location',
+            evidenceA: locations[0].evidenceIds[0],
+            evidenceB: locations[1].evidenceIds[0],
+            severity: 'LOW',
+            explanation: `Multiple distinct locations detected: ${uniqueLocs.join(' vs ')}`,
+            isTemporalResolution: true
           });
         }
       }
     }
 
-    // Deduplicate properties on primary entity
-    const dedupedProps: EntityProperty[] = [];
-    const seen = new Set<string>();
-    for (const p of primaryProperties) {
-      const key = `${p.type}:${p.normalizedValue.toLowerCase()}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        dedupedProps.push(p);
+    // 4. Generate Target Relationships
+    for (const entity of mergedEntities) {
+      let relType: Relationship['type'] | null = null;
+      let matchedEvidenceIds: string[] = [];
+
+      if (target.classification === 'username') {
+        const usernames = entity.attributes.filter(a => a.type === 'username' && a.normalized === Normalizer.normalizeUsername(target.raw).normalized.canonicalKey);
+        if (usernames.length > 0) {
+          relType = 'USES_USERNAME';
+          matchedEvidenceIds = usernames.map(u => u.evidenceIds).flat();
+        }
+      } else if (target.classification === 'email') {
+        const emails = entity.attributes.filter(a => a.type === 'email' && a.normalized === Normalizer.normalizeEmail(target.raw).normalized.address);
+        if (emails.length > 0) {
+          relType = 'HAS_EMAIL';
+          matchedEvidenceIds = emails.map(u => u.evidenceIds).flat();
+        }
+      } else if (target.classification === 'person_name') {
+        const names = entity.attributes.filter(a => a.type === 'name' && a.normalized === Normalizer.normalizeName(target.raw).normalized.standard);
+        if (names.length > 0) {
+          relType = 'AFFILIATED_WITH'; 
+          matchedEvidenceIds = names.map(u => u.evidenceIds).flat();
+        }
+      } else if (target.classification === 'domain') {
+        const domains = entity.attributes.filter(a => a.type === 'domain' && a.normalized === Normalizer.normalizeDomain(target.raw).normalized);
+        if (domains.length > 0) {
+          relType = 'OWNS_DOMAIN';
+          matchedEvidenceIds = domains.map(u => u.evidenceIds).flat();
+        }
+      }
+
+      if (relType && matchedEvidenceIds.length > 0) {
+        relationships.push({
+          id: `rel_target_${entity.id}`,
+          fromEntity: 'TARGET',
+          toEntity: entity.id,
+          type: relType,
+          confidence: Math.min(...matchedEvidenceIds.map(id => evidences.find(e => e.id === id)?.confidence || 50)),
+          evidenceIds: matchedEvidenceIds,
+          status: 'SUPPORTED',
+          description: `Entity is associated with target via ${relType}`
+        });
       }
     }
 
-    const primaryEntity: Entity = {
-      id: primaryEntityId,
+    // Determine Entity Status
+    for (const entity of mergedEntities) {
+      const uniqueSources = new Set(entity.supportingEvidence.map(id => evidences.find(e => e.id === id)?.independenceGroup).filter(Boolean));
+      if (uniqueSources.size >= 3) {
+        entity.status = 'STRONG';
+      } else if (uniqueSources.size >= 2) {
+        entity.status = 'PROBABLE';
+      } else if (entity.attributes.length > 2) {
+        entity.status = 'POSSIBLE';
+      } else {
+        entity.status = 'UNRESOLVED';
+      }
+    }
+
+    return { entities: mergedEntities, relationships, contradictions };
+  }
+
+  private static createCandidate(idNum: number, primaryType: EntityCandidate['primaryType'], label: string, ev: Evidence): EntityCandidate {
+    return {
+      id: `cand_${idNum}_${Date.now()}`,
       primaryType,
-      label: target.raw,
-      properties: dedupedProps,
-      confidence: {
-        score: 0, // Will be computed by confidence scorer
-        level: 'POSSIBLE',
-        reasons: []
-      },
-      observedOn: Array.from(observedPlatforms)
+      label,
+      attributes: [],
+      supportingEvidence: [ev.id],
+      conflictingEvidence: [],
+      confidence: ev.confidence,
+      status: 'UNRESOLVED',
+      observedOn: [ev.source]
     };
+  }
 
-    entities.push(primaryEntity);
+  private static addAttribute(candidate: EntityCandidate, type: EntityAttribute['type'], raw: string, evidenceId: string, confidence: number) {
+    if (!raw || raw.trim() === '') return;
+    
+    let normalized = raw.trim().toLowerCase();
+    if (type === 'username') normalized = Normalizer.normalizeUsername(raw).normalized.canonicalKey;
+    if (type === 'email') normalized = Normalizer.normalizeEmail(raw).normalized.address;
+    if (type === 'name') normalized = Normalizer.normalizeName(raw).normalized.standard;
 
-    return { entities, relationships };
+    const existing = candidate.attributes.find(a => a.type === type && a.normalized === normalized);
+    if (existing) {
+      if (!existing.evidenceIds.includes(evidenceId)) {
+        existing.evidenceIds.push(evidenceId);
+      }
+      existing.confidence = Math.max(existing.confidence, confidence);
+    } else {
+      candidate.attributes.push({
+        type,
+        raw,
+        normalized,
+        evidenceIds: [evidenceId],
+        confidence
+      });
+    }
+  }
+
+  private static mergeCandidates(target: EntityCandidate, source: EntityCandidate) {
+    for (const attr of source.attributes) {
+      for (const evId of attr.evidenceIds) {
+        this.addAttribute(target, attr.type, attr.raw, evId, attr.confidence);
+      }
+    }
+    target.supportingEvidence = Array.from(new Set([...target.supportingEvidence, ...source.supportingEvidence]));
+    target.observedOn = Array.from(new Set([...target.observedOn, ...source.observedOn]));
+    target.confidence = Math.min(99, target.confidence + (source.confidence * 0.2)); 
   }
 }

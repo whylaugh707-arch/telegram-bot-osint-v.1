@@ -1,6 +1,6 @@
 /**
- * OSINT Nexus - Email Intelligence & Footprint Collector
- * Extracts Gravatar MD5 cryptographic profiles, MX validations, and subaddressing.
+ * OSINT Nexus - Email Intelligence & Footprint Collector (Phase 2 Refactor)
+ * Extracts Gravatar MD5 cryptographic profiles and determines email provider classification.
  */
 
 import { Collector, CollectorOutput, SafeRequester } from './base';
@@ -46,12 +46,20 @@ export class EmailCollector implements Collector {
 
     if (gravRes.status === 'FOUND' && gravRes.response?.data?.entry?.[0]) {
       const entry = gravRes.response.data.entry[0];
+      const sourceRel = SafeRequester.getSourceReliability('Gravatar API');
+
       output.evidences.push({
         id: `gravatar_${hash}`,
-        tier: 'DIRECT_VERIFICATION',
+        source: 'Gravatar (Automattic Identity Registry)',
+        sourceType: 'API',
+        sourceUrl: gravatarUrl,
+        independenceGroup: 'gravatar',
+        method: 'md5_cryptographic_hash_lookup',
+        observedAt: startedAt,
+        retrievedAt: new Date().toISOString(),
         type: 'email_hash',
-        key: 'GRAVATAR_IDENTITY_PROFILE',
-        value: {
+        rawValue: entry,
+        normalizedValue: {
           email: address,
           hash,
           displayName: entry.displayName,
@@ -61,16 +69,13 @@ export class EmailCollector implements Collector {
           photos: entry.photos?.map((p: any) => p.value) || [],
           accounts: entry.accounts?.map((a: any) => ({ domain: a.domain, username: a.username, url: a.url })) || []
         },
-        confidenceScore: 98,
-        verified: true,
-        provenance: {
-          collector: this.name,
-          source: 'Gravatar (Automattic Identity Registry)',
-          sourceUrl: gravatarUrl,
-          httpStatus: 200,
-          retrievedAt: new Date().toISOString(),
-          durationMs: gravRes.durationMs,
-          method: 'MD5_HASH_LOOKUP'
+        rawExcerpt: `Gravatar matched for hash ${hash}: ${entry.displayName}`,
+        status: 'VERIFIED',
+        verificationScope: 'OWNERSHIP', // Confirms they own this email hash
+        confidence: 98,
+        reliability: sourceRel.reliability,
+        metadata: {
+          note: 'Cryptographically verified profile bound to email MD5 hash'
         }
       });
     }
@@ -84,25 +89,22 @@ export class EmailCollector implements Collector {
 
     output.evidences.push({
       id: `email_domain_class_${domain}`,
-      tier: 'DIRECT_VERIFICATION',
+      source: 'Mail Provider Classification Matrix',
+      sourceType: 'AUTHORITATIVE_REGISTRY',
+      independenceGroup: 'domain_classification',
+      method: 'static_domain_set_evaluation',
+      observedAt: startedAt,
+      retrievedAt: new Date().toISOString(),
       type: 'account',
-      key: 'EMAIL_DOMAIN_TIER',
-      value: {
-        address,
-        user,
-        domain,
-        isDisposable,
-        isFreeMail: isFree,
-        isCustomCorporateDomain: !isDisposable && !isFree
-      },
-      confidenceScore: 90,
-      verified: true,
-      provenance: {
-        collector: this.name,
-        source: 'Mail Provider Classification Matrix',
-        retrievedAt: new Date().toISOString(),
-        durationMs: 1,
-        method: 'DOMAIN_SET_EVALUATION'
+      rawValue: { address, user, domain, isDisposable, isFree },
+      normalizedValue: { address, user, domain, isDisposable, isFreeMail: isFree, isCustomCorporateDomain: !isDisposable && !isFree },
+      rawExcerpt: `Domain ${domain} classified as ${isDisposable ? 'Disposable' : isFree ? 'Free Provider' : 'Corporate/Custom'}`,
+      status: 'VERIFIED',
+      verificationScope: 'ATTRIBUTE_OBSERVED',
+      confidence: 90,
+      reliability: 0.90,
+      metadata: {
+        note: 'Domain classification relies on known lists; does not verify account existence'
       }
     });
 

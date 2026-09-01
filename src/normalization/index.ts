@@ -1,6 +1,6 @@
 /**
- * OSINT Nexus - Normalization & Classification Layer
- * Handles robust parsing, canonicalization, and categorization of input vectors.
+ * OSINT Nexus - Normalization & Classification Layer (Phase 2 Refactor)
+ * Handles RFC-compliant parsing, canonicalization, bogon filtering, and preserves raw vs normalized values.
  */
 
 import { IPAddressType, NormalizedValue, TargetClassification } from '../models/types';
@@ -20,23 +20,32 @@ export class Normalizer {
       return net.isIPv4(raw) ? 'ipv4' : 'ipv6';
     }
 
-    // 2. Email Check
+    // 2. Email Check (Strict RFC 5322 structure)
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
     if (emailRegex.test(raw)) {
       return 'email';
     }
 
-    // 3. Phone Check (+62..., 08..., etc.)
+    // 3. Phone Check (+62..., 08..., international E.164)
     const phoneClean = raw.replace(/[\s\-\(\)\.]/g, '');
     if (/^(\+?[0-9]{8,15})$/.test(phoneClean) && (phoneClean.startsWith('+') || phoneClean.startsWith('0') || phoneClean.startsWith('62'))) {
       return 'phone';
     }
 
     // 4. Domain Check
-    const cleanDomain = raw.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0].split(':')[0].toLowerCase();
-    const domainRegex = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
-    if (cleanDomain.includes('.') && domainRegex.test(cleanDomain) && !raw.includes(' ')) {
-      return 'domain';
+    try {
+      let candidate = raw;
+      if (!candidate.startsWith('http://') && !candidate.startsWith('https://')) {
+        candidate = `https://${candidate}`;
+      }
+      const parsedUrl = new URL(candidate);
+      const host = parsedUrl.hostname;
+      const domainRegex = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+      if (host.includes('.') && domainRegex.test(host) && !raw.includes(' ') && !raw.includes('@')) {
+        return 'domain';
+      }
+    } catch {
+      // Not a valid domain URL
     }
 
     // 5. Full Person Name (contains spaces and letters only)
@@ -49,9 +58,9 @@ export class Normalizer {
   }
 
   /**
-   * Strict IP Classification & Validation
+   * Strict IP Classification & Validation (IPv4 and IPv6 with Bogon/SSRF bounds)
    */
-  public static normalizeIP(ip: string): { normalized: string; type: IPAddressType; version: 4 | 6 } | null {
+  public static normalizeIP(ip: string): NormalizedValue<{ ip: string; type: IPAddressType; version: 4 | 6; isPrivateOrLocal: boolean }> | null {
     const clean = (ip || '').trim();
     const version = net.isIP(clean);
     if (version === 0) return null;
@@ -73,27 +82,54 @@ export class Normalizer {
       else if (a === 169 && b === 254) type = 'LINK_LOCAL';
       // Documentation RFC 5737 (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)
       else if ((a === 192 && b === 0 && parts[2] === 2) || (a === 198 && b === 51 && parts[2] === 100) || (a === 203 && b === 0 && parts[2] === 113)) type = 'DOCUMENTATION';
-      // Reserved / Broadcast / Multicast
-      else if (a === 0 || a >= 224) type = 'RESERVED';
+      // Multicast RFC 5771 (224.0.0.0/4)
+      else if (a >= 224 && a <= 239) type = 'MULTICAST';
+      // Reserved / Broadcast RFC 1112 (240.0.0.0/4 or 0.0.0.0/8)
+      else if (a === 0 || a >= 240) type = 'RESERVED';
+
+      const isPrivateOrLocal = type !== 'PUBLIC';
 
       return {
-        normalized: parts.join('.'),
-        type,
-        version: 4
+        raw: ip,
+        normalized: {
+          ip: parts.join('.'),
+          type,
+          version: 4,
+          isPrivateOrLocal
+        },
+        normalizationMethod: 'IPV4_PARTS_OCTET_VALIDATION_AND_RFC_CIDR_LOOKUP'
       };
     }
 
-    // IPv6
-    const isLoopback = clean === '::1' || clean === '0:0:0:0:0:0:0:1';
+    // IPv6 Classification
+    const cleanV6 = clean.toLowerCase();
+    const isLoopback = cleanV6 === '::1' || cleanV6 === '0:0:0:0:0:0:0:1';
+    const isLinkLocal = cleanV6.startsWith('fe80:');
+    const isUniqueLocal = cleanV6.startsWith('fc00:') || cleanV6.startsWith('fd00:');
+    const isDocumentation = cleanV6.startsWith('2001:db8:');
+    const isMulticast = cleanV6.startsWith('ff');
+
+    let type: IPAddressType = 'PUBLIC';
+    if (isLoopback) type = 'LOOPBACK';
+    else if (isUniqueLocal) type = 'PRIVATE';
+    else if (isLinkLocal) type = 'LINK_LOCAL';
+    else if (isDocumentation) type = 'DOCUMENTATION';
+    else if (isMulticast) type = 'MULTICAST';
+
     return {
-      normalized: clean.toLowerCase(),
-      type: isLoopback ? 'LOOPBACK' : 'PUBLIC',
-      version: 6
+      raw: ip,
+      normalized: {
+        ip: cleanV6,
+        type,
+        version: 6,
+        isPrivateOrLocal: type !== 'PUBLIC'
+      },
+      normalizationMethod: 'IPV6_CANONICAL_DECOMPOSITION_AND_RFC_CLASSIFICATION'
     };
   }
 
   /**
-   * Domain & URL Normalization
+   * Domain & URL Normalization using native URL parser
    */
   public static normalizeDomain(rawDomain: string): NormalizedValue<string> {
     const cleaned = (rawDomain || '').trim();
@@ -115,12 +151,12 @@ export class Normalizer {
     return {
       raw: rawDomain,
       normalized: host,
-      method: 'URL_HOSTNAME_EXTRACTION_AND_LOWERCASE'
+      normalizationMethod: 'NATIVE_URL_HOSTNAME_PARSER_AND_LOWERCASE'
     };
   }
 
   /**
-   * Email Normalization (RFC standard + Gmail dot removal for canonical entity clustering)
+   * Email Normalization (Preserves raw address, extracts localpart, domain, and canonical dotless user)
    */
   public static normalizeEmail(rawEmail: string): NormalizedValue<{ address: string; user: string; domain: string; canonicalUser: string }> {
     const clean = (rawEmail || '').trim().toLowerCase();
@@ -129,7 +165,7 @@ export class Normalizer {
       return {
         raw: rawEmail,
         normalized: { address: clean, user: clean, domain: '', canonicalUser: clean },
-        method: 'INVALID_EMAIL_PASSTHROUGH'
+        normalizationMethod: 'INVALID_EMAIL_PASSTHROUGH'
       };
     }
 
@@ -150,7 +186,7 @@ export class Normalizer {
         domain,
         canonicalUser
       },
-      method: 'EMAIL_CANONICAL_RFC_DECOMPOSE'
+      normalizationMethod: 'EMAIL_RFC_DECOMPOSE_AND_CANONICAL_ALIAS_REMOVAL'
     };
   }
 
@@ -168,7 +204,7 @@ export class Normalizer {
         standard,
         canonicalKey
       },
-      method: 'LOWERCASE_AND_STRIP_PUNCTUATION_CANONICAL'
+      normalizationMethod: 'LOWERCASE_AND_STRIP_PUNCTUATION_CANONICAL'
     };
   }
 
@@ -177,7 +213,7 @@ export class Normalizer {
    */
   public static normalizeName(rawName: string): NormalizedValue<{ standard: string; tokens: string[]; initials: string }> {
     const clean = (rawName || '').trim().replace(/\s+/g, ' ');
-    // Remove common prefixes/suffixes: Dr., Ir., S.Kom, M.T, Ph.D, etc.
+    // Remove common prefixes/suffixes
     const stripped = clean.replace(/^(?:mr\.|ms\.|mrs\.|dr\.|prof\.|ir\.|drs\.)\s+/i, '')
                           .replace(/,\s*(?:s\.kom|m\.kom|s\.t|m\.t|ph\.d|m\.sc|b\.sc|se|sh|mm|mba)\.?$/i, '')
                           .trim();
@@ -192,7 +228,7 @@ export class Normalizer {
         tokens,
         initials
       },
-      method: 'TITLES_REMOVAL_AND_TOKENIZATION'
+      normalizationMethod: 'TITLES_REMOVAL_AND_TOKENIZATION'
     };
   }
 }

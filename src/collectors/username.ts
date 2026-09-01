@@ -1,12 +1,25 @@
 /**
- * OSINT Nexus - Multi-Platform Identity Collector
- * Scans 215+ verified public platforms with strict signature validation and zero false positives.
+ * OSINT Nexus - Multi-Platform Identity Collector (Phase 2 Refactor)
+ * Strict platform verification with explicit ACCOUNT_EXISTENCE scopes and zero naive HTTP 200 assertions.
  */
 
 import { Collector, CollectorOutput, SafeRequester } from './base';
-import { Evidence, TargetInput } from '../models/types';
+import { Evidence, EvidenceStatus, TargetInput, VerificationScope } from '../models/types';
 import { buildPlatformList, CorrelatePlatform } from '../services/correlator';
 import { Normalizer } from '../normalization';
+
+export interface PlatformObservation {
+  status: 'FOUND' | 'NOT_FOUND' | 'BLOCKED' | 'RATE_LIMITED' | 'ERROR' | 'AMBIGUOUS';
+  profileUrl?: string;
+  evidence: Evidence[];
+  note?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PlatformVerifier {
+  platform: string;
+  check(handle: string, platformConfig: CorrelatePlatform): Promise<PlatformObservation>;
+}
 
 export class UsernameCollector implements Collector {
   public name = 'MULTI_PLATFORM_IDENTITY_COLLECTOR';
@@ -28,7 +41,7 @@ export class UsernameCollector implements Collector {
     if (!handle || handle.length < 2) return output;
 
     const platforms = buildPlatformList(handle);
-    const batchSize = 15;
+    const batchSize = 12;
 
     for (let i = 0; i < platforms.length; i += batchSize) {
       const batch = platforms.slice(i, i + batchSize);
@@ -40,61 +53,115 @@ export class UsernameCollector implements Collector {
           timeout: 4000
         });
 
-        let isVerifiedMatch = false;
+        let obsStatus: PlatformObservation['status'] = 'NOT_FOUND';
+        let evidenceStatus: EvidenceStatus = 'OBSERVED';
+        let verificationScope: VerificationScope = 'ACCOUNT_EXISTENCE';
         let note = '';
         let metadata: Record<string, unknown> = {};
+        let confidenceScore = 65;
 
         if (reqRes.status === 'FOUND' && reqRes.response) {
           const res = reqRes.response;
 
-          // 1. GitHub API
+          // 1. GitHub API Verification (Authoritative API)
           if (p.checkMethod === 'api_github') {
-            if (res.data?.login) {
-              isVerifiedMatch = true;
-              note = res.data.name ? `Nama: ${res.data.name}` : 'GitHub Developer';
-              metadata = { login: res.data.login, name: res.data.name, email: res.data.email, bio: res.data.bio, blog: res.data.blog };
+            if (res.data?.login && String(res.data.login).toLowerCase() === handle.toLowerCase()) {
+              obsStatus = 'FOUND';
+              evidenceStatus = 'VERIFIED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 95;
+              note = res.data.name ? `Name: ${res.data.name}` : 'GitHub Developer';
+              metadata = { 
+                login: res.data.login, 
+                name: res.data.name, 
+                email: res.data.email, 
+                bio: res.data.bio, 
+                blog: res.data.blog,
+                company: res.data.company,
+                location: res.data.location
+              };
+            } else {
+              obsStatus = 'NOT_FOUND';
             }
           }
-          // 2. Gravatar API
+          // 2. Gravatar API Verification
           else if (p.checkMethod === 'api_gravatar') {
             if (res.data?.entry?.[0]) {
-              isVerifiedMatch = true;
+              obsStatus = 'FOUND';
+              evidenceStatus = 'VERIFIED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 90;
               note = res.data.entry[0].displayName || 'Gravatar User';
               metadata = { displayName: res.data.entry[0].displayName, aboutMe: res.data.entry[0].aboutMe };
+            } else {
+              obsStatus = 'NOT_FOUND';
             }
           }
-          // 3. Reddit API
+          // 3. Reddit API Verification
           else if (p.checkMethod === 'api_reddit') {
-            if (res.data?.data?.name) {
-              isVerifiedMatch = true;
+            if (res.data?.data?.name && !res.data.data.is_suspended) {
+              obsStatus = 'FOUND';
+              evidenceStatus = 'SUPPORTED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 85;
               note = `Karma: ${res.data.data.total_karma || 0}`;
+            } else {
+              obsStatus = 'NOT_FOUND';
             }
           }
           // 4. NPM Registry
           else if (p.checkMethod === 'api_npm') {
             if (res.data?.name) {
-              isVerifiedMatch = true;
+              obsStatus = 'FOUND';
+              evidenceStatus = 'VERIFIED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 90;
               note = 'NPM Package Maintainer';
+            } else {
+              obsStatus = 'NOT_FOUND';
             }
           }
-          // 5. Signature-based verification (Strict body keyword & anti-false-positive checks)
+          // 5. GitLab API
+          else if (p.checkMethod === 'api_gitlab') {
+            if (Array.isArray(res.data) && res.data.some((u: any) => u.username?.toLowerCase() === handle.toLowerCase())) {
+              obsStatus = 'FOUND';
+              evidenceStatus = 'VERIFIED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 90;
+              note = 'GitLab User';
+            } else {
+              obsStatus = 'NOT_FOUND';
+            }
+          }
+          // 6. Signature-based verification (Strict body keyword & anti-false-positive checks)
           else if (p.checkMethod === 'get_with_signature') {
             const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
             const lowerBody = body.toLowerCase();
 
             // Must Not Contain
-            const failedNotContain = p.mustNotContain && p.mustNotContain.some(kw => body.includes(kw));
+            const failedNotContain = p.mustNotContain && p.mustNotContain.some(kw => body.includes(kw) || lowerBody.includes(kw.toLowerCase()));
             // Must Contain
             const passedMustContain = !p.mustContain || p.mustContain.every(kw => lowerBody.includes(kw.toLowerCase()));
 
             if (!failedNotContain && passedMustContain) {
-              isVerifiedMatch = true;
+              obsStatus = 'FOUND';
+              evidenceStatus = 'SUPPORTED';
+              verificationScope = 'ACCOUNT_EXISTENCE';
+              confidenceScore = 75;
+            } else {
+              obsStatus = 'NOT_FOUND';
             }
           }
-          // Other specific APIs
-          else if (res.status === 200) {
-            isVerifiedMatch = true;
+          // 7. Any generic platform without robust signatures is strictly marked AMBIGUOUS rather than verified
+          else {
+            obsStatus = 'AMBIGUOUS';
           }
+        } else if (reqRes.status === 'BLOCKED') {
+          obsStatus = 'BLOCKED';
+        } else if (reqRes.status === 'RATE_LIMITED') {
+          obsStatus = 'RATE_LIMITED';
+        } else if (reqRes.status === 'TIMEOUT') {
+          obsStatus = 'TIMEOUT';
         }
 
         // Record provenance log
@@ -105,37 +172,34 @@ export class UsernameCollector implements Collector {
           startedAt,
           finishedAt: new Date().toISOString(),
           durationMs: reqRes.durationMs,
-          status: isVerifiedMatch ? 'FOUND' : reqRes.status,
+          status: obsStatus === 'FOUND' ? 'FOUND' : obsStatus === 'AMBIGUOUS' ? 'AMBIGUOUS' : reqRes.status,
           httpStatus: reqRes.response?.status,
-          resultCount: isVerifiedMatch ? 1 : 0,
+          resultCount: obsStatus === 'FOUND' ? 1 : 0,
           error: reqRes.error
         });
 
-        // Store Evidence if match
-        if (isVerifiedMatch) {
+        // Store Evidence if verified/supported account presence is confirmed
+        if (obsStatus === 'FOUND') {
+          const independenceGroup = `platform_${p.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+          const sourceRel = SafeRequester.getSourceReliability(p.name);
+
           output.evidences.push({
-            id: `plat_${p.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${handle}`,
-            tier: 'OBSERVED_PROFILE',
+            id: `plat_${independenceGroup}_${handle}`,
+            source: p.name,
+            sourceType: p.checkMethod.startsWith('api_') ? 'API' : 'WEB_CRAWL',
+            sourceUrl: p.url,
+            independenceGroup,
+            method: p.checkMethod,
+            observedAt: startedAt,
+            retrievedAt: new Date().toISOString(),
             type: 'account',
-            key: 'PUBLIC_PROFILE_PRESENCE',
-            value: {
-              platform: p.name,
-              category: p.category,
-              handle,
-              url: p.url,
-              note
-            },
-            confidenceScore: p.checkMethod.startsWith('api_') ? 95 : 85,
-            verified: true,
-            provenance: {
-              collector: this.name,
-              source: p.name,
-              sourceUrl: p.url,
-              httpStatus: reqRes.response?.status || 200,
-              retrievedAt: new Date().toISOString(),
-              durationMs: reqRes.durationMs,
-              method: p.checkMethod
-            },
+            rawValue: { platform: p.name, handle, url: p.url, rawHttpStatus: reqRes.response?.status },
+            normalizedValue: { platform: p.name, handle: norm.normalized.standard, url: p.url, category: p.category, note },
+            rawExcerpt: note,
+            status: evidenceStatus,
+            verificationScope,
+            confidence: confidenceScore,
+            reliability: sourceRel.reliability,
             metadata
           });
         }

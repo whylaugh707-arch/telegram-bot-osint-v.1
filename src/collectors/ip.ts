@@ -1,6 +1,6 @@
 /**
- * OSINT Nexus - IP Intelligence Collector
- * Enriches IP addresses with BGP ASN, Geolocation, Reverse DNS, and Bogon filtering.
+ * OSINT Nexus - IP Infrastructure & Bogon Intelligence Collector (Phase 2 Refactor)
+ * Comprehensive Bogon/SSRF classification, Shodan InternetDB, and PTR lookup with explicit provenance.
  */
 
 import { Collector, CollectorOutput, SafeRequester } from './base';
@@ -23,117 +23,116 @@ export class IPCollector implements Collector {
       limitations: []
     };
 
-    const ipInfo = Normalizer.normalizeIP(target.raw);
-    if (!ipInfo) {
-      output.limitations.push({
-        scope: 'IP Parsing',
-        reason: 'Malformed IP address format',
-        impact: 'Cannot query network infrastructure',
-        recommendation: 'Verify IP format before submission'
-      });
-      return output;
-    }
+    const norm = Normalizer.normalizeIP(target.raw);
+    if (!norm) return output;
 
-    // Check if IP is private/loopback/documentation
-    if (ipInfo.type !== 'PUBLIC') {
-      output.evidences.push({
-        id: `ip_bogon_${ipInfo.normalized}`,
-        tier: 'DIRECT_VERIFICATION',
-        type: 'ip_geo',
-        key: 'IP_CLASSIFICATION',
-        value: { ip: ipInfo.normalized, type: ipInfo.type, version: ipInfo.version },
-        confidenceScore: 100,
-        verified: true,
-        provenance: {
-          collector: this.name,
-          source: 'RFC_STANDARDS_PARSER',
-          retrievedAt: new Date().toISOString(),
-          durationMs: 1,
-          method: 'RFC_CIDR_MATCHING'
-        },
-        metadata: { isNonRoutable: true }
-      });
-      return output;
-    }
-
-    // 1. IP-API / Public BGP Geo Lookup
-    const geoUrl = `http://ip-api.com/json/${ipInfo.normalized}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,mobile,proxy,hosting,query`;
+    const ip = norm.normalized.ip;
+    const ipType = norm.normalized.type;
     const startedAt = new Date().toISOString();
-    const reqRes = await SafeRequester.executeRequest('ip-api.com', geoUrl, { timeout: 4000 });
 
-    output.logs.push({
-      collectorName: this.name,
-      sourceName: 'IP-API Geolocation Engine',
-      query: ipInfo.normalized,
-      startedAt,
-      finishedAt: new Date().toISOString(),
-      durationMs: reqRes.durationMs,
-      status: reqRes.status,
-      httpStatus: reqRes.response?.status,
-      resultCount: reqRes.status === 'FOUND' && reqRes.response?.data?.status === 'success' ? 1 : 0,
-      error: reqRes.error
+    // 1. IP Range Classification Evidence (Bogon / Private / Public)
+    output.evidences.push({
+      id: `ip_bogon_${ip}`,
+      source: 'RFC Address Allocation Standard (IANA/IETF)',
+      sourceType: 'AUTHORITATIVE_REGISTRY',
+      independenceGroup: 'iana_rfc_spec',
+      method: norm.normalizationMethod,
+      observedAt: startedAt,
+      retrievedAt: new Date().toISOString(),
+      type: 'bogon_check',
+      rawValue: { ip: target.raw },
+      normalizedValue: { ip, type: ipType, isPrivateOrLocal: norm.normalized.isPrivateOrLocal },
+      rawExcerpt: `IP Range Classification: ${ipType} (${norm.normalized.isPrivateOrLocal ? 'Non-Routable Bogon/Private/Local Range' : 'Globally Routable Public Address'})`,
+      status: 'VERIFIED',
+      verificationScope: 'ATTRIBUTE_OBSERVED',
+      confidence: 100,
+      reliability: 1.0
     });
 
-    if (reqRes.status === 'FOUND' && reqRes.response?.data?.status === 'success') {
-      const data = reqRes.response.data;
-      output.evidences.push({
-        id: `ip_geo_${ipInfo.normalized}`,
-        tier: 'DIRECT_VERIFICATION',
-        type: 'ip_geo',
-        key: 'IP_NETWORK_METADATA',
-        value: {
-          ip: ipInfo.normalized,
-          country: data.country,
-          countryCode: data.countryCode,
-          city: data.city,
-          region: data.regionName,
-          isp: data.isp,
-          org: data.org,
-          as: data.as,
-          asname: data.asname,
-          lat: data.lat,
-          lon: data.lon,
-          isProxy: data.proxy,
-          isHosting: data.hosting,
-          isMobile: data.mobile
-        },
-        confidenceScore: 95,
-        verified: true,
-        provenance: {
-          collector: this.name,
-          source: 'IP-API (Global BGP & Geo DB)',
-          sourceUrl: geoUrl,
-          httpStatus: reqRes.response.status,
-          retrievedAt: new Date().toISOString(),
-          durationMs: reqRes.durationMs,
-          method: 'BGP_ROUTING_TABLE_LOOKUP'
-        }
+    // If private or local, do not attempt public telemetry lookup
+    if (norm.normalized.isPrivateOrLocal) {
+      output.limitations.push({
+        scope: 'IP_GEO_AND_PORT_SCAN',
+        reason: `Target IP ${ip} belongs to ${ipType} space.`,
+        impact: 'Public intelligence registries cannot query internal or loopback IP ranges.',
+        recommendation: 'Target must be tested internally or via enterprise gateway.'
       });
+      return output;
     }
 
-    // 2. Reverse DNS (PTR)
+    // 2. Reverse DNS (PTR) Resolution
     try {
-      const ptrs = await dns.reverse(ipInfo.normalized);
-      if (ptrs && ptrs.length > 0) {
+      const ptrs = await dns.reverse(ip);
+      if (ptrs.length > 0) {
         output.evidences.push({
-          id: `ip_ptr_${ipInfo.normalized}`,
-          tier: 'DIRECT_VERIFICATION',
+          id: `ip_ptr_${ip}`,
+          source: 'Authoritative in-addr.arpa / ip6.arpa DNS PTR',
+          sourceType: 'DNS',
+          independenceGroup: 'authoritative_ptr_dns',
+          method: 'dns_reverse_lookup',
+          observedAt: startedAt,
+          retrievedAt: new Date().toISOString(),
           type: 'dns_record',
-          key: 'REVERSE_DNS_PTR',
-          value: { ptrRecords: ptrs },
-          confidenceScore: 98,
-          verified: true,
-          provenance: {
-            collector: this.name,
-            source: 'DNS PTR Resolver',
-            retrievedAt: new Date().toISOString(),
-            durationMs: 50,
-            method: 'DNS_IN_ADDR_ARPA_QUERY'
-          }
+          rawValue: { ip, ptrs },
+          normalizedValue: { ip, hostnames: ptrs },
+          rawExcerpt: `PTR Hostnames: ${ptrs.join(', ')}`,
+          status: 'VERIFIED',
+          verificationScope: 'ATTRIBUTE_OBSERVED',
+          confidence: 95,
+          reliability: 0.95
         });
       }
     } catch {
-      // PTR not found is standard for residential/dynamic IPs
+      // PTR not set
+    }
+
+    // 3. Shodan InternetDB Open Port & Vulnerability Query
+    const shodanUrl = `https://internetdb.shodan.io/${ip}`;
+    const shodanRes = await SafeRequester.executeRequest(
+      'Shodan InternetDB API',
+      shodanUrl,
+      { timeout: 4000 }
+    );
+
+    output.logs.push({
+      collectorName: this.name,
+      sourceName: 'Shodan InternetDB API',
+      query: ip,
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      durationMs: shodanRes.durationMs,
+      status: shodanRes.status,
+      httpStatus: shodanRes.response?.status,
+      resultCount: shodanRes.status === 'FOUND' ? 1 : 0,
+      error: shodanRes.error
+    });
+
+    if (shodanRes.status === 'FOUND' && shodanRes.response?.data) {
+      const data = shodanRes.response.data;
+      output.evidences.push({
+        id: `ip_shodan_${ip}`,
+        source: 'Shodan InternetDB Network Telemetry',
+        sourceType: 'API',
+        sourceUrl: shodanUrl,
+        independenceGroup: 'shodan_telemetry',
+        method: 'internetdb_rest_api',
+        observedAt: startedAt,
+        retrievedAt: new Date().toISOString(),
+        type: 'ip_geo',
+        rawValue: data,
+        normalizedValue: {
+          ip,
+          ports: data.ports || [],
+          cves: data.cves || [],
+          hostnames: data.hostnames || [],
+          tags: data.tags || []
+        },
+        rawExcerpt: `Open Ports: ${(data.ports || []).join(', ') || 'None'} | CVEs: ${(data.cves || []).length}`,
+        status: 'CORROBORATED',
+        verificationScope: 'ATTRIBUTE_OBSERVED',
+        confidence: 85,
+        reliability: 0.85
+      });
     }
 
     return output;

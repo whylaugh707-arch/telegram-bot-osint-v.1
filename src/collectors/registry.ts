@@ -1,6 +1,6 @@
 /**
- * OSINT Nexus - Public & Academic Registry Collector
- * Queries CrossRef, OpenAlex, and Wikipedia for authenticated publications and organizational affiliations.
+ * OSINT Nexus - Public & Academic Registry Collector (Phase 2 Refactor)
+ * Queries CrossRef, OpenAlex, and Wikipedia. Observes name occurrences without blindly verifying identity.
  */
 
 import { Collector, CollectorOutput, SafeRequester } from './base';
@@ -53,12 +53,20 @@ export class RegistryCollector implements Collector {
           (a.given && query.toLowerCase().includes(a.given.toLowerCase()))
         );
 
+        const sourceRel = SafeRequester.getSourceReliability('CrossRef API');
+
         output.evidences.push({
           id: `crossref_${doi || idx}`,
-          tier: 'REGISTRY_RECORD',
+          source: 'CrossRef (Official DOI Registration Agency)',
+          sourceType: 'API',
+          sourceUrl: doi ? `https://doi.org/${doi}` : crossRefUrl,
+          independenceGroup: 'scholarly_registry_crossref',
+          method: 'metadata_author_search',
+          observedAt: startedAt,
+          retrievedAt: new Date().toISOString(),
           type: 'academic_pub',
-          key: 'CROSSREF_SCHOLARLY_PUBLICATION',
-          value: {
+          rawValue: item,
+          normalizedValue: {
             title,
             doi,
             publisher,
@@ -66,17 +74,12 @@ export class RegistryCollector implements Collector {
             matchedAuthor: authorMatch ? `${authorMatch.given || ''} ${authorMatch.family || ''}`.trim() : query,
             affiliation: authorMatch?.affiliation?.[0]?.name
           },
-          confidenceScore: 80,
-          verified: true,
-          provenance: {
-            collector: this.name,
-            source: 'CrossRef (Official DOI Registration Agency)',
-            sourceUrl: doi ? `https://doi.org/${doi}` : crossRefUrl,
-            httpStatus: 200,
-            retrievedAt: new Date().toISOString(),
-            durationMs: crRes.durationMs,
-            method: 'METADATA_AUTHOR_SEARCH'
-          }
+          rawExcerpt: `Publication: ${title} | DOI: ${doi} | Author Match: ${authorMatch ? 'Yes' : 'No'}`,
+          status: 'OBSERVED', // Not verified! It's just an observation of a name.
+          verificationScope: 'ATTRIBUTE_OBSERVED',
+          confidence: 60, // Much lower than before, wait for cross-corroboration
+          reliability: sourceRel.reliability,
+          metadata: { note: 'Name match in academic registry does not confirm target is this specific author.' }
         });
       });
     }
@@ -98,14 +101,21 @@ export class RegistryCollector implements Collector {
     });
 
     if (oaRes.status === 'FOUND' && oaRes.response?.data?.results?.length > 0) {
+      const sourceRel = SafeRequester.getSourceReliability('OpenAlex API');
       oaRes.response.data.results.forEach((auth: any) => {
         if (auth.display_name && (auth.works_count > 0 || auth.cited_by_count > 0)) {
           output.evidences.push({
             id: `openalex_${auth.id}`,
-            tier: 'REGISTRY_RECORD',
+            source: 'OpenAlex Knowledge Graph',
+            sourceType: 'API',
+            sourceUrl: auth.id,
+            independenceGroup: 'scholarly_registry_openalex',
+            method: 'entity_graph_match',
+            observedAt: startedAt,
+            retrievedAt: new Date().toISOString(),
             type: 'academic_pub',
-            key: 'OPENALEX_SCHOLAR_PROFILE',
-            value: {
+            rawValue: auth,
+            normalizedValue: {
               name: auth.display_name,
               institution: auth.last_known_institutions?.[0]?.display_name,
               country: auth.last_known_institutions?.[0]?.country_code,
@@ -114,17 +124,12 @@ export class RegistryCollector implements Collector {
               orcid: auth.orcid,
               openAlexId: auth.id
             },
-            confidenceScore: 85,
-            verified: true,
-            provenance: {
-              collector: this.name,
-              source: 'OpenAlex Knowledge Graph',
-              sourceUrl: auth.id,
-              httpStatus: 200,
-              retrievedAt: new Date().toISOString(),
-              durationMs: oaRes.durationMs,
-              method: 'ENTITY_GRAPH_MATCH'
-            }
+            rawExcerpt: `Scholar: ${auth.display_name} | Works: ${auth.works_count} | ORCID: ${auth.orcid || 'N/A'}`,
+            status: 'OBSERVED', // Not verified identity, merely observed record
+            verificationScope: 'ATTRIBUTE_OBSERVED',
+            confidence: 65,
+            reliability: sourceRel.reliability,
+            metadata: { note: 'Scholarly profile match. May be a namesake.' }
           });
         }
       });

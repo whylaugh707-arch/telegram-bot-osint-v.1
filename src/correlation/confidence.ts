@@ -1,16 +1,19 @@
 /**
- * OSINT Nexus - Confidence Scoring Engine
- * Computes heuristic confidence, risk exposure, and generates evidence-driven audit reasons.
+ * OSINT Nexus - Confidence Scoring Engine (Phase 2 Refactor)
+ * Computes heuristic confidence, risk exposure, and generates evidence-driven audit reasons,
+ * strictly enforcing source independence and tracking contradictions.
  */
 
-import { ConfidenceLevel, Entity, Evidence, InvestigationLimitation, TargetInput } from '../models/types';
+import { ConfidenceLevel, EntityCandidate, Evidence, InvestigationLimitation, TargetInput, Contradiction, Relationship } from '../models/types';
 
 export class ConfidenceScorer {
 
   public static calculate(
     target: TargetInput,
     evidences: Evidence[],
-    entities: Entity[]
+    candidates: EntityCandidate[],
+    contradictions: Contradiction[],
+    relationships: Relationship[]
   ): {
     score: number;
     level: ConfidenceLevel;
@@ -22,59 +25,56 @@ export class ConfidenceScorer {
     const reasons: string[] = [];
     const limitations: InvestigationLimitation[] = [];
 
-    const verifiedEvidences = evidences.filter(e => e.verified);
-    const discoveryEvidences = evidences.filter(e => !e.verified);
+    // 1. Enforce Source Independence
+    // We group verified/corroborated evidence by their `independenceGroup`
+    const highConfidenceEvidences = evidences.filter(e => e.status === 'VERIFIED' || e.status === 'CORROBORATED');
+    const independentSources = new Set(highConfidenceEvidences.map(e => e.independenceGroup).filter(Boolean));
 
-    // 1. Direct Cryptographic & Authoritative Matches
-    const directMatches = verifiedEvidences.filter(e => e.tier === 'DIRECT_VERIFICATION');
-    if (directMatches.length > 0) {
-      scoreAccumulator += Math.min(40, directMatches.length * 15);
-      reasons.push(`Direct authoritative/cryptographic validation passed (${directMatches.length} source[s])`);
-    }
-
-    // 2. Verified Multi-Platform Footprints (OBSERVED_PROFILE)
-    const observedProfiles = verifiedEvidences.filter(e => e.tier === 'OBSERVED_PROFILE');
-    if (observedProfiles.length > 0) {
-      const added = Math.min(35, observedProfiles.length * 7);
-      scoreAccumulator += added;
-      reasons.push(`Verified public account signatures confirmed on ${observedProfiles.length} platform(s)`);
-    } else if (target.classification === 'username') {
+    if (independentSources.size > 0) {
+      scoreAccumulator += Math.min(50, independentSources.size * 15);
+      reasons.push(`Corroborated by ${independentSources.size} independent highly reliable source groups.`);
+    } else {
       limitations.push({
-        scope: 'Platform Footprint',
-        reason: 'Zero exact active public profiles matching target handle with high certainty',
-        impact: 'Correlation is limited to search index discovery and passive records',
-        recommendation: 'Expand search with alternative aliases or Google Dorking matrix'
+        scope: 'Source Independence',
+        reason: 'Zero mathematically independent authoritative sources confirmed this target.',
+        impact: 'Confidence score is strictly capped. Findings rely on unverified observations.',
+        recommendation: 'Seek direct cryptographic or authoritative registry validation.'
       });
     }
 
-    // 3. Academic & Official Registries
-    const registryRecords = verifiedEvidences.filter(e => e.tier === 'REGISTRY_RECORD');
-    if (registryRecords.length > 0) {
-      scoreAccumulator += Math.min(25, registryRecords.length * 10);
-      reasons.push(`Corroborated by ${registryRecords.length} official scholarly / institutional registry record(s)`);
+    // 2. Identity Ambiguity (Candidate Analysis)
+    const strongCandidates = candidates.filter(c => c.status === 'STRONG' || c.status === 'PROBABLE');
+    if (strongCandidates.length === 1) {
+      scoreAccumulator += 20;
+      reasons.push(`Single cohesive identity profile resolved without major entity fragmentation.`);
+    } else if (strongCandidates.length > 1) {
+      scoreAccumulator -= 15;
+      reasons.push(`Identity ambiguity detected: ${strongCandidates.length} distinct strong candidate entities found. Resolution is split.`);
+      limitations.push({
+        scope: 'Entity Resolution',
+        reason: `Multiple distinct candidates (${strongCandidates.length}) found for target.`,
+        impact: 'High risk of false positives. Data might belong to namesakes or disconnected accounts.',
+        recommendation: 'Filter search with additional anchors (e.g. location, organization) to isolate the correct entity.'
+      });
     }
 
-    // 4. Cross-Vector Identity Consistency
-    const primary = entities[0];
-    if (primary) {
-      const emailProps = primary.properties.filter(p => p.type === 'email');
-      const phoneProps = primary.properties.filter(p => p.type === 'phone');
-      const nameProps = primary.properties.filter(p => p.type === 'name');
-
-      if (emailProps.length > 0 && nameProps.length > 0) {
-        scoreAccumulator += 15;
-        reasons.push('Cross-source correlation: Name and verified Email anchor match');
-      }
-      if (phoneProps.length > 0) {
-        scoreAccumulator += 10;
-        reasons.push('Direct telecommunication vector (Phone/WhatsApp) discovered in public text records');
+    // 3. Contradiction Penalties
+    if (contradictions.length > 0) {
+      const highSevContradictions = contradictions.filter(c => c.severity === 'HIGH');
+      if (highSevContradictions.length > 0) {
+        scoreAccumulator -= 20;
+        reasons.push(`Critical contradictions found (${highSevContradictions.length}) undermining correlation.`);
+      } else {
+        scoreAccumulator -= 5;
+        reasons.push(`Minor temporal or contextual contradictions noted.`);
       }
     }
 
-    // 5. Discovery Snippets (Web Search) - Capped at low contribution
-    if (discoveryEvidences.length > 0) {
-      scoreAccumulator += Math.min(10, discoveryEvidences.length * 2);
-      reasons.push(`Supplementary web index discovery records identified (${discoveryEvidences.length} snippet[s])`);
+    // 4. Discovery / Observation (Low confidence padding)
+    const observedEvidences = evidences.filter(e => e.status === 'OBSERVED');
+    if (observedEvidences.length > 0) {
+      scoreAccumulator += Math.min(10, observedEvidences.length * 2);
+      reasons.push(`Supplementary observational records identified (${observedEvidences.length} distinct signals).`);
     }
 
     // Heuristic Score normalization (0 - 100)
@@ -87,8 +87,8 @@ export class ConfidenceScorer {
     else level = 'WEAK';
 
     // Risk exposure computation based on digital footprint surface
-    const totalIdentifiableProperties = primary ? primary.properties.length : 0;
-    const riskScore = Math.min(95, Math.max(15, (observedProfiles.length * 8) + (totalIdentifiableProperties * 6) + 10));
+    const totalAttributes = candidates.reduce((sum, c) => sum + c.attributes.length, 0);
+    const riskScore = Math.min(95, Math.max(15, (highConfidenceEvidences.length * 8) + (totalAttributes * 4) + 10));
 
     return {
       score: finalScore,

@@ -1,16 +1,16 @@
 /**
- * OSINT Nexus - Evidence Graph Generator
- * Creates multi-modal visual graph nodes and relationships with full provenance traceability.
+ * OSINT Nexus - Evidence Graph Generator (Phase 2 Refactor)
+ * Creates multi-modal visual graph nodes based on independent entities and explicit relationships.
  */
 
-import { Entity, EntityRelationship, Evidence, EvidenceGraph, EvidenceGraphLink, EvidenceGraphNode, TargetInput } from '../models/types';
+import { EntityCandidate, Relationship, Evidence, EvidenceGraph, EvidenceGraphLink, EvidenceGraphNode, TargetInput } from '../models/types';
 
 export class EvidenceGraphBuilder {
 
   public static build(
     target: TargetInput,
-    entities: Entity[],
-    relationships: EntityRelationship[],
+    entities: EntityCandidate[],
+    relationships: Relationship[],
     evidences: Evidence[]
   ): EvidenceGraph {
     const nodes: EvidenceGraphNode[] = [];
@@ -18,7 +18,7 @@ export class EvidenceGraphBuilder {
     const nodeMap = new Set<string>();
 
     // 1. Root Target Node
-    const targetNodeId = `node_target_${target.normalized}`;
+    const targetNodeId = 'TARGET';
     nodes.push({
       id: targetNodeId,
       label: target.raw,
@@ -37,75 +37,78 @@ export class EvidenceGraphBuilder {
           label: `${entity.primaryType}: ${entity.label}`,
           type: 'entity',
           group: entity.primaryType.toLowerCase(),
-          confidence: entity.confidence.score,
-          metadata: { propertiesCount: entity.properties.length }
+          confidence: entity.confidence,
+          metadata: { propertiesCount: entity.attributes.length, status: entity.status }
         });
         nodeMap.add(entity.id);
-
-        links.push({
-          source: targetNodeId,
-          target: entity.id,
-          relation: 'RESOLVED_AS',
-          weight: 90
-        });
       }
 
-      // Add properties as leaf nodes for clear visualization
-      for (const prop of entity.properties) {
-        const propNodeId = `prop_${prop.type}_${prop.normalizedValue.replace(/[^a-zA-Z0-9_]/g, '_')}`;
-        if (!nodeMap.has(propNodeId)) {
+      // Add attributes as leaf nodes
+      for (const attr of entity.attributes) {
+        const attrNodeId = `attr_${attr.type}_${attr.normalized.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+        if (!nodeMap.has(attrNodeId)) {
           nodes.push({
-            id: propNodeId,
-            label: `${prop.type.toUpperCase()}: ${prop.value}`,
+            id: attrNodeId,
+            label: `${attr.type.toUpperCase()}: ${attr.raw}`,
             type: 'evidence',
             group: 'property',
-            confidence: prop.confidence
+            confidence: attr.confidence
           });
-          nodeMap.add(propNodeId);
+          nodeMap.add(attrNodeId);
 
           links.push({
             source: entity.id,
-            target: propNodeId,
-            relation: `HAS_${prop.type.toUpperCase()}`,
-            weight: prop.confidence,
-            evidenceIds: prop.evidenceIds
+            target: attrNodeId,
+            relation: `HAS_${attr.type.toUpperCase()}`,
+            weight: attr.confidence,
+            evidenceIds: attr.evidenceIds
           });
         }
       }
     }
 
     // 3. Evidence / Platform Nodes
-    for (const ev of evidences.slice(0, 30)) { // Cap to avoid overwhelming graph visualizer
+    for (const ev of evidences.slice(0, 30)) {
       const evNodeId = `ev_${ev.id}`;
       if (!nodeMap.has(evNodeId)) {
         nodes.push({
           id: evNodeId,
-          label: `${ev.provenance.source} [${ev.tier}]`,
+          label: `${ev.source} [${ev.status}]`,
           type: 'platform',
-          group: ev.tier.toLowerCase(),
-          confidence: ev.confidenceScore,
-          metadata: { sourceUrl: ev.provenance.sourceUrl, verified: ev.verified }
+          group: ev.status.toLowerCase(),
+          confidence: ev.confidence,
+          metadata: { sourceUrl: ev.sourceUrl }
         });
         nodeMap.add(evNodeId);
+      }
+    }
 
-        links.push({
-          source: targetNodeId,
-          target: evNodeId,
-          relation: ev.verified ? 'VERIFIED_ON' : 'OBSERVED_IN',
-          weight: ev.confidenceScore
-        });
+    // Link Entities to Evidences
+    for (const entity of entities) {
+      for (const evId of entity.supportingEvidence) {
+        if (nodeMap.has(`ev_${evId}`)) {
+          links.push({
+            source: entity.id,
+            target: `ev_${evId}`,
+            relation: 'SUPPORTED_BY',
+            weight: entity.confidence,
+            evidenceIds: [evId]
+          });
+        }
       }
     }
 
     // 4. Entity Relationships
     for (const rel of relationships) {
-      links.push({
-        source: rel.sourceEntityId,
-        target: rel.targetEntityId,
-        relation: rel.relation,
-        weight: rel.confidence,
-        evidenceIds: rel.evidenceIds
-      });
+      if (nodeMap.has(rel.fromEntity) && nodeMap.has(rel.toEntity)) {
+        links.push({
+          source: rel.fromEntity,
+          target: rel.toEntity,
+          relation: rel.type,
+          weight: rel.confidence,
+          evidenceIds: rel.evidenceIds
+        });
+      }
     }
 
     return { nodes, links };

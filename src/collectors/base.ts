@@ -1,10 +1,12 @@
 /**
- * OSINT Nexus - Collector Base & Rate Limiter Infrastructure
- * Provides standardized interface, token-bucket rate limiting, exponential backoff, and circuit breaker.
+ * OSINT Nexus - Collector Base & Strict SSRF-Protected Requester (Phase 2 Refactor)
+ * Standardizes external data ingestion with strict IP bounds, circuit breaking, and source reliability.
  */
 
-import { CollectorLog, Evidence, InvestigationLimitation, SourceStatus, TargetInput } from '../models/types';
+import { CollectorLog, Evidence, InvestigationLimitation, SourceReliability, SourceStatus, TargetInput } from '../models/types';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { Normalizer } from '../normalization';
+import dns from 'dns/promises';
 
 export interface CollectorOutput {
   evidences: Evidence[];
@@ -28,30 +30,108 @@ interface CircuitBreakerState {
 export class SafeRequester {
   private static domainQueues = new Map<string, Promise<void>>();
   private static circuitBreakers = new Map<string, CircuitBreakerState>();
+  private static sourceReliabilityRegistry = new Map<string, SourceReliability>();
 
-  private static getRandomUserAgent(): string {
-    const uas = [
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-      'Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0',
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0'
-    ];
-    return uas[Math.floor(Math.random() * uas.length)];
+  public static readonly STANDARD_USER_AGENT = 'OSINT-Nexus-Intelligence-Engine/2.5 (+https://nexus-osint.local; ethical-recon)';
+
+  static {
+    // Seed standard source reliability heuristics
+    SafeRequester.registerSourceReliability('GitHub API', 0.95, true, 'Authoritative developer identity platform');
+    SafeRequester.registerSourceReliability('Gravatar API', 0.95, true, 'Cryptographic email MD5 hash binding');
+    SafeRequester.registerSourceReliability('CrossRef API', 0.90, true, 'Official DOI registration agency');
+    SafeRequester.registerSourceReliability('OpenAlex API', 0.85, true, 'Global scholarly knowledge graph');
+    SafeRequester.registerSourceReliability('DNS PTR Resolver', 0.95, true, 'Authoritative root and in-addr.arpa resolver');
+    SafeRequester.registerSourceReliability('DuckDuckGo Public Search Index', 0.45, false, 'Third-party web crawler search index (discovery only)');
+  }
+
+  public static registerSourceReliability(source: string, reliability: number, supportsVerification: boolean, notes: string): void {
+    this.sourceReliabilityRegistry.set(source, { source, reliability, supportsVerification, notes });
+  }
+
+  public static getSourceReliability(source: string): SourceReliability {
+    return this.sourceReliabilityRegistry.get(source) || {
+      source,
+      reliability: 0.60,
+      supportsVerification: false,
+      notes: 'General unclassified public source'
+    };
   }
 
   /**
-   * Request with circuit breaker, timeout, rate limiting, and exponential retry
+   * SSRF Protection: Validates that a target URL is safe to query.
+   * Resolves hostname to IP and verifies that it is not loopback, private, link-local, or reserved.
+   */
+  public static async validateUrlSafety(rawUrl: string): Promise<{ safe: boolean; reason?: string; resolvedIp?: string }> {
+    try {
+      const parsed = new URL(rawUrl);
+
+      // 1. Only allow HTTP and HTTPS protocols
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { safe: false, reason: `Disallowed protocol: ${parsed.protocol}. Only HTTP and HTTPS are permitted.` };
+      }
+
+      const hostname = parsed.hostname;
+
+      // 2. Direct IP check or DNS resolution
+      let ipCandidate = hostname;
+      const directIpNorm = Normalizer.normalizeIP(hostname);
+
+      if (!directIpNorm) {
+        // Resolve domain via DNS
+        try {
+          const resolved = await dns.lookup(hostname);
+          ipCandidate = resolved.address;
+        } catch (err: any) {
+          return { safe: false, reason: `DNS lookup failed for hostname ${hostname}: ${err.message}` };
+        }
+      }
+
+      // 3. Classify resolved IP
+      const ipClassification = Normalizer.normalizeIP(ipCandidate);
+      if (!ipClassification) {
+        return { safe: false, reason: `Unrecognized IP format for resolved host: ${ipCandidate}` };
+      }
+
+      if (ipClassification.normalized.isPrivateOrLocal) {
+        return { 
+          safe: false, 
+          reason: `SSRF Blocked: Destination IP ${ipCandidate} is classified as ${ipClassification.normalized.type} (Bogon/Private/Local Range).`,
+          resolvedIp: ipCandidate
+        };
+      }
+
+      return { safe: true, resolvedIp: ipCandidate };
+
+    } catch (err: any) {
+      return { safe: false, reason: `URL parsing exception: ${err.message}` };
+    }
+  }
+
+  /**
+   * Request with SSRF protection, circuit breaker, timeout, rate limiting, and exponential retry
    */
   public static async executeRequest(
     sourceName: string,
     url: string,
     config: AxiosRequestConfig = {},
     maxRetries: number = 1
-  ): Promise<{ response?: AxiosResponse; status: SourceStatus; error?: string; durationMs: number }> {
+  ): Promise<{ response?: AxiosResponse; status: SourceStatus; error?: string; durationMs: number; resolvedIp?: string }> {
     const startedAt = Date.now();
+
+    // 1. SSRF Validation
+    const ssrfCheck = await this.validateUrlSafety(url);
+    if (!ssrfCheck.safe) {
+      return {
+        status: 'BLOCKED',
+        error: ssrfCheck.reason || 'SSRF Security Check Failed',
+        durationMs: Date.now() - startedAt,
+        resolvedIp: ssrfCheck.resolvedIp
+      };
+    }
+
     const domain = new URL(url).hostname;
     
-    // Check Circuit Breaker
+    // 2. Check Circuit Breaker
     const cb = this.circuitBreakers.get(domain) || { failures: 0, lastFailureTime: 0, state: 'CLOSED' };
     if (cb.state === 'OPEN') {
       if (Date.now() - cb.lastFailureTime > 30000) {
@@ -66,7 +146,7 @@ export class SafeRequester {
     }
 
     const headers = {
-      'User-Agent': this.getRandomUserAgent(),
+      'User-Agent': this.STANDARD_USER_AGENT,
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
       ...config.headers
@@ -80,6 +160,7 @@ export class SafeRequester {
           ...config,
           headers,
           timeout,
+          maxRedirects: 3,
           validateStatus: () => true // Handle all status codes cleanly
         });
 
@@ -91,26 +172,25 @@ export class SafeRequester {
           cb.lastFailureTime = Date.now();
           if (cb.failures >= 3) cb.state = 'OPEN';
           this.circuitBreakers.set(domain, cb);
-          return { response: res, status: 'RATE_LIMITED', error: 'HTTP 429 Too Many Requests', durationMs };
+          return { response: res, status: 'RATE_LIMITED', error: 'HTTP 429 Too Many Requests', durationMs, resolvedIp: ssrfCheck.resolvedIp };
         }
 
         // HTTP 403: Blocked / Cloudflare / WAF
         if (res.status === 403) {
-          return { response: res, status: 'BLOCKED', error: 'HTTP 403 Forbidden / Anti-Bot WAF', durationMs };
+          return { response: res, status: 'BLOCKED', error: 'HTTP 403 Forbidden / Anti-Bot WAF', durationMs, resolvedIp: ssrfCheck.resolvedIp };
         }
 
         // HTTP 404: Not Found
         if (res.status === 404) {
-          return { response: res, status: 'NOT_FOUND', durationMs };
+          return { response: res, status: 'NOT_FOUND', durationMs, resolvedIp: ssrfCheck.resolvedIp };
         }
 
-        // HTTP 200: OK
+        // HTTP 200 - 299: OK (Page Retrieved, not automatically identity-verified)
         if (res.status >= 200 && res.status < 300) {
-          // Reset breaker on success
           cb.failures = 0;
           cb.state = 'CLOSED';
           this.circuitBreakers.set(domain, cb);
-          return { response: res, status: 'FOUND', durationMs };
+          return { response: res, status: 'FOUND', durationMs, resolvedIp: ssrfCheck.resolvedIp };
         }
 
         // Other HTTP Statuses
@@ -118,7 +198,8 @@ export class SafeRequester {
           response: res,
           status: 'ERROR',
           error: `Unexpected HTTP ${res.status}`,
-          durationMs
+          durationMs,
+          resolvedIp: ssrfCheck.resolvedIp
         };
 
       } catch (err: any) {
