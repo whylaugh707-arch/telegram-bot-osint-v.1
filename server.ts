@@ -2827,6 +2827,47 @@ There are no background services or permissions associated.
             });
           }
         }
+        
+        // Send Entity Relational Graph as Image
+        try {
+           if (reportData.graph && reportData.graph.nodes && reportData.graph.nodes.length > 0) {
+              await ctx.reply("⏳ <i>Men-generate Entity Relational Graph...</i>", { parse_mode: 'HTML' });
+              
+              let dot = 'digraph G {\n';
+              dot += '  rankdir=LR;\n';
+              dot += '  node [style=filled, fontname="Arial", fontsize=10];\n';
+              dot += '  edge [fontname="Arial", fontsize=8];\n';
+
+              const typeColors: any = {
+                'target': '#ffcccc',
+                'entity': '#ccffcc',
+                'evidence': '#ccccff',
+                'platform': '#fff3cc',
+                'infrastructure': '#e6ccff'
+              };
+
+              reportData.graph.nodes.forEach((n: any) => {
+                const color = typeColors[n.type] || '#eeeeee';
+                let label = (n.label || '').replace(/"/g, '\\"');
+                if (label.length > 40) label = label.substring(0, 40) + '...';
+                dot += `  "${n.id}" [label="${label}", fillcolor="${color}", shape=box, style="rounded,filled"];\n`;
+              });
+
+              reportData.graph.links.forEach((l: any) => {
+                const relation = (l.relation || '').replace(/"/g, '\\"');
+                dot += `  "${l.source}" -> "${l.target}" [label="${relation}"];\n`;
+              });
+              dot += '}\n';
+              
+              const resp = await axios.post('https://quickchart.io/graphviz', { graph: dot }, { responseType: 'arraybuffer', timeout: 15000 });
+              if (resp.status === 200 && resp.data) {
+                  await ctx.replyWithPhoto({ source: Buffer.from(resp.data) }, { caption: "🕸️ <b>Entity Relational Graph</b>\nPeta korelasi intelijen hasil temuan.", parse_mode: 'HTML' });
+              }
+           }
+        } catch(gErr: any) {
+           console.error("Failed to generate graph image", gErr.message);
+        }
+
       } catch(err: any) {
         if (timerInterval) clearInterval(timerInterval);
         ctx.reply(`❌ <b>Gagal menjalankan Intelijen Engine:</b> ${err.message}`, { parse_mode: 'HTML' });
